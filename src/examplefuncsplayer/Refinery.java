@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class Refinery extends Building {
+public class Refinery extends Building implements RefineryInterface {
 
     public Refinery(RobotController rc) {
         super(rc);

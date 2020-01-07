@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class HQ extends Building {
+public class HQ extends Building implements NetGunInterface, RefineryInterface {
 
     public HQ(RobotController rc) {
         super(rc);

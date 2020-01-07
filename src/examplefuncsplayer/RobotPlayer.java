@@ -1,6 +1,5 @@
 package examplefuncsplayer;
 import battlecode.common.*;
-import sun.nio.ch.Net;
 
 public strictfp class RobotPlayer {
 
