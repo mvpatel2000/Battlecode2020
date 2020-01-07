@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class DeliveryDrone extends Robot {
+public class DeliveryDrone extends Unit {
 
     public DeliveryDrone(RobotController rc) {
         super(rc);
@@ -10,6 +10,8 @@ public class DeliveryDrone extends Robot {
 
     @Override
     public void run()  throws GameActionException  {
+        turnCount++;
+
         Team enemy = rc.getTeam().opponent();
         if (!rc.isCurrentlyHoldingUnit()) {
             // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)

@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class Refinery extends Robot {
+public class Refinery extends Building {
 
     public Refinery(RobotController rc) {
         super(rc);
@@ -10,6 +10,6 @@ public class Refinery extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        return;
+        turnCount++;
     }
 }

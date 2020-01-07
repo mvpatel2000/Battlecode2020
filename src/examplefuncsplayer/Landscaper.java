@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class Landscaper extends Robot {
+public class Landscaper extends Unit {
 
     public Landscaper(RobotController rc) {
         super(rc);
@@ -10,6 +10,6 @@ public class Landscaper extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        return;
+        turnCount++;
     }
 }

@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class NetGun extends Robot {
+public class NetGun extends Building {
 
     public NetGun(RobotController rc) {
         super(rc);
@@ -10,6 +10,6 @@ public class NetGun extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        return;
+        turnCount++;
     }
 }

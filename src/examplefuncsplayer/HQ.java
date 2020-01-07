@@ -2,7 +2,7 @@ package examplefuncsplayer;
 
 import battlecode.common.*;
 
-public class HQ extends Robot {
+public class HQ extends Building {
 
     public HQ(RobotController rc) {
         super(rc);
@@ -10,6 +10,8 @@ public class HQ extends Robot {
 
     @Override
     public void run() throws GameActionException {
+        turnCount++;
+
         for (Direction dir : directions)
             tryBuild(RobotType.MINER, dir);
     }

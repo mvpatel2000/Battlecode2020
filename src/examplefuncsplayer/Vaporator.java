@@ -3,7 +3,7 @@ package examplefuncsplayer;
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
 
-public class Vaporator extends Robot {
+public class Vaporator extends Building {
 
     public Vaporator(RobotController rc) {
         super(rc);
@@ -11,6 +11,6 @@ public class Vaporator extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        return;
+        turnCount++;
     }
 }
