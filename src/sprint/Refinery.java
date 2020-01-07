@@ -1,10 +1,10 @@
-package examplefuncsplayer;
+package sprint;
 
 import battlecode.common.*;
 
-public class Landscaper extends Unit {
+public class Refinery extends Building implements RefineryInterface {
 
-    public Landscaper(RobotController rc) {
+    public Refinery(RobotController rc) {
         super(rc);
     }
 

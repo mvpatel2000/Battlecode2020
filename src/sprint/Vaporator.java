@@ -1,4 +1,4 @@
-package examplefuncsplayer;
+package sprint;
 
 import battlecode.common.GameActionException;
 import battlecode.common.RobotController;
