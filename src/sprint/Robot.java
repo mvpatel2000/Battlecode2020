@@ -11,10 +11,14 @@ public abstract class Robot {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
+    static Team allyTeam;
+    static Team enemyTeam;
 
     public Robot(RobotController robotController) {
         rc = robotController;
         turnCount = 0;
+        allyTeam = rc.getTeam();
+        enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
     }
 
     public abstract void run() throws GameActionException;
