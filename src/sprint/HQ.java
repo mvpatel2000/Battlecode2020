@@ -1,5 +1,4 @@
 package sprint;
-
 import battlecode.common.*;
 
 public class HQ extends Building {
@@ -20,9 +19,10 @@ public class HQ extends Building {
     public void run() throws GameActionException {
         setupTurn();
 
-        netgun.shoot();
-
-        for (Direction dir : directions)
+        //netgun.shoot();
+        System.out.println("Hello");
+        for (Direction dir : directions) {
             tryBuild(RobotType.MINER, dir);
+        }
     }
 }

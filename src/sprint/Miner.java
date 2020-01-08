@@ -19,12 +19,18 @@ public class Miner extends Unit {
         // tryBuild(randomSpawnedByMiner(), randomDirection());
         for (Direction dir : directions)
             tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-        for (Direction dir : directions)
-            if (tryRefine(dir))
+        for (Direction dir : directions) {
+            if (tryRefine(dir)) {
                 System.out.println("I refined soup! " + rc.getTeamSoup());
-        for (Direction dir : directions)
-            if (tryMine(dir))
+                break;
+            }
+        }
+        for (Direction dir : directions) {
+            if (tryMine(dir)) {
                 System.out.println("I mined soup! " + rc.getSoupCarrying());
+                break;
+            }
+        }
     }
 
     /**
@@ -38,7 +44,9 @@ public class Miner extends Unit {
         if (rc.isReady() && rc.canMineSoup(dir)) {
             rc.mineSoup(dir);
             return true;
-        } else return false;
+        } else {
+            return false;
+        }
     }
 
     /**
