@@ -13,13 +13,16 @@ public class HQ extends Building {
         refinery = new Refinery(rc);
     }
 
+    /*
+     * 1. Always shoot enemy drones down if possible
+     */
     @Override
     public void run() throws GameActionException {
         setupTurn();
 
+        netgun.shoot();
+
         for (Direction dir : directions)
             tryBuild(RobotType.MINER, dir);
-
-        // netgun.shoot(); // This takes up the action!
     }
 }

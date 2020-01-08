@@ -14,10 +14,10 @@ public class NetGun extends Building {
         shoot();
     }
 
-    /* Shoots nearest enemy drone if possible */
-    public void shoot() throws GameActionException {
+    /* Shoots nearest enemy drone if possible, returning true if it does shoot */
+    public boolean shoot() throws GameActionException {
         if (!rc.isReady()) // Cannot take an action
-            return;
+            return false;
 
         RobotInfo target = null;
         int distSquared = -1;
@@ -37,6 +37,8 @@ public class NetGun extends Building {
         }
         if (target != null) {
             rc.shootUnit(target.ID);
+            return true;
         }
+        return false;
     }
 }
