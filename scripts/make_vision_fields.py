@@ -9,7 +9,7 @@ for a in range(0, R+1):
 		for y in range(-r, r+1):
 			if 100*x+y not in D and x**2 + y**2 <= a:
 				D.add(100*x+y)
-				s += f'[{x},{y}], '
+				s += '{'+str(x)+','+str(y)+'}, '
 				l += 1
 
 s = s[:-2]
