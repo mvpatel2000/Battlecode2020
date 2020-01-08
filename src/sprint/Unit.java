@@ -39,7 +39,7 @@ public abstract class Unit extends Robot {
     }
 
     static boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
-        int mindist = 1000;
+        int mindist = 50000;
         Direction bestdir = null;
         for (Direction dir : directions) {
             if(rc.canMove(dir)) {

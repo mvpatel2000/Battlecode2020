@@ -27,6 +27,8 @@ public abstract class Robot {
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
         myId = rc.getID();
+
+        myLocation = rc.getLocation();
     }
 
     public void setupTurn() throws GameActionException {

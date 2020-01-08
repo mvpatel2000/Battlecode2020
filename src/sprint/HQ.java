@@ -5,7 +5,6 @@ public class HQ extends Building {
 
     static NetGun netgun;
     static Refinery refinery;
-    static int count = 0;
 
     public HQ(RobotController rc) {
         super(rc);
@@ -23,9 +22,7 @@ public class HQ extends Building {
         netgun.shoot();
 
         for (Direction dir : directions) {
-            if (count < 1)
             tryBuild(RobotType.MINER, dir);
-            count++;
         }
     }
 }
