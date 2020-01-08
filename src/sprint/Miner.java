@@ -13,9 +13,12 @@ public class Miner extends Unit {
         setupTurn();
 
         tryBlockchain();
-        tryMove(randomDirection());
-        if (tryMove(randomDirection()))
-            System.out.println("I moved!");
+        for (Direction dir : directions) {
+            if (tryMine(dir)) {
+                System.out.println("I mined soup! " + rc.getSoupCarrying());
+                break;
+            }
+        }
         // tryBuild(randomSpawnedByMiner(), randomDirection());
         for (Direction dir : directions)
             tryBuild(RobotType.FULFILLMENT_CENTER, dir);
@@ -25,11 +28,8 @@ public class Miner extends Unit {
                 break;
             }
         }
-        for (Direction dir : directions) {
-            if (tryMine(dir)) {
-                System.out.println("I mined soup! " + rc.getSoupCarrying());
-                break;
-            }
+        if (tryMove(randomDirection())) {
+            System.out.println("I moved!");
         }
     }
 
