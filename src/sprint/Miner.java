@@ -29,6 +29,11 @@ public class Miner extends Unit {
     public void run() throws GameActionException {
         setupTurn();
         harvest();
+
+        //TODO: Modify Harvest to build refineries if mining location > some dist from base
+        //TODO: Handle case where no stuff found. Switch to explore mode. See other TODOs after calling nearestSoup
+        //TODO: Debug movement and verify it all works.
+        //TODO: Add in pathfinding to keep track of observed stuff. Build map over time.
     }
 
     public void harvest() throws GameActionException {
