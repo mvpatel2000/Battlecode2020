@@ -30,21 +30,27 @@ public class Miner extends Unit {
             }
         }
 
-        for (int i=0; i<moveLocs.length; i++) {
-            MapLocation newLoc = myLocation.translate(moveLocs[i][0], moveLocs[i][1]);
-            if(rc.canSenseLocation(newLoc)) {
-                int souphere = rc.senseSoup(newLoc);
-                if(souphere>0) {
-                    fuzzyMoveToLoc(newLoc);
-                    System.out.println("Fuzzy moved!");
-                    break;
+        if(rc.isReady()) {
+            for (int i=0; i<moveLocs.length; i++) {
+                MapLocation newLoc = myLocation.translate(moveLocs[i][0], moveLocs[i][1]);
+                if(rc.canSenseLocation(newLoc)) {
+                    int souphere = rc.senseSoup(newLoc);
+                    if(souphere>0) {
+                        if(fuzzyMoveToLoc(newLoc)) {
+                            System.out.println("Fuzzy moved!");
+                        } else {
+                            System.out.println("I see soup but I cannot move!");
+                        }
+                        return;
+                    }
                 }
             }
         }
 
-        if (tryMove(randomDirection())) {
+        if (rc.isReady() && tryMove(randomDirection())) {
             System.out.println("Random moved!");
         }
+        return;
     }
 
     /**
@@ -72,8 +78,13 @@ public class Miner extends Unit {
      */
     static boolean tryRefine(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canDepositSoup(dir)) {
-            rc.depositSoup(dir, rc.getSoupCarrying());
-            return true;
-        } else return false;
+            if (rc.senseRobotAtLocation(myLocation.add(dir)).getTeam() == allyTeam) {
+                rc.depositSoup(dir, rc.getSoupCarrying());
+                return true;
+            }
+        } else {
+            return false;
+        }
+        return false;
     }
 }
