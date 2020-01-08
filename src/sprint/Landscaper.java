@@ -10,6 +10,6 @@ public class Landscaper extends Unit {
 
     @Override
     public void run() throws GameActionException {
-        turnCount++;
+        setupTurn();
     }
 }

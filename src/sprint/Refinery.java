@@ -2,7 +2,7 @@ package sprint;
 
 import battlecode.common.*;
 
-public class Refinery extends Building implements RefineryInterface {
+public class Refinery extends Building {
 
     public Refinery(RobotController rc) {
         super(rc);
@@ -10,6 +10,6 @@ public class Refinery extends Building implements RefineryInterface {
 
     @Override
     public void run() throws GameActionException {
-        turnCount++;
+        setupTurn();
     }
 }

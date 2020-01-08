@@ -6,19 +6,30 @@ public abstract class Robot {
 
     static RobotController rc;
 
+    /* constant for each game */
     static Direction[] directions = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
-
-    static int turnCount;
     static Team allyTeam;
     static Team enemyTeam;
+    static int myId;
+
+    /* updated per turn */
+    static int turnCount;
+    static MapLocation myLocation;
+
 
     public Robot(RobotController robotController) {
         rc = robotController;
         turnCount = 0;
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
+        myId = rc.getID();
+    }
+
+    public void setupTurn() throws GameActionException {
+        turnCount++;
+        myLocation = rc.getLocation();
     }
 
     public abstract void run() throws GameActionException;

@@ -2,7 +2,7 @@ package sprint;
 
 import battlecode.common.*;
 
-public class NetGun extends Building implements NetGunInterface {
+public class NetGun extends Building {
 
     public NetGun(RobotController rc) {
         super(rc);
@@ -10,6 +10,33 @@ public class NetGun extends Building implements NetGunInterface {
 
     @Override
     public void run() throws GameActionException {
-        turnCount++;
+        setupTurn();
+        shoot();
+    }
+
+    /* Shoots nearest enemy drone if possible */
+    public void shoot() throws GameActionException {
+        if (!rc.isReady()) // Cannot take an action
+            return;
+
+        RobotInfo target = null;
+        int distSquared = -1;
+        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, enemyTeam);
+        for(RobotInfo nearbyRobot : nearbyRobots) {
+            if (rc.canShootUnit(nearbyRobot.ID)) {
+                if (target == null) { // separate check to avoid extra computation of distance
+                    target = nearbyRobot;
+                    distSquared = myLocation.distanceSquaredTo(target.location);
+                }
+                int nearbyDist = myLocation.distanceSquaredTo(target.location);
+                if (nearbyDist < distSquared) {
+                    target = nearbyRobot;
+                    distSquared = nearbyDist;
+                }
+            }
+        }
+        if (target != null) {
+            rc.shootUnit(target.ID);
+        }
     }
 }
