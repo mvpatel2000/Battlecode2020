@@ -1,5 +1,4 @@
 package sprint;
-
 import battlecode.common.*;
 
 public class HQ extends Building {
