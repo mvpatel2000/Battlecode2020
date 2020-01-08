@@ -12,6 +12,7 @@ public class Miner extends Unit {
     public void run() throws GameActionException {
         setupTurn();
 
+
         tryBlockchain();
         tryMove(randomDirection());
         if (tryMove(randomDirection()))
