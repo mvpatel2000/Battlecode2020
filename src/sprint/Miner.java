@@ -33,16 +33,14 @@ public class Miner extends Unit {
         if(rc.isReady()) {
             for (int i=0; i<moveLocs.length; i++) {
                 MapLocation newLoc = myLocation.translate(moveLocs[i][0], moveLocs[i][1]);
-                if(rc.canSenseLocation(newLoc)) {
-                    int souphere = rc.senseSoup(newLoc);
-                    if(souphere>0) {
-                        if(fuzzyMoveToLoc(newLoc)) {
-                            System.out.println("Fuzzy moved!");
-                        } else {
-                            System.out.println("I see soup but I cannot move!");
-                        }
-                        return;
+                int souphere = rc.senseSoup(newLoc);
+                if(souphere>0) {
+                    if(fuzzyMoveToLoc(newLoc)) {
+                        System.out.println("Fuzzy moved!");
+                    } else {
+                        System.out.println("I see soup but I cannot move!");
                     }
+                    return;
                 }
             }
         }
