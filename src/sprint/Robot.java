@@ -13,16 +13,25 @@ public abstract class Robot {
     /* constant for each game */
     Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
     Direction[] directionsWithCenter = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
-
-    RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
-            RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
+    RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL, RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
     Team allyTeam;
     Team enemyTeam;
     int myId;
+    final int MAP_WIDTH;
+    final int MAP_HEIGHT;
 
     /* updated per turn */
-    int turnCount;
     MapLocation myLocation;
+
+    public Robot(RobotController robotController) {
+        rc = robotController;
+        allyTeam = rc.getTeam();
+        enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
+        myId = rc.getID();
+        myLocation = rc.getLocation();
+        MAP_WIDTH = rc.getMapWidth();
+        MAP_HEIGHT = rc.getMapHeight();
+    }
 
 
     public Direction toward(MapLocation me, MapLocation dest) {
@@ -99,15 +108,6 @@ public abstract class Robot {
                 return -1;
         }
     }
-
-    public Robot(RobotController robotController) {
-        rc = robotController;
-        allyTeam = rc.getTeam();
-        enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
-        myId = rc.getID();
-        myLocation = rc.getLocation();
-    }
-
 
     public abstract void run() throws GameActionException;
 
