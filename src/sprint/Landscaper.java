@@ -26,7 +26,6 @@ public class Landscaper extends Unit {
 
     @Override
     public void run() throws GameActionException {
-        setupTurn();
         Direction hqDir = myLocation.directionTo(baseLocation);
 
         if (defensive) {
@@ -64,7 +63,7 @@ public class Landscaper extends Unit {
                 }
             }
             else {
-                fuzzyMoveToLoc(baseLocation);
+                path(baseLocation);
             }
         }
     }

@@ -26,8 +26,6 @@ public class DesignSchool extends Building {
 
     @Override
     public void run() throws GameActionException  {
-        setupTurn();
-
         if (defensive) { // defensive d.school
         	Direction spawnDir = myLocation.directionTo(baseLocation);
         	for (int i = 8; i > 0; i--) {
