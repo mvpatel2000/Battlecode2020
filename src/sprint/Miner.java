@@ -8,9 +8,11 @@ public class Miner extends Unit {
 
     MapLocation destination;
     MapLocation baseLocation;
+    boolean builtDSchool;
 
     public Miner(RobotController rc) throws GameActionException{
         super(rc);
+        builtDSchool = false;
         System.out.println(myLocation);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
@@ -42,6 +44,11 @@ public class Miner extends Unit {
         if (distanceToDestination <= 2) {
             if (destination == baseLocation) { // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
+
+                // build a d school
+                if (!builtDSchool)
+                    builtDSchool = tryBuild(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+
                 if (rc.canDepositSoup(hqDir)) // Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) { // still carrying soup
@@ -82,6 +89,9 @@ public class Miner extends Unit {
                 if(souphere>0) {
                     return newLoc;
                 }
+            }
+            else {
+                System.out.println(newLoc);
             }
         }
         return null;

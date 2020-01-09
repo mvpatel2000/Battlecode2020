@@ -3,13 +3,15 @@ import battlecode.common.*;
 
 public class HQ extends Building {
 
-    static NetGun netgun;
-    static Refinery refinery;
+    NetGun netgun;
+    Refinery refinery;
+    int numMiners;
 
     public HQ(RobotController rc) {
         super(rc);
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
+        numMiners = 0;
     }
 
     /*
@@ -22,7 +24,7 @@ public class HQ extends Building {
         netgun.shoot();
 
         for (Direction dir : directions) {
-            tryBuild(RobotType.MINER, dir);
+            if(numMiners < 1 && tryBuild(RobotType.MINER, dir)) numMiners++;
         }
     }
 }
