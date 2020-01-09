@@ -10,11 +10,13 @@ public abstract class Unit extends Robot {
     private Deque<MapLocation> history;
     private Map<MapLocation, Integer> historySet;
     private boolean hasHistory;
+    private int stuck;
 
     public static int HISTORY_SIZE = 30;
 
     public Unit(RobotController rc) {
         super(rc);
+        stuck = 0;
         clearHistory();
     }
 
@@ -88,7 +90,7 @@ public abstract class Unit extends Robot {
             try {
                 MapLocation next = me.add(x);
                 return rc.canMove(x) && !rc.senseFlooding(next)
-                        && !historySet.keySet().contains(next)
+                        && historySet.getOrDefault(next, 0) == 0
                         && !(me.add(toward(me, history.peekLast())).equals(next));
             } catch (GameActionException e) {
                 return false;
@@ -96,14 +98,22 @@ public abstract class Unit extends Robot {
         }).min(Comparator.comparing(x ->
                 me.add(x).distanceSquaredTo(target))).orElse(null);
         if (best != null) {
+            stuck = 0;
             tryMove(best);
             return true;
         } else {
             if (!hasHistory) {
+                stuck = 0;
                 return false;
             } else {
-                clearHistory();
-                return path(target);
+                if (stuck < 3) {
+                    stuck++;
+                    return true;
+                } else {
+                    stuck = 0;
+                    clearHistory();
+                    return path(target);
+                }
             }
         }
     }

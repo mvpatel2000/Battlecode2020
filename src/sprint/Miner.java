@@ -105,9 +105,9 @@ public class Miner extends Unit {
                 }
             }
         }
-        else {                                                                // in transit
+        else { // in transit
             path(destination);
-            if (destination != baseLocation) {                                // keep checking soup location
+            if (!destination.equals(baseLocation)) {                                // keep checking soup location
                 destination = updateNearestSoupLocation(0);
             }
         }
