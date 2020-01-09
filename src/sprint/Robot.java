@@ -50,11 +50,32 @@ public abstract class Robot {
         }
     }
 
-    public Direction itod(int i) {
-        return directions[i];
+    public Direction intToDirection(int i) {
+        switch (i) {
+            case 0:
+                return Direction.NORTH;
+            case 1:
+                return Direction.NORTHEAST;
+            case 2:
+                return Direction.EAST;
+            case 3:
+                return Direction.SOUTHEAST;
+            case 4:
+                return Direction.SOUTH;
+            case 5:
+                return Direction.SOUTHWEST;
+            case 6:
+                return Direction.WEST;
+            case 7:
+                return Direction.NORTHWEST;
+            case 8:
+                return Direction.CENTER;
+            default:
+                return null;
+        }
     }
 
-    public int dtoi(Direction d) {
+    public int directionToInt(Direction d) {
         switch (d) {
             case NORTH:
                 return 0;
@@ -72,6 +93,8 @@ public abstract class Robot {
                 return 6;
             case NORTHWEST:
                 return 7;
+            case CENTER:
+                return 8;
             default:
                 return -1;
         }
@@ -94,7 +117,7 @@ public abstract class Robot {
      * @return a random Direction
      */
     Direction randomDirection() {
-        return directions[(int) (Math.random() * directions.length)];
+        return intToDirection((int) (Math.random() * 8));
     }
 
     /**
