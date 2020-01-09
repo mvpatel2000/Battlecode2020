@@ -9,9 +9,8 @@ public class FulfillmentCenter extends Building {
     }
 
     @Override
-    public void run() throws GameActionException  {
-        setupTurn();
-
+    public void run() throws GameActionException {
+        super.run();
         for (Direction dir : directions)
             tryBuild(RobotType.DELIVERY_DRONE, dir);
     }

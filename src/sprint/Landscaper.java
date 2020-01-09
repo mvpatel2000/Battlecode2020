@@ -67,12 +67,5 @@ public class Landscaper extends Unit {
                 fuzzyMoveToLoc(baseLocation);
             }
         }
-
-        for (Direction dir : directions) {
-            if(rc.canDigDirt(dir)) {
-                rc.digDirt(dir);
-                break;
-            }
-        }
     }
 }

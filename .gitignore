@@ -28,4 +28,4 @@ battlecode-scaffold.iws
 # Eclipse user-specific files
 .classpath
 .project
-.settings/
+.settings/gradle.properties
