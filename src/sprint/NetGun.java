@@ -10,7 +10,7 @@ public class NetGun extends Building {
 
     @Override
     public void run() throws GameActionException {
-        setupTurn();
+        super.run();
         shoot();
     }
 

@@ -31,7 +31,8 @@ public abstract class Unit extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        MapLocation me = rc.getLocation();
+        myLocation = rc.getLocation();
+        MapLocation me = myLocation;
         history.addFirst(me);
         historySet.merge(me, 1, Integer::sum);
         MapLocation loc = history.pollLast();

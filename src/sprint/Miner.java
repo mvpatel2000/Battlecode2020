@@ -28,7 +28,6 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        setupTurn();
         harvest();
         //TODO: Modify Harvest to build refineries if mining location > some dist from base
         //TODO: Handle case where no stuff found. Switch to explore mode. See other TODOs after calling nearestSoup

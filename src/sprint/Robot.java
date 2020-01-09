@@ -85,9 +85,6 @@ public abstract class Robot {
         myLocation = rc.getLocation();
     }
 
-    public void setupTurn() throws GameActionException {
-        myLocation = rc.getLocation();
-    }
 
     public abstract void run() throws GameActionException;
 
