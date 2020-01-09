@@ -1,10 +1,11 @@
 package sprint;
+
 import battlecode.common.*;
 
 public class HQ extends Building {
 
-    static NetGun netgun;
-    static Refinery refinery;
+    private NetGun netgun;
+    private Refinery refinery;
     int minerCount;
 
     public HQ(RobotController rc) {
@@ -19,10 +20,8 @@ public class HQ extends Building {
      */
     @Override
     public void run() throws GameActionException {
-        setupTurn();
-
+        super.run();
         netgun.shoot();
-
         for (Direction dir : directions) {
             if (minerCount < 5 && tryBuild(RobotType.MINER, dir))
                 minerCount++;

@@ -2,37 +2,89 @@ package sprint;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 public abstract class Robot {
 
-    static RobotController rc;
+    RobotController rc;
     final int MAX_SQUARED_DISTANCE = Integer.MAX_VALUE;
 
     /* constant for each game */
-    static Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
-    static Direction[] directionsWithCenter = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
+    Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
+    Direction[] directionsWithCenter = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
 
-    static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
+    RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
-    static Team allyTeam;
-    static Team enemyTeam;
-    static int myId;
+    Team allyTeam;
+    Team enemyTeam;
+    int myId;
 
     /* updated per turn */
-    static MapLocation myLocation;
+    int turnCount;
+    MapLocation myLocation;
 
+
+    public Direction toward(MapLocation me, MapLocation dest) {
+        switch (Integer.compare(me.x, dest.x) + 3 * Integer.compare(me.y, dest.y)) {
+            case -4:
+                return Direction.NORTHEAST;
+            case -3:
+                return Direction.NORTH;
+            case -2:
+                return Direction.NORTHWEST;
+            case -1:
+                return Direction.EAST;
+            case 0:
+                return Direction.CENTER;
+            case 1:
+                return Direction.WEST;
+            case 2:
+                return Direction.SOUTHEAST;
+            case 3:
+                return Direction.SOUTH;
+            case 4:
+                return Direction.SOUTHWEST;
+            default:
+                return null;
+        }
+    }
+
+    public Direction itod(int i) {
+        return directions[i];
+    }
+
+    public int dtoi(Direction d) {
+        switch (d) {
+            case NORTH:
+                return 0;
+            case NORTHEAST:
+                return 1;
+            case EAST:
+                return 2;
+            case SOUTHEAST:
+                return 3;
+            case SOUTH:
+                return 4;
+            case SOUTHWEST:
+                return 5;
+            case WEST:
+                return 6;
+            case NORTHWEST:
+                return 7;
+            default:
+                return -1;
+        }
+    }
 
     public Robot(RobotController robotController) {
         rc = robotController;
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
         myId = rc.getID();
-
         myLocation = rc.getLocation();
     }
 
-    public void setupTurn() throws GameActionException {
-        myLocation = rc.getLocation();
-    }
 
     public abstract void run() throws GameActionException;
 
@@ -41,7 +93,7 @@ public abstract class Robot {
      *
      * @return a random Direction
      */
-    static Direction randomDirection() {
+    Direction randomDirection() {
         return directions[(int) (Math.random() * directions.length)];
     }
 
@@ -50,7 +102,7 @@ public abstract class Robot {
      *
      * @return a random RobotType
      */
-    static RobotType randomSpawnedByMiner() {
+    RobotType randomSpawnedByMiner() {
         return spawnedByMiner[(int) (Math.random() * spawnedByMiner.length)];
     }
 
@@ -58,11 +110,11 @@ public abstract class Robot {
      * Attempts to build a given robot in a given direction.
      *
      * @param type The type of the robot to build
-     * @param dir The intended direction of movement
+     * @param dir  The intended direction of movement
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
+    boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
             return true;
@@ -71,7 +123,7 @@ public abstract class Robot {
         }
     }
 
-    static void tryBlockchain() throws GameActionException {
+    void tryBlockchain() throws GameActionException {
         if (4 < 3) {
             int[] message = new int[10];
             for (int i = 0; i < 10; i++) {

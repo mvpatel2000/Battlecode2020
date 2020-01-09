@@ -10,9 +10,9 @@ public class Landscaper extends Unit {
 
     @Override
     public void run() throws GameActionException {
-        setupTurn();
+        super.run();
         for (Direction dir : directions) {
-            if(rc.canDigDirt(dir)) {
+            if (rc.canDigDirt(dir)) {
                 rc.digDirt(dir);
                 break;
             }

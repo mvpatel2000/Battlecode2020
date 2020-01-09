@@ -10,7 +10,7 @@ public class DeliveryDrone extends Unit {
 
     @Override
     public void run()  throws GameActionException  {
-        setupTurn();
+        super.run();
 
         Team enemy = rc.getTeam().opponent();
         if (!rc.isCurrentlyHoldingUnit()) {

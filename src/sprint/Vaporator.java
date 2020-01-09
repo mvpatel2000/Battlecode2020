@@ -11,6 +11,6 @@ public class Vaporator extends Building {
 
     @Override
     public void run() throws GameActionException {
-        setupTurn();
+        super.run();
     }
 }

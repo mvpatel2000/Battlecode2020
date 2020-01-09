@@ -1,4 +1,5 @@
 package sprint;
+
 import battlecode.common.*;
 
 public strictfp class RobotPlayer {
@@ -42,7 +43,6 @@ public strictfp class RobotPlayer {
                 System.out.println(rc.getType() + " is not supported.");
                 return;
         }
-
         while (true) {
             try {
                 robot.run();

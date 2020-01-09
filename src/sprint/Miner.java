@@ -6,7 +6,6 @@ import java.util.*;
 
 public class Miner extends Unit {
 
-//    final int[][] SPIRAL_ORDERED_MAPLOCATIONS = {{5,3}, {5,-3}, {3,5}, {3,-5}, {-3,5}, {-3,-5}, {-5,3}, {-5,-3}, {4,4}, {4,-4}, {-4,4}, {-4,-4}, {5,2}, {5,-2}, {2,5}, {2,-5}, {-2,5}, {-2,-5}, {-5,2}, {-5,-2}, {5,1}, {5,-1}, {1,5}, {1,-5}, {-1,5}, {-1,-5}, {-5,1}, {-5,-1}, {5,0}, {4,3}, {4,-3}, {3,4}, {3,-4}, {0,5}, {0,-5}, {-3,4}, {-3,-4}, {-4,3}, {-4,-3}, {-5,0}, {4,2}, {4,-2}, {2,4}, {2,-4}, {-2,4}, {-2,-4}, {-4,2}, {-4,-2}, {3,3}, {3,-3}, {-3,3}, {-3,-3}, {4,1}, {4,-1}, {1,4}, {1,-4}, {-1,4}, {-1,-4}, {-4,1}, {-4,-1}, {4,0}, {0,4}, {0,-4}, {-4,0}, {3,2}, {3,-2}, {2,3}, {2,-3}, {-2,3}, {-2,-3}, {-3,2}, {-3,-2}, {3,1}, {3,-1}, {1,3}, {1,-3}, {-1,3}, {-1,-3}, {-3,1}, {-3,-1}, {3,0}, {0,3}, {0,-3}, {-3,0}, {2,2}, {2,-2}, {-2,2}, {-2,-2}, {2,1}, {2,-1}, {1,2}, {1,-2}, {-1,2}, {-1,-2}, {-2,1}, {-2,-1}, {2,0}, {0,2}, {0,-2}, {-2,0}, {1,1}, {1,-1}, {-1,1}, {-1,-1}, {1,0}, {0,1}, {0,-1}, {-1,0}, {0,0}};
     final int[][] SPIRAL_ORDERED_MAPLOCATIONS = {{0,0}, {-1,0}, {0,-1}, {0,1}, {1,0}, {-1,-1}, {-1,1}, {1,-1}, {1,1}, {-2,0}, {0,-2}, {0,2}, {2,0}, {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1}, {-2,-2}, {-2,2}, {2,-2}, {2,2}, {-3,0}, {0,-3}, {0,3}, {3,0}, {-3,-1}, {-3,1}, {-1,-3}, {-1,3}, {1,-3}, {1,3}, {3,-1}, {3,1}, {-3,-2}, {-3,2}, {-2,-3}, {-2,3}, {2,-3}, {2,3}, {3,-2}, {3,2}, {-4,0}, {0,-4}, {0,4}, {4,0}, {-4,-1}, {-4,1}, {-1,-4}, {-1,4}, {1,-4}, {1,4}, {4,-1}, {4,1}, {-3,-3}, {-3,3}, {3,-3}, {3,3}, {-4,-2}, {-4,2}, {-2,-4}, {-2,4}, {2,-4}, {2,4}, {4,-2}, {4,2}, {-5,0}, {-4,-3}, {-4,3}, {-3,-4}, {-3,4}, {0,-5}, {0,5}, {3,-4}, {3,4}, {4,-3}, {4,3}, {5,0}, {-5,-1}, {-5,1}, {-1,-5}, {-1,5}, {1,-5}, {1,5}, {5,-1}, {5,1}, {-5,-2}, {-5,2}, {-2,-5}, {-2,5}, {2,-5}, {2,5}, {5,-2}, {5,2}, {-4,-4}, {-4,4}, {4,-4}, {4,4}, {-5,-3}, {-5,3}, {-3,-5}, {-3,5}, {3,-5}, {3,5}, {5,-3}, {5,3}};
     final Map<Integer, int[][]> BORDER_MAPLOCATIONS = new HashMap<Integer, int[][]>() {{
         put(1, new int[][] {{0,0}, {-1,0}, {0,-1}, {0,1}, {1,0}});
@@ -53,7 +52,7 @@ public class Miner extends Unit {
     MapLocation destination;
     MapLocation baseLocation;
 
-    public Miner(RobotController rc) throws GameActionException{
+    public Miner(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
@@ -71,9 +70,8 @@ public class Miner extends Unit {
 
     @Override
     public void run() throws GameActionException {
-        setupTurn();
+        super.run();
         harvest();
-
         //TODO: Modify Harvest to build refineries if mining location > some dist from base
         //TODO: Handle case where no stuff found. Switch to explore mode
     }
@@ -105,7 +103,7 @@ public class Miner extends Unit {
             }
         }
         else {                                                           // in transit
-            fuzzyMoveToLoc(destination);
+            path(destination);
             if (destination != baseLocation) {                           // keep checking soup location
                 destination = updateNearestSoupLocation(0);
             }
@@ -184,7 +182,7 @@ public class Miner extends Unit {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryMine(Direction dir) throws GameActionException {
+    boolean tryMine(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canMineSoup(dir)) {
             rc.mineSoup(dir);
             return true;
@@ -200,7 +198,7 @@ public class Miner extends Unit {
      * @return true if a move was performed
      * @throws GameActionException
      */
-    static boolean tryRefine(Direction dir) throws GameActionException {
+    boolean tryRefine(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canDepositSoup(dir)) {
             if (rc.senseRobotAtLocation(myLocation.add(dir)).getTeam() == allyTeam) {
                 rc.depositSoup(dir, rc.getSoupCarrying());

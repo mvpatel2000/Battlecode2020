@@ -10,6 +10,6 @@ public class Refinery extends Building {
 
     @Override
     public void run() throws GameActionException {
-        setupTurn();
+        super.run();
     }
 }
