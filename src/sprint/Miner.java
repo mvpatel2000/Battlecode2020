@@ -86,8 +86,10 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
-                if (rc.getSoupCarrying() == 0)                                // reroute if not carrying soup
+                if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
                     destination = updateNearestSoupLocation(0);
+                    clearHistory();
+                }
             }
             else {                                                            // mining
                 Direction soupDir = myLocation.directionTo(destination);
@@ -96,15 +98,16 @@ public class Miner extends Unit {
                 }
                 else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
                     destination = baseLocation;
+                    clearHistory();
                 }
                 else if (rc.isReady()) {                                      // mine
                     rc.mineSoup(soupDir);
                 }
             }
         }
-        else {                                                           // in transit
+        else {                                                                // in transit
             path(destination);
-            if (destination != baseLocation) {                           // keep checking soup location
+            if (destination != baseLocation) {                                // keep checking soup location
                 destination = updateNearestSoupLocation(0);
             }
         }
