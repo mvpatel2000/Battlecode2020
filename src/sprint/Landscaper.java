@@ -16,24 +16,28 @@ public class Landscaper extends Unit {
         if (defensive) {
             RobotInfo baseInfo = rc.senseRobot(hqID);
             baseLocation = baseInfo.location;
-            System.out.println("I am a defensive d.school. Found our HQ:");
+            System.out.println("I am a defensive landscaper. Found our HQ:");
             System.out.println(baseInfo);
         }
         else {
-            System.out.println("I am an offensive d.school");
+            System.out.println("I am an offensive landscaper");
         }
     }
 
     @Override
     public void run() throws GameActionException {
+        super.run();
+        
         Direction hqDir = myLocation.directionTo(baseLocation);
 
         if (defensive) {
             if (myLocation.distanceSquaredTo(baseLocation) <= 2) {
                 if (rc.canDigDirt(hqDir)) {
+                    System.out.println("Healing HQ");
                     rc.digDirt(hqDir);
                 }
                 else if (rc.canDigDirt(hqDir.opposite())) {
+                    System.out.println("Digging dirt from direction " + hqDir.toString());
                     rc.digDirt(hqDir.opposite());
                 }
                 else {
@@ -58,12 +62,14 @@ public class Landscaper extends Unit {
                         }
                     }
                     if (rc.canDepositDirt(dump)) {
+                        System.out.println("Dumping dirt in direction " + dump.toString());
                         rc.depositDirt(dump);
                     }
                 }
             }
             else {
-                path(baseLocation);
+                System.out.println("Attempting to move towards " + baseLocation.toString() + " from myLocation, which is " + myLocation.toString());
+                fuzzyMoveToLoc(baseLocation);
             }
         }
     }
