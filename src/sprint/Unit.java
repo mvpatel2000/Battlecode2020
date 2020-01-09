@@ -3,7 +3,6 @@ package sprint;
 import battlecode.common.*;
 
 import java.util.*;
-import java.util.function.Function;
 
 public abstract class Unit extends Robot {
     private enum Hand {LEFT, RIGHT}

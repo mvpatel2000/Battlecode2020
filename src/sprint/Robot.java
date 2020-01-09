@@ -8,6 +8,7 @@ import java.util.Comparator;
 public abstract class Robot {
 
     RobotController rc;
+    final int MAX_SQUARED_DISTANCE = Integer.MAX_VALUE;
 
     /* constant for each game */
     Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
@@ -22,6 +23,7 @@ public abstract class Robot {
     /* updated per turn */
     int turnCount;
     MapLocation myLocation;
+
 
     public Direction toward(MapLocation me, MapLocation dest) {
         switch (Integer.compare(me.x, dest.x) + 3 * Integer.compare(me.y, dest.y)) {
@@ -77,7 +79,6 @@ public abstract class Robot {
 
     public Robot(RobotController robotController) {
         rc = robotController;
-        turnCount = 0;
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
         myId = rc.getID();
@@ -85,7 +86,6 @@ public abstract class Robot {
     }
 
     public void setupTurn() throws GameActionException {
-        turnCount++;
         myLocation = rc.getLocation();
     }
 
@@ -127,7 +127,7 @@ public abstract class Robot {
     }
 
     void tryBlockchain() throws GameActionException {
-        if (turnCount < 3) {
+        if (4 < 3) {
             int[] message = new int[10];
             for (int i = 0; i < 10; i++) {
                 message[i] = 123;
