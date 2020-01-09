@@ -18,7 +18,7 @@ public abstract class Unit extends Robot {
         clearHistory();
     }
 
-    private void clearHistory() {
+    public void clearHistory() {
         hasHistory = false;
         history = new LinkedList<>();
         historySet = new HashMap<>();
