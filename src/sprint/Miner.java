@@ -45,8 +45,6 @@ public class Miner extends Unit {
         put(35, new int[][] {{-5,-1}, {-5,1}, {-1,-5}, {-1,5}, {1,-5}, {1,5}, {5,-1}, {5,1}, {-5,-2}, {-5,2}, {-2,-5}, {-2,5}, {2,-5}, {2,5}, {5,-2}, {5,2}, {-4,-4}, {-4,4}, {4,-4}, {4,4}, {-5,-3}, {-5,3}, {-3,-5}, {-3,5}, {3,-5}, {3,5}, {5,-3}, {5,3}});
     }};
 
-    // TODO: Replace this with a large initialized array? Is this faster?
-    // TODO: Replace this with a bitmap? FInd a clever way to get nearest euclidian from bitmap?
     Set<MapLocation> soupLocations = new HashSet<MapLocation>();
 
     MapLocation destination;
@@ -54,7 +52,7 @@ public class Miner extends Unit {
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
-        System.out.println(myLocation);
+
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
             RobotInfo r = rc.senseRobotAtLocation(t);
