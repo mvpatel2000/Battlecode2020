@@ -49,10 +49,12 @@ public class Miner extends Unit {
 
     MapLocation destination;
     MapLocation baseLocation;
+    boolean builtDSchool;
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
-
+        builtDSchool = false;
+        System.out.println(myLocation);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
             RobotInfo r = rc.senseRobotAtLocation(t);
@@ -82,6 +84,11 @@ public class Miner extends Unit {
         if (distanceToDestination <= 2) {                                     // at destination
             if (destination == baseLocation) {                                // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
+
+                // build a d.school
+                if (!builtDSchool)
+                    builtDSchool = tryBuild(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
@@ -103,9 +110,9 @@ public class Miner extends Unit {
                 }
             }
         }
-        else {                                                                // in transit
+        else { // in transit
             path(destination);
-            if (destination != baseLocation) {                                // keep checking soup location
+            if (!destination.equals(baseLocation)) {                                // keep checking soup location
                 destination = updateNearestSoupLocation(0);
             }
         }
@@ -166,6 +173,9 @@ public class Miner extends Unit {
                     nearest = soupLocation;
                     distanceToNearest = soupDistance;
                 }
+            }
+            else {
+                System.out.println(newLoc);
             }
         }
         System.out.println("end find nearest "+Clock.getBytecodeNum());

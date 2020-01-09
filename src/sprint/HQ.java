@@ -23,7 +23,7 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 5 && tryBuild(RobotType.MINER, dir))
+            if (minerCount < 1 && tryBuild(RobotType.MINER, dir))
                 minerCount++;
         }
     }
