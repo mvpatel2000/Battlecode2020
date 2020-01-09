@@ -117,4 +117,26 @@ public abstract class Unit extends Robot {
             }
         }
     }
+
+    boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
+        int mindist = 50000;
+        Direction bestdir = null;
+        for (Direction dir : directions) {
+            if(rc.canMove(dir)) {
+                MapLocation newLoc = myLocation.add(dir);
+                int thisdist = newLoc.distanceSquaredTo(target);
+                if(thisdist < mindist) {
+                    mindist = thisdist;
+                    bestdir = dir;
+                }
+            }
+        }
+
+        if(bestdir == null) {
+            return false;
+        } else {
+            tryMove(bestdir);
+        }
+        return true;
+    }
 }
