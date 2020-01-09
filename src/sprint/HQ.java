@@ -1,10 +1,11 @@
 package sprint;
+
 import battlecode.common.*;
 
 public class HQ extends Building {
 
-    static NetGun netgun;
-    static Refinery refinery;
+    private NetGun netgun;
+    private Refinery refinery;
 
     public HQ(RobotController rc) {
         super(rc);
@@ -18,9 +19,7 @@ public class HQ extends Building {
     @Override
     public void run() throws GameActionException {
         setupTurn();
-
         netgun.shoot();
-
         for (Direction dir : directions) {
             tryBuild(RobotType.MINER, dir);
         }

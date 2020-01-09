@@ -18,11 +18,10 @@ public class NetGun extends Building {
     public boolean shoot() throws GameActionException {
         if (!rc.isReady()) // Cannot take an action
             return false;
-
         RobotInfo target = null;
         int distSquared = -1;
         RobotInfo[] nearbyRobots = rc.senseNearbyRobots(GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED, enemyTeam);
-        for(RobotInfo nearbyRobot : nearbyRobots) {
+        for (RobotInfo nearbyRobot : nearbyRobots) {
             if (rc.canShootUnit(nearbyRobot.ID)) {
                 if (target == null) { // separate check to avoid extra computation of distance
                     target = nearbyRobot;
