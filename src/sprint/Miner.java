@@ -131,6 +131,7 @@ public class Miner extends Unit {
                         int soupHere = rc.senseSoup(newLoc);
                         if (soupHere > 0) {
                             soupLocations.add(newLoc);
+                            sendSoup(newLoc, soupHere);
                         }
                     } else if (myLocation.distanceSquaredTo(newLoc) > scanRadius) {
                         break;
@@ -144,6 +145,7 @@ public class Miner extends Unit {
                         int soupHere = rc.senseSoup(newLoc);
                         if (soupHere > 0) {
                             soupLocations.add(newLoc);
+                            sendSoup(newLoc, soupHere);
                         }
                     } else if (myLocation.distanceSquaredTo(newLoc) > scanRadius) {
                         break;
@@ -210,4 +212,10 @@ public class Miner extends Unit {
         }
         return false;
     }
+
+    boolean sendSoup(MapLocation loc, int soupDepth) {
+        int[] msg = {getGridCenter(loc).x, getGridCenter(loc).y, soupDepth};
+        return sendMessage(msg, 1);
+    }
+
 }

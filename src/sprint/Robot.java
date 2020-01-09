@@ -24,6 +24,13 @@ public abstract class Robot {
     int turnCount;
     MapLocation myLocation;
 
+    //discretized grid for communicating map information
+    int mapHeight;
+    int mapWidth;
+    int centers[][][];
+    int soupCenters[][];
+    final int gridWidth = 8;    //number of cells wide
+    final int gridHeight = 8;   //number of cells tall
 
     public Direction toward(MapLocation me, MapLocation dest) {
         switch (Integer.compare(me.x, dest.x) + 3 * Integer.compare(me.y, dest.y)) {
@@ -83,6 +90,9 @@ public abstract class Robot {
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
         myId = rc.getID();
         myLocation = rc.getLocation();
+        mapHeight = rc.getMapHeight();
+        mapWidth = rc.getMapWidth();
+        centers = generateGrid();
     }
 
 
@@ -117,6 +127,44 @@ public abstract class Robot {
     boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Grid used for communication
+     * discretization.
+     */
+
+    int[][][] generateGrid() throws GameActionException {
+        int squareHeight = mapHeight/gridHeight;
+        int squareWidth = mapWidth/gridWidth;
+        int[][][] centers = new int[8][8][2];
+        for (int i=0; i<8; i++) {
+            for (int j=0; j<8; j++) {
+                centers[i][j][0] = squareHeight*j + squareHeight/2;
+                centers[i][j][1] = squareWidth*i + squareWidth/2;
+                soupCenters[i][j] = 0;
+            }
+        }
+        return centers;
+    }
+
+    MapLocation getGridCenter(MapLocation loc) throws GameActionException {
+        int centerx = loc.x/(mapHeight/gridHeight);
+        int centery = loc.y/(mapWidth/gridWidth);
+        MapLocation centerLoc = new MapLocation(centers[centerx][centery][0], centers[centerx][centery][1]);
+        return centerLoc;
+    }
+
+    boolean sendMessage(int[] message, int bid) throws GameActionException {
+        if(message.length>GameConstants.MAX_BLOCKCHAIN_TRANSACTION_LENGTH) {
+            return false;
+        }
+        if (rc.canSubmitTransaction(message, bid)) {
+            rc.submitTransaction(message, bid);
             return true;
         } else {
             return false;
