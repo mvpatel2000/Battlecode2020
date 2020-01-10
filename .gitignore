@@ -21,6 +21,8 @@ build/*
 *.iws
 /.idea/
 version.txt
+*.properties
+*gradle*
 
 
 # User-specific stuff:
