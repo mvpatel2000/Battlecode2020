@@ -7,12 +7,16 @@ public class HQ extends Building {
     private NetGun netgun;
     private Refinery refinery;
     int minerCount;
+    int[] patchList;
+    int[] patchProbs;
 
-    public HQ(RobotController rc) {
+    public HQ(RobotController rc) throws GameActionException {
         super(rc);
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
+        patchList = new int[6];
+        patchProbs = new int[6];
     }
 
     /*
@@ -23,8 +27,13 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 5 && tryBuild(RobotType.MINER, dir))
+            if (minerCount < 1 && tryBuild(RobotType.MINER, dir))
                 minerCount++;
         }
+        readMessages();
+    }
+
+    void readMessages() {
+
     }
 }

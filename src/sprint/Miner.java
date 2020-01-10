@@ -50,6 +50,8 @@ public class Miner extends Unit {
     MapLocation destination;
     MapLocation baseLocation;
 
+    boolean builtDSchool;
+
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
 
@@ -82,6 +84,11 @@ public class Miner extends Unit {
         if (distanceToDestination <= 2) {                                     // at destination
             if (destination == baseLocation) {                                // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
+
+                // build d.school
+                if (!builtDSchool)
+                    builtDSchool = tryBuild(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
@@ -131,7 +138,6 @@ public class Miner extends Unit {
                         int soupHere = rc.senseSoup(newLoc);
                         if (soupHere > 0) {
                             soupLocations.add(newLoc);
-                            sendSoup(newLoc, soupHere);
                         }
                     } else if (myLocation.distanceSquaredTo(newLoc) > scanRadius) {
                         break;
@@ -145,7 +151,6 @@ public class Miner extends Unit {
                         int soupHere = rc.senseSoup(newLoc);
                         if (soupHere > 0) {
                             soupLocations.add(newLoc);
-                            sendSoup(newLoc, soupHere);
                         }
                     } else if (myLocation.distanceSquaredTo(newLoc) > scanRadius) {
                         break;
@@ -213,7 +218,7 @@ public class Miner extends Unit {
         return false;
     }
 
-    boolean sendSoup(MapLocation loc, int soupDepth) {
+    boolean sendSoup(MapLocation loc, int soupDepth) throws GameActionException {
         int[] msg = {getGridCenter(loc).x, getGridCenter(loc).y, soupDepth};
         return sendMessage(msg, 1);
     }

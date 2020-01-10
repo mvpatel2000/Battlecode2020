@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 public class Refinery extends Building {
 
-    public Refinery(RobotController rc) {
+    public Refinery(RobotController rc) throws GameActionException {
         super(rc);
     }
 

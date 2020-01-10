@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 public class FulfillmentCenter extends Building {
 
-    public FulfillmentCenter(RobotController rc) {
+    public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
     }
 

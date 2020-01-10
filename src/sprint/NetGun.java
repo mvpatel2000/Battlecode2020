@@ -4,7 +4,7 @@ import battlecode.common.*;
 
 public class NetGun extends Building {
 
-    public NetGun(RobotController rc) {
+    public NetGun(RobotController rc) throws GameActionException {
         super(rc);
     }
 

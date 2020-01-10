@@ -18,19 +18,23 @@ public abstract class Robot {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
     Team allyTeam;
     Team enemyTeam;
+    int teamNum;
     int myId;
 
     /* updated per turn */
     int turnCount;
     MapLocation myLocation;
 
+
     //discretized grid for communicating map information
     int mapHeight;
     int mapWidth;
     int centers[][][];
-    int soupCenters[][];
-    final int gridWidth = 8;    //number of cells wide
-    final int gridHeight = 8;   //number of cells tall
+    long soupCenters;
+    final int squareWidth = 4;    //number of cells wide per tile
+    final int squareHeight = 7;   //number of cells tall per tile
+    final int numRows;
+    final int numCols;
 
     public Direction toward(MapLocation me, MapLocation dest) {
         switch (Integer.compare(me.x, dest.x) + 3 * Integer.compare(me.y, dest.y)) {
@@ -84,14 +88,21 @@ public abstract class Robot {
         }
     }
 
-    public Robot(RobotController robotController) {
+    public Robot(RobotController robotController) throws GameActionException {
         rc = robotController;
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
+        if(allyTeam == Team.A) {
+            teamNum = 0;
+        } else {
+            teamNum = 1;
+        }
         myId = rc.getID();
         myLocation = rc.getLocation();
         mapHeight = rc.getMapHeight();
         mapWidth = rc.getMapWidth();
+        numRows = (mapHeight+squareHeight-1)/squareHeight;
+        numCols = (mapWidth+squareWidth-1)/squareWidth;
         centers = generateGrid();
     }
 
@@ -139,24 +150,37 @@ public abstract class Robot {
      */
 
     int[][][] generateGrid() throws GameActionException {
-        int squareHeight = mapHeight/gridHeight;
-        int squareWidth = mapWidth/gridWidth;
-        int[][][] centers = new int[8][8][2];
-        for (int i=0; i<8; i++) {
-            for (int j=0; j<8; j++) {
-                centers[i][j][0] = squareHeight*j + squareHeight/2;
-                centers[i][j][1] = squareWidth*i + squareWidth/2;
-                soupCenters[i][j] = 0;
-            }
-        }
-        return centers;
-    }
+        System.out.println("Generating grid!");
+         int[][][] centers = new int[numRows][numCols][2];
+         for (int i=0; i<numRows; i++) {
+             for (int j=0; j<numCols; j++) {
+                 centers[i][j][0] = Math.min(squareWidth*j + squareWidth/2, mapWidth-1);
+                 centers[i][j][1] = Math.min(squareHeight*i + squareHeight/2, mapHeight-1);
+                 MapLocation bob = new MapLocation(centers[i][j][0], centers[i][j][1]);
+                 rc.setIndicatorDot(bob, 255, 40*i, 0);
+             }
+         }
+         return centers;
+     }
 
-    MapLocation getGridCenter(MapLocation loc) throws GameActionException {
-        int centerx = loc.x/(mapHeight/gridHeight);
-        int centery = loc.y/(mapWidth/gridWidth);
-        MapLocation centerLoc = new MapLocation(centers[centerx][centery][0], centers[centerx][centery][1]);
-        return centerLoc;
+     MapLocation getGridCenter(MapLocation loc) throws GameActionException {
+         int centerx = loc.x/squareWidth;
+         int centery = loc.y/squareHeight;
+         MapLocation centerLoc = new MapLocation(centers[centery][centerx][0], centers[centery][centerx][1]);
+         return centerLoc;
+     }
+
+    int getTileNumber(MapLocation loc) throws GameActionException {
+        MapLocation centerLoc = getGridCenter(loc);
+        int xnum = (centerLoc.x - squareWidth/2)/squareWidth;
+        int ynum = (centerLoc.y - squareHeight/2)/squareHeight;
+        if(centerLoc.x == mapWidth-1) {
+            xnum = numCols-1;
+        }
+        if(centerLoc.y == mapHeight-1) {
+            ynum = numRows-1;
+        }
+        return ynum*(numCols-1) + xnum;
     }
 
     boolean sendMessage(int[] message, int bid) throws GameActionException {
