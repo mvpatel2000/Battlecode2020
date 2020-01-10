@@ -7,10 +7,10 @@ import java.util.*;
 public abstract class Unit extends Robot {
     private enum Hand {LEFT, RIGHT}
 
-    private Deque<MapLocation> history;
-    private Map<MapLocation, Integer> historySet;
-    private boolean hasHistory;
-    private int stuck;
+    protected Deque<MapLocation> history;
+    protected Map<MapLocation, Integer> historySet;
+    protected boolean hasHistory;
+    protected int stuck;
 
     public static int HISTORY_SIZE = 30;
 
@@ -97,6 +97,10 @@ public abstract class Unit extends Robot {
             }
         }).min(Comparator.comparing(x ->
                 me.add(x).distanceSquaredTo(target))).orElse(null);
+        return pathHelper(target, best);
+    }
+
+    protected boolean pathHelper(MapLocation target, Direction best) throws GameActionException {
         if (best != null) {
             stuck = 0;
             tryMove(best);
@@ -118,37 +122,6 @@ public abstract class Unit extends Robot {
         }
     }
 
-    boolean pathWithWater(MapLocation target) throws GameActionException {
-        MapLocation me = history.peekFirst();
-        if (me.equals(target)) {
-            return false;
-        }
-        Direction best = Arrays.stream(directions).filter(x -> {
-                MapLocation next = me.add(x);
-                return rc.canMove(x) && historySet.getOrDefault(next, 0) == 0
-                        && !(me.add(toward(me, history.peekLast())).equals(next));
-        }).min(Comparator.comparing(x ->
-                me.add(x).distanceSquaredTo(target))).orElse(null);
-        if (best != null) {
-            stuck = 0;
-            tryMove(best);
-            return true;
-        } else {
-            if (!hasHistory) {
-                stuck = 0;
-                return false;
-            } else {
-                if (stuck < 3) {
-                    stuck++;
-                    return true;
-                } else {
-                    stuck = 0;
-                    clearHistory();
-                    return path(target);
-                }
-            }
-        }
-    }
 
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
         int mindist = 50000;

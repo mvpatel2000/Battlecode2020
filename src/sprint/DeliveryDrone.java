@@ -46,7 +46,6 @@ public class DeliveryDrone extends Unit {
     @Override
     public void run()  throws GameActionException  {
         super.run();
-
         if (rc.getRoundNum() > 300) {
             destination = destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
         }
@@ -67,12 +66,12 @@ public class DeliveryDrone extends Unit {
             else {
                 if ((nearestWaterLocation == baseLocation || nearestWaterLocation == hqLocation)
                         && myLocation.distanceSquaredTo(destination) > 8) {
-                    pathWithWater(nearestWaterLocation);
+                    path(nearestWaterLocation);
                 }
                 else {
                     tryMove();
                 }
-                pathWithWater(nearestWaterLocation);
+                path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
@@ -97,12 +96,12 @@ public class DeliveryDrone extends Unit {
                 carryingEnemy = true;
             }
             else if (nearest != null) {
-                pathWithWater(nearest.location); // to nearest enemy.
+                path(nearest.location); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
             }
             else { // go back to base
                 if (myLocation.distanceSquaredTo(destination) > 8) {
-                    pathWithWater(destination);
+                    path(destination);
                 }
                 else {
                     tryMove();
@@ -110,6 +109,25 @@ public class DeliveryDrone extends Unit {
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
+    }
+
+    @Override
+    boolean path(MapLocation target) throws GameActionException {
+        MapLocation me = history.peekFirst();
+        if (me.equals(target)) {
+            return false;
+        }
+        RobotInfo[] guns = Arrays.stream(rc.senseNearbyRobots()).filter(robot ->
+                            !robot.team.equals(rc.getTeam())
+                            && (robot.getType().equals(RobotType.HQ) || robot.getType().equals(RobotType.NET_GUN)))
+                            .toArray(RobotInfo[]::new);
+        Direction best = Arrays.stream(directions).filter(x -> {
+            MapLocation next = me.add(x);
+            return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
+                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        }).min(Comparator.comparing(x ->
+                me.add(x).distanceSquaredTo(target))).orElse(null);
+        return pathHelper(target, best);
     }
 
     // Returns location of nearest water

@@ -34,6 +34,7 @@ public class Miner extends Unit {
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
+
     @Override
     public void run() throws GameActionException {
         super.run();
