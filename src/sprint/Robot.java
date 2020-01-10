@@ -146,6 +146,38 @@ public abstract class Robot {
         }
     }
 
+    boolean tryBuildIfNotPresent(RobotType type, Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canBuildRobot(type, dir)) {
+            if(!existsNearbyAllyOfType(type)) {
+                rc.buildRobot(type, dir);
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    boolean existsNearbyAllyOfType(RobotType type) throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.type.equals(type) && botInfo.team.equals(allyTeam)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean existsNearbyEnemy() throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.team.equals(enemyTeam)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void tryBlockchain() throws GameActionException {
         if (4 < 3) {
             int[] message = new int[10];

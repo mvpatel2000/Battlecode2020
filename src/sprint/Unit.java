@@ -89,12 +89,44 @@ public abstract class Unit extends Robot {
         Direction best = Arrays.stream(directions).filter(x -> {
             try {
                 MapLocation next = me.add(x);
-                return rc.canMove(x) && !rc.senseFlooding(next)
+                return rc.canMove(x) && !(rc.canSenseLocation(next) && rc.senseFlooding(next))
                         && historySet.getOrDefault(next, 0) == 0
                         && !(me.add(toward(me, history.peekLast())).equals(next));
             } catch (GameActionException e) {
                 return false;
             }
+        }).min(Comparator.comparing(x ->
+                me.add(x).distanceSquaredTo(target))).orElse(null);
+        if (best != null) {
+            stuck = 0;
+            tryMove(best);
+            return true;
+        } else {
+            if (!hasHistory) {
+                stuck = 0;
+                return false;
+            } else {
+                if (stuck < 3) {
+                    stuck++;
+                    return true;
+                } else {
+                    stuck = 0;
+                    clearHistory();
+                    return path(target);
+                }
+            }
+        }
+    }
+
+    boolean pathWithWater(MapLocation target) throws GameActionException {
+        MapLocation me = history.peekFirst();
+        if (me.equals(target)) {
+            return false;
+        }
+        Direction best = Arrays.stream(directions).filter(x -> {
+                MapLocation next = me.add(x);
+                return rc.canMove(x) && historySet.getOrDefault(next, 0) == 0
+                        && !(me.add(toward(me, history.peekLast())).equals(next));
         }).min(Comparator.comparing(x ->
                 me.add(x).distanceSquaredTo(target))).orElse(null);
         if (best != null) {

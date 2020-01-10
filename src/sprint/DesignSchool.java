@@ -8,6 +8,7 @@ public class DesignSchool extends Building {
     boolean defensive;
     boolean primaryDefensive; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
+    int closeInnerWallAt;
 
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
@@ -23,14 +24,9 @@ public class DesignSchool extends Building {
             System.out.println(baseInfo);
 
             // Determine if I am the primary defensive d.school or if I am an extra.
-            primaryDefensive = true;
-            RobotInfo[] nearbyBots = rc.senseNearbyRobots();
-            for (RobotInfo botInfo : nearbyBots) {
-            	if (botInfo.type.equals(RobotType.LANDSCAPER) && botInfo.team.equals(allyTeam)) { // I see an ally landscaper (made by another d.school)
-            		primaryDefensive = false;
-            	}
-            	// Note: we can't just check for another d.school because it might be outside vision radius.
-            }
+            primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
+
+            closeInnerWallAt = 300;
         }
 	    else {
 	    	System.out.println("I am an offensive d.school");
@@ -39,7 +35,10 @@ public class DesignSchool extends Building {
 
     @Override
     public void run() throws GameActionException  {
-        if (primaryDefensive && (numLandscapersMade < 5 || rc.getRoundNum() >= 400)) { // primary defensive d.school. TODO: constant 400 should be tweaked
+    	if (existsNearbyEnemy()) {
+    		closeInnerWallAt = 0;
+    	}
+        if (primaryDefensive && (numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // primary defensive d.school. TODO: constant 400 should be tweaked
         	Direction spawnDir = myLocation.directionTo(baseLocation);
         	for (int i = 8; i > 0; i--) {
         		if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {

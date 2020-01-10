@@ -74,7 +74,7 @@ public class Landscaper extends Unit {
             }
             else if (rc.canDigDirt(hqDir)) { // second priority: heal HQ
                 System.out.println("Healing HQ");
-                rc.digDirt(hqDir);
+                tryDig(hqDir);
             }
             else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // third priority: dig dirt
                 Direction digDir = hqDir.opposite();
@@ -85,14 +85,10 @@ public class Landscaper extends Unit {
                     digDir = digDir.rotateRight();
                 }
                 System.out.println("Digging dirt from direction " + digDir.toString());
-                if (rc.canDigDirt(digDir)) {
-                    rc.digDirt(digDir);
-                }
+                tryDig(digDir);
             }
             else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
-                if(rc.canDepositDirt(Direction.CENTER)) {
-                    rc.depositDirt(Direction.CENTER);
-                }
+                tryDeposit(Direction.CENTER);
                 System.out.println("Dumping dirt under myself");
             }
             else { // inner wall tight; distribute around it
@@ -116,11 +112,26 @@ public class Landscaper extends Unit {
                         height = rc.senseElevation(myLocation.add(hqDir.rotateRight().rotateRight()));
                     }
                 }
-                if (rc.canDepositDirt(dump)) {
-                    System.out.println("Dumping dirt in direction " + dump.toString());
-                    rc.depositDirt(dump);
-                }
+                tryDeposit(dump);
             }
+        }
+    }
+
+    boolean tryDeposit(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canDepositDirt(dir)) {
+            rc.depositDirt(dir);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    boolean tryDig(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canDigDirt(dir)) {
+            rc.digDirt(dir);
+            return true;
+        } else {
+            return false;
         }
     }
 
