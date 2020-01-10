@@ -21,9 +21,9 @@ public class HQ extends Building {
     @Override
     public void run() throws GameActionException {
         super.run();
-        netgun.shoot();
+        // netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 1 && tryBuild(RobotType.MINER, dir))
+            if (minerCount < 3 && tryBuild(RobotType.MINER, dir))
                 minerCount++;
         }
     }

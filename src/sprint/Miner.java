@@ -7,13 +7,13 @@ import java.util.*;
 public class Miner extends Unit {
 
     long[] soupChecked = new long[64]; // align to top right
-
     List<MapLocation> soupLocations = new ArrayList<MapLocation>();
 
     MapLocation destination;
     MapLocation baseLocation;
 
     boolean builtDSchool;
+    boolean fulfillmentCenter;
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
@@ -27,7 +27,7 @@ public class Miner extends Unit {
             }
         }
 
-        destination = updateNearestSoupLocation(1);
+        destination = updateNearestSoupLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
@@ -49,20 +49,22 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build d.school
+                if (!fulfillmentCenter)
+                    fulfillmentCenter = tryBuild(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
                 if (!builtDSchool)
                     builtDSchool = tryBuild(RobotType.DESIGN_SCHOOL, hqDir.opposite());
 
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
-                    destination = updateNearestSoupLocation(0);
+                    destination = updateNearestSoupLocation();
                     clearHistory();
                 }
             }
             else {                                                            // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {                         // find new mining tile
-                    destination = updateNearestSoupLocation(0);
+                    destination = updateNearestSoupLocation();
                 }
                 else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
                     destination = baseLocation;
@@ -76,14 +78,14 @@ public class Miner extends Unit {
         else {                                                                // in transit
             path(destination);
             if (destination != baseLocation) {                                // keep checking soup location
-                destination = updateNearestSoupLocation(0);
+                destination = updateNearestSoupLocation();
             }
         }
 //        System.out.println("end harvest "+Clock.getBytecodeNum());
     }
 
     // Returns location of nearest soup
-    public MapLocation updateNearestSoupLocation(int full_scan) throws GameActionException {
+    public MapLocation updateNearestSoupLocation() throws GameActionException {
         int scanRadius = rc.getCurrentSensorRadiusSquared();
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
