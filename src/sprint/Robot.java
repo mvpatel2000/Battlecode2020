@@ -43,8 +43,8 @@ public abstract class Robot {
         }
         myId = rc.getID();
         myLocation = rc.getLocation();
-        MAP_WIDTH = rc.getMAP_WIDTH();
-        MAP_HEIGHT = rc.getMAP_HEIGHT();
+        MAP_WIDTH = rc.getMapWidth();
+        MAP_HEIGHT = rc.getMapHeight();
         numRows = (MAP_HEIGHT+squareHeight-1)/squareHeight;
         numCols = (MAP_WIDTH+squareWidth-1)/squareWidth;
         centers = generateGrid();
@@ -214,6 +214,7 @@ public abstract class Robot {
         } else {
             return false;
         }
+    }
 
     boolean tryBuildIfNotPresent(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {

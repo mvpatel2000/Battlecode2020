@@ -17,7 +17,7 @@ public class Message {
 
     int headerlen = 16;
     int schema = 0; //default message type
-    int schemalen = 3;
+    int schemaLen = 3;
 
     public Message(int myMAP_HEIGHT, int myMAP_WIDTH, int myTeam) {
         actualMessage = new int[7];
