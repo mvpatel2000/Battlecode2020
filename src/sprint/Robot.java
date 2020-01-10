@@ -178,7 +178,7 @@ public abstract class Robot {
                  centers[i][j][0] = Math.min(squareWidth*j + squareWidth/2, MAP_WIDTH-1);
                  centers[i][j][1] = Math.min(squareHeight*i + squareHeight/2, MAP_HEIGHT-1);
                  MapLocation bob = new MapLocation(centers[i][j][0], centers[i][j][1]);
-                 rc.setIndicatorDot(bob, 255, 40*i, 0);
+                 //rc.setIndicatorDot(bob, 255, 40*i, 0);
              }
          }
          return centers;
