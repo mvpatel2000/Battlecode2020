@@ -21,6 +21,7 @@ build/*
 *.iws
 /.idea/
 version.txt
+*.properties
 
 
 # User-specific stuff:
