@@ -20,6 +20,7 @@ build/*
 *.ipr
 *.iws
 /.idea/
+version.txt
 
 
 # User-specific stuff:
