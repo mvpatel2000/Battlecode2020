@@ -65,6 +65,13 @@ public class DeliveryDrone extends Unit {
                 }
             }
             else {
+                if ((nearestWaterLocation == baseLocation || nearestWaterLocation == hqLocation)
+                        && myLocation.distanceSquaredTo(destination) > 8) {
+                    pathWithWater(nearestWaterLocation);
+                }
+                else {
+                    tryMove();
+                }
                 pathWithWater(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -94,7 +101,12 @@ public class DeliveryDrone extends Unit {
                 nearestWaterLocation = updateNearestWaterLocation();
             }
             else { // go back to base
-                pathWithWater(destination);
+                if (myLocation.distanceSquaredTo(destination) > 8) {
+                    pathWithWater(destination);
+                }
+                else {
+                    tryMove();
+                }
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
