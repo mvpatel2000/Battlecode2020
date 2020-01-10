@@ -46,7 +46,7 @@ public class Miner extends Unit {
 //        System.out.println("Start harvest " + Clock.getBytecodeNum());
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-        System.out.println("Start harvest " + destination + " " + distanceToDestination);
+//        System.out.println("Start harvest " + destination + " " + distanceToDestination);
         if (distanceToDestination <= 2) {                                     // at destination
             if (destination == baseLocation) {                                // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
@@ -73,6 +73,7 @@ public class Miner extends Unit {
                     destination = updateNearestSoupLocation();
                 }
                 else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
+                    refineryCheck(); //TODO: Fix this method and make it better
                     destination = baseLocation;
                     clearHistory();
                 }
@@ -88,6 +89,30 @@ public class Miner extends Unit {
             }
         }
 //        System.out.println("end harvest "+Clock.getBytecodeNum());
+    }
+
+    // Updates base location and builds refinery if base is too far
+    public void refineryCheck() throws GameActionException {
+        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+        for (RobotInfo robot : robots) {
+            if (robot.getType() == RobotType.REFINERY || robot.getType() == RobotType.HQ) {
+                if (myLocation.distanceSquaredTo(robot.getLocation()) < myLocation.distanceSquaredTo(baseLocation)) {
+                    baseLocation = robot.getLocation();
+                }
+            }
+        }
+        //TODO: Better measure of distance than straightline. Consider path length?
+        if (myLocation.distanceSquaredTo(baseLocation) > 25) {
+            //TODO: build a refinery smarter and in good direction.
+            //TODO: Handle case where you dont have enough resources and then are stuck? I think soln is better pathing so it can get back
+            //build new refinery!
+            for (Direction dir : directions) {
+                if (rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)) {
+                    rc.buildRobot(RobotType.REFINERY, dir);
+                    baseLocation = myLocation.add(dir);
+                }
+            }
+        }
     }
 
     // Returns location of nearest soup
@@ -2192,44 +2217,5 @@ public class Miner extends Unit {
         return new int[]{};
     }
 
-    /**
-     * Attempts to mine soup in a given direction.
-     *
-     * @param dir The intended direction of mining
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    boolean tryMine(Direction dir) throws GameActionException {
-        if (rc.isReady() && rc.canMineSoup(dir)) {
-            rc.mineSoup(dir);
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Attempts to refine soup in a given direction.
-     *
-     * @param dir The intended direction of refining
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    boolean tryRefine(Direction dir) throws GameActionException {
-        if (rc.isReady() && rc.canDepositSoup(dir)) {
-            if (rc.senseRobotAtLocation(myLocation.add(dir)).getTeam() == allyTeam) {
-                rc.depositSoup(dir, rc.getSoupCarrying());
-                return true;
-            }
-        } else {
-            return false;
-        }
-        return false;
-    }
-
-    boolean sendSoup(MapLocation loc, int soupDepth) throws GameActionException {
-        int[] msg = {getGridCenter(loc).x, getGridCenter(loc).y, soupDepth};
-        return sendMessage(msg, 1);
-    }
 
 }
