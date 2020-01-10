@@ -13,28 +13,42 @@ public abstract class Robot {
     /* constant for each game */
     Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
     Direction[] directionsWithCenter = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
-
-    RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
-            RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
+    RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL, RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
     Team allyTeam;
     Team enemyTeam;
     int teamNum;
     int myId;
-
-    /* updated per turn */
-    int turnCount;
-    MapLocation myLocation;
-
+    final int MAP_WIDTH;
+    final int MAP_HEIGHT;
 
     //discretized grid for communicating map information
-    int mapHeight;
-    int mapWidth;
     int centers[][][];
     long soupCenters;
     final int squareWidth = 4;    //number of cells wide per tile
     final int squareHeight = 7;   //number of cells tall per tile
     final int numRows;
     final int numCols;
+
+    /* updated per turn */
+    MapLocation myLocation;
+
+    public Robot(RobotController robotController) throws GameActionException {
+        rc = robotController;
+        allyTeam = rc.getTeam();
+        enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
+        if(allyTeam == Team.A) {
+            teamNum = 0;
+        } else {
+            teamNum = 1;
+        }
+        myId = rc.getID();
+        myLocation = rc.getLocation();
+        MAP_WIDTH = rc.getMAP_WIDTH();
+        MAP_HEIGHT = rc.getMAP_HEIGHT();
+        numRows = (MAP_HEIGHT+squareHeight-1)/squareHeight;
+        numCols = (MAP_WIDTH+squareWidth-1)/squareWidth;
+        centers = generateGrid();
+    }
 
     public Direction toward(MapLocation me, MapLocation dest) {
         switch (Integer.compare(me.x, dest.x) + 3 * Integer.compare(me.y, dest.y)) {
@@ -61,11 +75,32 @@ public abstract class Robot {
         }
     }
 
-    public Direction itod(int i) {
-        return directions[i];
+    public Direction intToDirection(int i) {
+        switch (i) {
+            case 0:
+                return Direction.NORTH;
+            case 1:
+                return Direction.NORTHEAST;
+            case 2:
+                return Direction.EAST;
+            case 3:
+                return Direction.SOUTHEAST;
+            case 4:
+                return Direction.SOUTH;
+            case 5:
+                return Direction.SOUTHWEST;
+            case 6:
+                return Direction.WEST;
+            case 7:
+                return Direction.NORTHWEST;
+            case 8:
+                return Direction.CENTER;
+            default:
+                return null;
+        }
     }
 
-    public int dtoi(Direction d) {
+    public int directionToInt(Direction d) {
         switch (d) {
             case NORTH:
                 return 0;
@@ -83,28 +118,14 @@ public abstract class Robot {
                 return 6;
             case NORTHWEST:
                 return 7;
+            case CENTER:
+                return 8;
             default:
                 return -1;
         }
     }
 
-    public Robot(RobotController robotController) throws GameActionException {
-        rc = robotController;
-        allyTeam = rc.getTeam();
-        enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
-        if(allyTeam == Team.A) {
-            teamNum = 0;
-        } else {
-            teamNum = 1;
-        }
-        myId = rc.getID();
-        myLocation = rc.getLocation();
-        mapHeight = rc.getMapHeight();
-        mapWidth = rc.getMapWidth();
-        numRows = (mapHeight+squareHeight-1)/squareHeight;
-        numCols = (mapWidth+squareWidth-1)/squareWidth;
-        centers = generateGrid();
-    }
+
 
 
     public abstract void run() throws GameActionException;
@@ -115,7 +136,7 @@ public abstract class Robot {
      * @return a random Direction
      */
     Direction randomDirection() {
-        return directions[(int) (Math.random() * directions.length)];
+        return intToDirection((int) (Math.random() * 8));
     }
 
     /**
@@ -144,7 +165,7 @@ public abstract class Robot {
         }
     }
 
-    /**
+     /**
      * Grid used for communication
      * discretization.
      */
@@ -154,8 +175,8 @@ public abstract class Robot {
          int[][][] centers = new int[numRows][numCols][2];
          for (int i=0; i<numRows; i++) {
              for (int j=0; j<numCols; j++) {
-                 centers[i][j][0] = Math.min(squareWidth*j + squareWidth/2, mapWidth-1);
-                 centers[i][j][1] = Math.min(squareHeight*i + squareHeight/2, mapHeight-1);
+                 centers[i][j][0] = Math.min(squareWidth*j + squareWidth/2, MAP_WIDTH-1);
+                 centers[i][j][1] = Math.min(squareHeight*i + squareHeight/2, MAP_HEIGHT-1);
                  MapLocation bob = new MapLocation(centers[i][j][0], centers[i][j][1]);
                  rc.setIndicatorDot(bob, 255, 40*i, 0);
              }
@@ -174,10 +195,10 @@ public abstract class Robot {
         MapLocation centerLoc = getGridCenter(loc);
         int xnum = (centerLoc.x - squareWidth/2)/squareWidth;
         int ynum = (centerLoc.y - squareHeight/2)/squareHeight;
-        if(centerLoc.x == mapWidth-1) {
+        if(centerLoc.x == MAP_WIDTH-1) {
             xnum = numCols-1;
         }
-        if(centerLoc.y == mapHeight-1) {
+        if(centerLoc.y == MAP_HEIGHT-1) {
             ynum = numRows-1;
         }
         return ynum*(numCols-1) + xnum;
@@ -193,6 +214,37 @@ public abstract class Robot {
         } else {
             return false;
         }
+
+    boolean tryBuildIfNotPresent(RobotType type, Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canBuildRobot(type, dir)) {
+            if(!existsNearbyAllyOfType(type)) {
+                rc.buildRobot(type, dir);
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    boolean existsNearbyAllyOfType(RobotType type) throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.type.equals(type) && botInfo.team.equals(allyTeam)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean existsNearbyEnemy() throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.team.equals(enemyTeam)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void tryBlockchain() throws GameActionException {

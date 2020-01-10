@@ -10,8 +10,8 @@ public class MinePatchMessage extends Message {
     int numPatches;
     int numPatchesLeft;
 
-    public MinePatchMessage(int myMapHeight, int myMapWidth, int myTeam) {
-        m = new Message(myMapHeight, myMapWidth, myTeam);
+    public MinePatchMessage(int myMAP_HEIGHT, int myMAP_WIDTH, int myTeam) {
+        m = new Message(myMAP_HEIGHT, myMAP_WIDTH, myTeam);
         m.writeSchema(mpmSchema);
         numPatches = m.getBitsRemaining()/12;
         numPatchesLeft = numPatches;

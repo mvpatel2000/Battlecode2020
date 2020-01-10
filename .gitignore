@@ -21,15 +21,6 @@ build/*
 *.iws
 /.idea/
 
-/gradle/
-build.gradle
-gradle.properties
-gradlew
-gradlew.bat
-LICENSE
-README.md
-version.txt
-
 
 # User-specific stuff:
 battlecode-scaffold.iws
@@ -37,4 +28,4 @@ battlecode-scaffold.iws
 # Eclipse user-specific files
 .classpath
 .project
-.settings/gradle.properties
+.settings/

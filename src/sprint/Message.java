@@ -11,19 +11,19 @@ public class Message {
     int[] actualMessage;
     int writtenTo;  // number of bits written to so far.
 
-    int mapHeight;
-    int mapWidth;
+    int MAP_HEIGHT;
+    int MAP_WIDTH;
     int team;
 
     int headerlen = 16;
     int schema = 0; //default message type
     int schemalen = 3;
 
-    public Message(int myMapHeight, int myMapWidth, int myTeam) {
+    public Message(int myMAP_HEIGHT, int myMAP_WIDTH, int myTeam) {
         actualMessage = new int[7];
         writtenTo = 0;
-        mapHeight = myMapHeight;
-        mapWidth = myMapWidth;
+        MAP_HEIGHT = myMAP_HEIGHT;
+        MAP_WIDTH = myMAP_WIDTH;
         team = myTeam;
         generateHeader();
     }
@@ -37,7 +37,7 @@ public class Message {
     }
 
     boolean generateHeader() {
-        int header = (team+1)*mapHeight*mapWidth % (1 << headerlen+1) - 1;
+        int header = (team+1)*MAP_HEIGHT*MAP_WIDTH % (1 << headerlen+1) - 1;
         return writeToArray(header, 16);
     }
 
