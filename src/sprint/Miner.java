@@ -51,14 +51,14 @@ public class Miner extends Unit {
             if (destination == baseLocation) {                                // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
 
+                // build fulfillment center
+                if (!fulfillmentCenterExists) {
+                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+                }
                 // build d.school
                 if (!dSchoolExists) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
-                // build fulfillment center // TODO: TEMPORARILY COMMENTED OUT FOR SCRIMMAGES
-                // if (!fulfillmentCenterExists) {
-                //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-                // }
 
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
