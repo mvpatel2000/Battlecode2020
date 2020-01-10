@@ -6,6 +6,8 @@ public class DesignSchool extends Building {
 
     MapLocation baseLocation;
     boolean defensive;
+    boolean primaryDefensive; // For now only the primary defensive d.school does anything.
+    int numLandscapersMade;
 
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
@@ -13,11 +15,22 @@ public class DesignSchool extends Building {
         baseLocation = null;
         int hqID = rc.getTeam().equals(Team.valueOf("A")) ? 0 : 1;
         defensive = rc.canSenseRobot(hqID);
+        primaryDefensive = false;
         if (defensive) {
             RobotInfo baseInfo = rc.senseRobot(hqID);
             baseLocation = baseInfo.location;
             System.out.println("I am a defensive d.school. Found our HQ:");
             System.out.println(baseInfo);
+
+            // Determine if I am the primary defensive d.school or if I am an extra.
+            primaryDefensive = true;
+            RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+            for (RobotInfo botInfo : nearbyBots) {
+            	if (botInfo.type.equals(RobotType.LANDSCAPER) && botInfo.team.equals(allyTeam)) { // I see an ally landscaper (made by another d.school)
+            		primaryDefensive = false;
+            	}
+            	// Note: we can't just check for another d.school because it might be outside vision radius.
+            }
         }
 	    else {
 	    	System.out.println("I am an offensive d.school");
@@ -26,11 +39,15 @@ public class DesignSchool extends Building {
 
     @Override
     public void run() throws GameActionException  {
-        if (defensive) { // defensive d.school
+        if (primaryDefensive && (numLandscapersMade < 5 || rc.getRoundNum() >= 400)) { // primary defensive d.school. TODO: constant 400 should be tweaked
         	Direction spawnDir = myLocation.directionTo(baseLocation);
         	for (int i = 8; i > 0; i--) {
-        		tryBuild(RobotType.LANDSCAPER, spawnDir);
-        		spawnDir = spawnDir.rotateLeft();
+        		if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+        			numLandscapersMade++;
+        		}
+        		else {
+        			spawnDir = spawnDir.rotateLeft();
+        		}
         	}
         }
     }
