@@ -191,6 +191,8 @@ public abstract class Robot {
          return centerLoc;
      }
 
+     MapLocation getTilesIn
+
     int getTileNumber(MapLocation loc) throws GameActionException {
         MapLocation centerLoc = getGridCenter(loc);
         int xnum = (centerLoc.x - squareWidth/2)/squareWidth;

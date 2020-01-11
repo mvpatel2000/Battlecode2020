@@ -71,6 +71,7 @@ public class Miner extends Unit {
             else {                                                            // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {                         // find new mining tile
+
                     destination = updateNearestSoupLocation();
                 }
                 else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining

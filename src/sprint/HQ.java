@@ -15,8 +15,8 @@ public class HQ extends Building {
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
-        patchList = new int[6];
-        patchProbs = new int[6];
+        patchList = new int[17];
+        patchProbs = new int[17];
     }
 
     /*
