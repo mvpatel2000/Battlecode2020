@@ -22,7 +22,7 @@ public class Landscaper extends Unit {
     Direction[] outerRingDig = {Direction.NORTHWEST, Direction.EAST, Direction.CENTER, Direction.WEST, Direction.NORTHEAST, Direction.SOUTH, Direction.CENTER, Direction.NORTH, Direction.SOUTHEAST, Direction.WEST, Direction.CENTER, Direction.EAST, Direction.SOUTHWEST, Direction.NORTH, Direction.CENTER, Direction.SOUTH};
     Direction[] outerRingDeposit = {Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTHEAST, Direction.NORTHEAST, Direction.EAST, Direction.EAST, Direction.SOUTHEAST};
     int outerRingIndex = 0;
-    int OUTER_RING_TARGET_ELEVATION = 25; // TODO: tweak constant
+    int OUTER_RING_TARGET_ELEVATION = 50; // TODO: tweak constant
 
     public Landscaper(RobotController rc) throws GameActionException {
         super(rc);
