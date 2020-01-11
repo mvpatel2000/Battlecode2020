@@ -7,20 +7,43 @@ public class MinePatchMessage extends Message {
 
     Message m;
     final int mpmSchema = 2; //MinePatchMessages are message type 1
-    int numPatches;
-    int numPatchesLeft;
+    final int MAX_PATCHES;
+    int numPatchesWritten;
+    int[] patches;
+    int[] weights;
 
-    public MinePatchMessage(int myMAP_HEIGHT, int myMAP_WIDTH, int myTeam) {
-        super(myMAP_HEIGHT, myMAP_WIDTH, myTeam);
+    public MinePatchMessage(int myMapHeight, int myMapWidth, int myTeam) {
+        super(myMapHeight, myMapWidth, myTeam);
         this.writeSchema(mpmSchema);
-        numPatches = this.getBitsRemaining()/12;
-        numPatchesLeft = numPatches;
+        MAX_PATCHES = this.getBitsRemaining()/12;
+        numPatchesWritten = 0;
+        patches = new int[MAX_PATCHES];
+        weights = new int[MAX_PATCHES];
+    }
+
+    public MinePatchMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
+        super(recieved, myMapHeight, myMapWidth, myTeam);
+        this.writeSchema(mpmSchema);
+        MAX_PATCHES = this.getBitsRemaining()/12;
+        numPatchesWritten = MAX_PATCHES;
+        patches = new int[MAX_PATCHES];
+        weights = new int[MAX_PATCHES];
+        readPatches();
+    }
+
+    void readPatches() {
+        for(int i=0; i<MAX_PATCHES; i++) {
+            patches[i] = readFromArray(i*12 + headerLen + schemLen, 6);
+            weights[i] = readFromArray(i*12 + 6 + headerLen + schemLen, 6);
+        }
     }
 
     boolean writePatch(int tile, int weight) {
-        if(numPatchesLeft>0) {
+        if(numPatchesWritten<MAX_PATCHES) {
             if(writeToArray(tile, 6) && writeToArray(weight, 6)) {
-                numPatchesLeft-=1;
+                patches[numPatchesWritten] = tile;
+                weights[numPatchesWritten] = weight;
+                numPatchesWritten+=1;
                 return true;
             }
         }
