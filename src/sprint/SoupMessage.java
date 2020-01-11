@@ -9,6 +9,8 @@ public class SoupMessage extends Message {
     final int soupSchema = 1;   //SoupMessages are message type 1
     int tile;
     int soupThere;
+    int bitsPerTile = 8;
+    int bitsPerPresence = 6;
 
     public SoupMessage(int myMapHeight, int myMapWidth, int myTeam) {
         super(myMapHeight, myMapWidth, myTeam);
@@ -29,17 +31,17 @@ public class SoupMessage extends Message {
 
     boolean writeTile(int myTile) {
         tile = myTile;
-        return writeToArray(myTile, 6);
+        return writeToArray(myTile, bitsPerTile);
     }
 
-    boolean writeSoupOrNot(int presence) {
+    boolean writeSoupAmount(int presence) {
         soupThere = presence;
-        return writeToArray(presence, 1);
+        return writeToArray(presence, bitsPerPresence);
     }
 
     void readTile() {
-        tile = readFromArray(headerLen + schemaLen, 6);
-        soupThere = readFromArray(headerLen + schemaLen+6, 1);
+        tile = readFromArray(headerLen + schemaLen, bitsPerTile);
+        soupThere = readFromArray(headerLen + schemaLen+bitsPerTile, bitsPerPresence);
     }
 
 }

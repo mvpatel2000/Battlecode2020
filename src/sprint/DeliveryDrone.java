@@ -21,10 +21,12 @@ public class DeliveryDrone extends Unit {
         super(rc);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
-            RobotInfo r = rc.senseRobotAtLocation(t);
-            if (r != null && r.getType() == RobotType.FULFILLMENT_CENTER) {
-                baseLocation = t;
-                break;
+            if (rc.canSenseLocation(t)) {
+                RobotInfo r = rc.senseRobotAtLocation(t);
+                if (r != null && r.getType() == RobotType.FULFILLMENT_CENTER) {
+                    baseLocation = t;
+                    break;
+                }
             }
         }
 

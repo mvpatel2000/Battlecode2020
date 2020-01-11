@@ -21,6 +21,11 @@ public class HQ extends Building {
         refinery = new Refinery(rc);
         minerCount = 0;
         initialScan();
+        /*
+        for(int i=0; i<numRows*numCols; i++) {
+            MapLocation cen = getCenterFromTileNumber(i);
+            rc.setIndicatorDot(cen, 255, i*3, i*3);
+        }*/
     }
 
     /*
@@ -31,7 +36,7 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 3 && tryBuild(RobotType.MINER, dir))
+            if (minerCount < 30 && tryBuild(RobotType.MINER, dir))
                 minerCount++;
         }
         if(rc.getRoundNum()!=1) {
@@ -61,35 +66,58 @@ public class HQ extends Building {
     }
 
     void generateMessage() throws GameActionException {
-        if(rc.getRoundNum()%5==2) {
+        if(rc.getRoundNum()%messageFrequency==messageModulus) {
             MinePatchMessage m = new MinePatchMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-            int numToSend = Math.min(17, soupsPerTile.size());
+            int numToSend = Math.min(m.MAX_PATCHES, soupsPerTile.size());
+            int lastPatchNum = 0;
+            int lastWeight = 0;
             int i=0;
             for(int[] x : soupsPerTile) {
                 if(i>=numToSend) {
                     break;
                 }
+                //System.out.print("I am sending patchnum ");
+                //System.out.print(x[0]);
+                //System.out.print(" to the miners");
+                MapLocation cen = getCenterFromTileNumber(x[0]);
+                //System.out.println(cen);
+                rc.setIndicatorDot(cen, 255, 0, 255);
                 m.writePatch(x[0], 1); //TODO: use x[1] in the future
+
+                if(i==soupsPerTile.size()-1) {
+                    lastPatchNum = x[0];
+                    lastWeight = 1; // set to final weight
+                }
+
                 i++;
             }
+            for(int j=soupsPerTile.size(); j<m.MAX_PATCHES; j++) {
+                m.writePatch(lastPatchNum, lastWeight);
+            }
             //TODO figure out better bidding scheme
-
             sendMessage(m.getMessage(), 1);
         }
     }
 
     void addToSoupList(int tileNum, int soupThere) throws GameActionException {
         boolean added = false;
+        System.out.println("adding " + Integer.toString(tileNum));
+        for(int[] sss : soupsPerTile) {
+            System.out.println("SSI know soup at " + Integer.toString(sss[0]));
+        }
         for(int j=0; j<soupsPerTile.size(); j++) {
             ///////////////////////////////
             //TODO: instead of inserting s.soupThere
             //do the weighting calculation here and compare
             //based on weighting.
-            if(soupsPerTile.get(j)[1] < soupThere) {
+            if(tileNum==soupsPerTile.get(j)[0]) {
+                added = true;
+                break;
+            } else if (soupsPerTile.get(j)[1] < soupThere) {
                 soupsPerTile.add(j, new int[]{tileNum, soupThere});
                 added = true;
+                break;
             }
-            break;
         }
         if (!added) {
             soupsPerTile.add(new int[]{tileNum, soupThere});
@@ -107,14 +135,19 @@ public class HQ extends Building {
                 if(m.schema == 1) {
                     SoupMessage s = new SoupMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
+                        // for(int[] sss : soupsPerTile) {
+                        //     System.out.println("I know soup at " + Integer.toString(sss[0]));
+                        // }
+                        System.out.println("Miners telling me there is no soup at " + Integer.toString(s.tile));
                         //delete from arraylist of soups
                         for(int j=0; j<soupsPerTile.size(); j++) {
                             if(soupsPerTile.get(j)[0]==s.tile) {
                                 soupsPerTile.remove(j);
+                                break;
                             }
-                            break;
                         }
                     } else {
+                        //miner telling me there is soup at tile
                         addToSoupList(s.tile, s.soupThere);
                     }
                 }
