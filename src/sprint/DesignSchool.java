@@ -39,7 +39,7 @@ public class DesignSchool extends Building {
     		closeInnerWallAt = 0;
     	}
         if (primaryDefensive && (numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // primary defensive d.school. TODO: constant 400 should be tweaked
-        	Direction spawnDir = myLocation.directionTo(baseLocation);
+        	Direction spawnDir = myLocation.directionTo(baseLocation).rotateRight(); // note: added rotateRight for rush defense purposes
         	for (int i = 8; i > 0; i--) {
         		if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
         			numLandscapersMade++;
