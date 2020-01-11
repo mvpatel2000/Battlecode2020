@@ -33,8 +33,8 @@ public class MinePatchMessage extends Message {
 
     void readPatches() {
         for(int i=0; i<MAX_PATCHES; i++) {
-            patches[i] = readFromArray(i*12 + headerLen + schemLen, 6);
-            weights[i] = readFromArray(i*12 + 6 + headerLen + schemLen, 6);
+            patches[i] = readFromArray(i*12 + headerLen + schemaLen, 6);
+            weights[i] = readFromArray(i*12 + 6 + headerLen + schemaLen, 6);
         }
     }
 

@@ -21,9 +21,9 @@ public class Message {
     int schema = 0; //default message type
     int schemaLen = 3;
 
-    //origin 1 if our sent by our team, 0 if sent by enemy.
+    //origin true if our sent by our team, false if sent by enemy.
     //Only matters for recieved messages
-    int origin;
+    boolean origin;
 
     public Message(int myMapHeight, int myMapWidth, int myTeam) {
         actualMessage = new int[7];
@@ -31,14 +31,14 @@ public class Message {
         MAP_HEIGHT = myMapHeight;
         MAP_WIDTH = myMapWidth;
         team = myTeam;
-        origin = 1;
+        origin = true;
         generateHeader();
     }
 
     //Use this constructor for messages recieved
-    public Message(int[] recieved, int myMapHeight, myMapWidth, int myTeam) {
+    public Message(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         if(recieved.length==7) {
-            actualmessage = recieved.length;
+            actualMessage = recieved;
         } else {
             //this should never happen
             //only call this constructor on a message of valid length
@@ -67,7 +67,7 @@ public class Message {
      }
 
 
-     boolean getSchema() {
+     int getSchema() {
          return readFromArray(headerLen, schemaLen);
      }
 

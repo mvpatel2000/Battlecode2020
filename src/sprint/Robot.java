@@ -22,8 +22,6 @@ public abstract class Robot {
     final int MAP_HEIGHT;
 
     //discretized grid for communicating map information
-    int centers[][][];
-    long soupCenters;
     final int squareWidth = 4;    //number of cells wide per tile
     final int squareHeight = 7;   //number of cells tall per tile
     final int numRows;
@@ -36,18 +34,13 @@ public abstract class Robot {
         rc = robotController;
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
-        if(allyTeam == Team.A) {
-            teamNum = 0;
-        } else {
-            teamNum = 1;
-        }
+        teamNum = allyTeam == Team.A ? 0 : 1;
         myId = rc.getID();
         myLocation = rc.getLocation();
         MAP_WIDTH = rc.getMapWidth();
         MAP_HEIGHT = rc.getMapHeight();
         numRows = (MAP_HEIGHT+squareHeight-1)/squareHeight;
         numCols = (MAP_WIDTH+squareWidth-1)/squareWidth;
-        centers = generateGrid();
     }
 
     public Direction toward(MapLocation me, MapLocation dest) {
@@ -169,29 +162,14 @@ public abstract class Robot {
      * Grid used for communication
      * discretization.
      */
-
-    int[][][] generateGrid() throws GameActionException {
-        System.out.println("Generating grid!");
-         int[][][] centers = new int[numRows][numCols][2];
-         for (int i=0; i<numRows; i++) {
-             for (int j=0; j<numCols; j++) {
-                 centers[i][j][0] = Math.min(squareWidth*j + squareWidth/2, MAP_WIDTH-1);
-                 centers[i][j][1] = Math.min(squareHeight*i + squareHeight/2, MAP_HEIGHT-1);
-                 MapLocation bob = new MapLocation(centers[i][j][0], centers[i][j][1]);
-                 //rc.setIndicatorDot(bob, 255, 40*i, 0);
-             }
-         }
-         return centers;
-     }
-
      MapLocation getGridCenter(MapLocation loc) throws GameActionException {
          int centerx = loc.x/squareWidth;
          int centery = loc.y/squareHeight;
-         MapLocation centerLoc = new MapLocation(centers[centery][centerx][0], centers[centery][centerx][1]);
+         MapLocation centerLoc = new MapLocation(
+                                Math.min(squareWidth*centerx + squareWidth/2, MAP_WIDTH-1),
+                                Math.min(squareHeight*centery + squareHeight/2, MAP_HEIGHT-1));
          return centerLoc;
      }
-
-     MapLocation getTilesIn
 
     int getTileNumber(MapLocation loc) throws GameActionException {
         MapLocation centerLoc = getGridCenter(loc);

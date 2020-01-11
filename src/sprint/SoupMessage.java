@@ -38,8 +38,8 @@ public class SoupMessage extends Message {
     }
 
     void readTile() {
-        tile = readFromArray(headerLen + schemaLen + , 6);
-        soupThere = readFromArray(headerLen + schemaLen +6, 1);
+        tile = readFromArray(headerLen + schemaLen, 6);
+        soupThere = readFromArray(headerLen + schemaLen+6, 1);
     }
 
 }
