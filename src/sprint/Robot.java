@@ -20,12 +20,11 @@ public abstract class Robot {
     int myId;
     final int MAP_WIDTH;
     final int MAP_HEIGHT;
-
+    final int messageModulus=2;
+    final int messageFrequency=5;
     //discretized grid for communicating map information
-    int centers[][][];
-    long soupCenters;
     final int squareWidth = 4;    //number of cells wide per tile
-    final int squareHeight = 7;   //number of cells tall per tile
+    final int squareHeight = 4;   //number of cells tall per tile
     final int numRows;
     final int numCols;
 
@@ -36,18 +35,13 @@ public abstract class Robot {
         rc = robotController;
         allyTeam = rc.getTeam();
         enemyTeam = allyTeam == Team.A ? Team.B : Team.A;
-        if(allyTeam == Team.A) {
-            teamNum = 0;
-        } else {
-            teamNum = 1;
-        }
+        teamNum = allyTeam == Team.A ? 0 : 1;
         myId = rc.getID();
         myLocation = rc.getLocation();
         MAP_WIDTH = rc.getMapWidth();
         MAP_HEIGHT = rc.getMapHeight();
         numRows = (MAP_HEIGHT+squareHeight-1)/squareHeight;
         numCols = (MAP_WIDTH+squareWidth-1)/squareWidth;
-        centers = generateGrid();
     }
 
     public Direction toward(MapLocation me, MapLocation dest) {
@@ -169,27 +163,51 @@ public abstract class Robot {
      * Grid used for communication
      * discretization.
      */
-
-    int[][][] generateGrid() throws GameActionException {
-        System.out.println("Generating grid!");
-         int[][][] centers = new int[numRows][numCols][2];
-         for (int i=0; i<numRows; i++) {
-             for (int j=0; j<numCols; j++) {
-                 centers[i][j][0] = Math.min(squareWidth*j + squareWidth/2, MAP_WIDTH-1);
-                 centers[i][j][1] = Math.min(squareHeight*i + squareHeight/2, MAP_HEIGHT-1);
-                 MapLocation bob = new MapLocation(centers[i][j][0], centers[i][j][1]);
-                 //rc.setIndicatorDot(bob, 255, 40*i, 0);
-             }
-         }
-         return centers;
+     MapLocation getCenterFromTileNumber(int tnum) throws GameActionException {
+         int col = tnum % numCols;
+         int row = tnum / numCols;
+         int centerx = Math.min(squareWidth*col + squareWidth/2, MAP_WIDTH-1);
+         int centery = Math.min(squareHeight*row + squareHeight/2, MAP_HEIGHT-1);
+         MapLocation centerLoc = new MapLocation(centerx, centery);
+         return centerLoc;
      }
 
      MapLocation getGridCenter(MapLocation loc) throws GameActionException {
          int centerx = loc.x/squareWidth;
          int centery = loc.y/squareHeight;
-         MapLocation centerLoc = new MapLocation(centers[centery][centerx][0], centers[centery][centerx][1]);
+         MapLocation centerLoc = new MapLocation(
+                                Math.min(squareWidth*centerx + squareWidth/2, MAP_WIDTH-1),
+                                Math.min(squareHeight*centery + squareHeight/2, MAP_HEIGHT-1));
          return centerLoc;
      }
+
+     MapLocation getGridCenterFromTileNumberNoBoundaries(int tnum) throws GameActionException {
+         int col = tnum % numCols;
+         int row = tnum / numCols;
+         int centerx = squareWidth*col + squareWidth/2;
+         int centery = squareHeight*row + squareHeight/2;
+         MapLocation centerLoc = new MapLocation(centerx, centery);
+         return centerLoc;
+     }
+
+     MapLocation[] getAllCellsFromTileNumber(int tnum) throws GameActionException {
+         MapLocation[] allLocs = new MapLocation[squareWidth*squareHeight];
+         MapLocation center = getGridCenterFromTileNumberNoBoundaries(tnum);
+         for (int i=0; i<squareWidth; i++) {
+             for(int j=0; j<squareHeight; j++) {
+                 MapLocation newLoc = new MapLocation(
+                        Math.min(center.x-squareWidth/2+i, MAP_WIDTH-1),
+                        Math.min(center.y-squareHeight/2+j, MAP_HEIGHT-1));
+                 allLocs[i*squareWidth+j] = newLoc;
+             }
+         }
+         return allLocs;
+     }
+
+     //TODO: Better, easily invertible function
+    int soupToPower(int soupAmount) {
+        return Math.min((soupAmount+99)/100, 63);
+    }
 
     int getTileNumber(MapLocation loc) throws GameActionException {
         MapLocation centerLoc = getGridCenter(loc);
@@ -201,7 +219,7 @@ public abstract class Robot {
         if(centerLoc.y == MAP_HEIGHT-1) {
             ynum = numRows-1;
         }
-        return ynum*(numCols-1) + xnum;
+        return ynum*(numCols) + xnum;
     }
 
     boolean sendMessage(int[] message, int bid) throws GameActionException {
