@@ -38,6 +38,8 @@ public abstract class Unit extends Robot {
         }
         historySet.put(loc, HISTORY_SIZE);
         dir = null;
+        facing = null;
+        time = 0;
     }
 
     @Override
@@ -112,7 +114,7 @@ public abstract class Unit extends Robot {
         }
     }
 
-    boolean path(MapLocation target) throws GameActionException {
+    public boolean path(MapLocation target) throws GameActionException {
         System.out.println("Pathing to: " + target);
         if (rc.getCooldownTurns() >= 1)
             return true;
@@ -157,13 +159,13 @@ public abstract class Unit extends Robot {
                 Direction l = left(facing);
                 if (canMove(l) && dir != Hand.RIGHT) {
                     dir = Hand.LEFT;
-                    tryMove(l);
+                    go(l);
                     return true;
                 }
                 Direction r = right(facing);
                 if (canMove(r) && dir != Hand.LEFT) {
                     dir = Hand.RIGHT;
-                    tryMove(r);
+                    go(r);
                     return true;
                 }
             }
@@ -171,13 +173,13 @@ public abstract class Unit extends Robot {
                 Direction r = right(facing);
                 if (canMove(r) && dir != Hand.LEFT) {
                     dir = Hand.RIGHT;
-                    tryMove(r);
+                    go(r);
                     return true;
                 }
                 Direction l = left(facing);
                 if (canMove(l) && dir != Hand.RIGHT) {
                     dir = Hand.LEFT;
-                    tryMove(l);
+                    go(l);
                     return true;
                 }
             }
@@ -188,7 +190,7 @@ public abstract class Unit extends Robot {
         dir = null;
         time = 0;
         if (facing != null && canMove(facing)) {
-            tryMove(facing);
+            go(facing);
             facing = null;
             return true;
         }
@@ -196,10 +198,15 @@ public abstract class Unit extends Robot {
         return pathHelper(target, best);
     }
 
+    protected void go(Direction d) throws GameActionException {
+        tryMove(d);
+        myLocation = rc.getLocation();
+    }
+
     protected boolean pathHelper(MapLocation target, Direction best) throws GameActionException {
         if (best != null) {
             stuck = 0;
-            tryMove(best);
+            go(best);
             return true;
         } else {
             if (!hasHistory) {
