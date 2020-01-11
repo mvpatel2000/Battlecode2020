@@ -96,7 +96,7 @@ public class Miner extends Unit {
     public void refineryCheck() throws GameActionException {
         RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         for (RobotInfo robot : robots) {
-            if (robot.getType() == RobotType.REFINERY || robot.getType() == RobotType.HQ) {
+            if (robot.getType() == RobotType.REFINERY || (robot.getType() == RobotType.HQ && rc.getRoundNum() < 100) ) {
                 if (myLocation.distanceSquaredTo(robot.getLocation()) < myLocation.distanceSquaredTo(baseLocation)) {
                     baseLocation = robot.getLocation();
                 }

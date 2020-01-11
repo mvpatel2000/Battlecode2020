@@ -47,13 +47,10 @@ public class DeliveryDrone extends Unit {
     public void run()  throws GameActionException  {
         super.run();
         if (rc.getRoundNum() > 300) {
-            destination = destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
+            destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
         }
-        System.out.println(hqLocation +" " + baseLocation);
-
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
-
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
@@ -132,7 +129,6 @@ public class DeliveryDrone extends Unit {
 
     // Returns location of nearest water
     public MapLocation updateNearestWaterLocation() throws GameActionException {
-        int scanRadius = rc.getCurrentSensorRadiusSquared();
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
         if (nearestWaterLocation != null && !(rc.canSenseLocation(nearestWaterLocation) && rc.senseSoup(nearestWaterLocation) == 0)) {
