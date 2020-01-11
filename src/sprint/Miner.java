@@ -58,9 +58,9 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
-                if (!fulfillmentCenterExists) {
-                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-                }
+                // if (!fulfillmentCenterExists) {
+                //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+                // }
                 // build d.school
                 if (!dSchoolExists) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
@@ -117,7 +117,7 @@ public class Miner extends Unit {
             //TODO: Handle case where you dont have enough resources and then are stuck? I think soln is better pathing so it can get back
             //build new refinery!
             for (Direction dir : directions) {
-                if (rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)) {
+                if (rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) { // TODO: add check for fulfillmentCenterExists
                     rc.buildRobot(RobotType.REFINERY, dir);
                     baseLocation = myLocation.add(dir);
                 }
