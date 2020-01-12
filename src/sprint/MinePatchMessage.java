@@ -6,7 +6,7 @@ import java.util.Comparator;
 public class MinePatchMessage extends Message {
 
     Message m;
-    final int mpmSchema = 2; //MinePatchMessages are message type 1
+    final int mpmSchema = 2; //MinePatchMessages are message type 2
     final int MAX_PATCHES;
     int numPatchesWritten;
     int[] patches;

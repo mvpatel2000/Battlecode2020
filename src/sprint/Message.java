@@ -1,8 +1,6 @@
 package sprint;
 
 import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Comparator;
 
 public class Message {
 
@@ -62,11 +60,16 @@ public class Message {
      * The following methods are helpful for reading messages.
      *
      */
+     //Returns true if header matches our team's header
+     //Always check before using message content.
      boolean getOrigin() {
          return readFromArray(0, 16) == arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
      }
 
-
+     //Type of message
+     //After recieving a message, use this
+     //Then construct a message of a subclass
+     //depending on the schema (e.g. create a SoupMessage if getSchema() = 1).
      int getSchema() {
          return readFromArray(headerLen, schemaLen);
      }
@@ -97,9 +100,15 @@ public class Message {
         return msgLen - writtenTo;
     }
 
+    /*
+     * Low-level read and write methods based on bit masking.
+     * Reading and writing are supported for any number of length 0-32 bits (inclusive)
+     * Takes constant time regardless of length of number written.
+     */
+
     //Can only write numbers of length 0 to 32
     //It is up to the caller to provide enough bits to write the number
-    //Otherwise, the function will not work. It will only write the first n
+    //Otherwise, the function will not work. It will only write the first numBits
     //digits.
     //If providing a number with excess bits (numBits >> 2^value), the number will be
     //at the right end of the slot (the excess bits will be turned into leading zeros).
@@ -141,8 +150,8 @@ public class Message {
     }
 
      //Bits are zero indexed. Put the bit you want to begin reading read from,
-     //_ _ _ 0 1 0 _ , so reading 010, starting from the 0 would be readfromArray(4, 3)
-     //Reading from the second integer requires a beginBit>32.
+     //_ _ _ 0 1 0 _ , so reading 010, starting from the 0 would be readfromArray(3, 3)
+     //beginBit can be anywhere in [0, 32*7-1].
     int readFromArray(int beginBit, int numBits) {
         int arrIndexStart = intIndex(beginBit);
         int arrIndexEnd = intIndex(numBits+beginBit-1);
