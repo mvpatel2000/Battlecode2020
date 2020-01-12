@@ -38,6 +38,8 @@ public abstract class Unit extends Robot {
         }
         historySet.put(loc, HISTORY_SIZE);
         dir = null;
+        facing = null;
+        time = 0;
     }
 
     @Override
@@ -90,19 +92,20 @@ public abstract class Unit extends Robot {
         return itr.next();
     }
 
-    private Direction left(Direction in) {
+
+    protected Direction right(Direction in) {
         return intToDirection((directionToInt(in) + 2) % 8);
     }
 
-    private Direction right(Direction in) {
+    protected Direction left(Direction in) {
         return intToDirection((directionToInt(in) + 6) % 8);
     }
 
-    private Direction adj(Direction in, int k) {
+    protected Direction adj(Direction in, int k) {
         return intToDirection((directionToInt(in) + k) % 8);
     }
 
-    private boolean canMove(Direction in) {
+    protected boolean canMove(Direction in) {
         MapLocation me = history.peekFirst().add(in);
         try {
             return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me);
@@ -112,7 +115,7 @@ public abstract class Unit extends Robot {
         }
     }
 
-    boolean path(MapLocation target) throws GameActionException {
+    public boolean path(MapLocation target) throws GameActionException {
         System.out.println("Pathing to: " + target);
         if (rc.getCooldownTurns() >= 1)
             return true;
@@ -154,30 +157,30 @@ public abstract class Unit extends Robot {
                 facing = best;
             }
             if (rand == 1) {
-                Direction l = left(facing);
+                Direction l = right(facing);
                 if (canMove(l) && dir != Hand.RIGHT) {
                     dir = Hand.LEFT;
-                    tryMove(l);
+                    go(l);
                     return true;
                 }
-                Direction r = right(facing);
+                Direction r = left(facing);
                 if (canMove(r) && dir != Hand.LEFT) {
                     dir = Hand.RIGHT;
-                    tryMove(r);
+                    go(r);
                     return true;
                 }
             }
             if (rand == 0) {
-                Direction r = right(facing);
+                Direction r = left(facing);
                 if (canMove(r) && dir != Hand.LEFT) {
                     dir = Hand.RIGHT;
-                    tryMove(r);
+                    go(r);
                     return true;
                 }
-                Direction l = left(facing);
+                Direction l = right(facing);
                 if (canMove(l) && dir != Hand.RIGHT) {
                     dir = Hand.LEFT;
-                    tryMove(l);
+                    go(l);
                     return true;
                 }
             }
@@ -188,7 +191,7 @@ public abstract class Unit extends Robot {
         dir = null;
         time = 0;
         if (facing != null && canMove(facing)) {
-            tryMove(facing);
+            go(facing);
             facing = null;
             return true;
         }
@@ -196,11 +199,15 @@ public abstract class Unit extends Robot {
         return pathHelper(target, best);
     }
 
+    protected void go(Direction d) throws GameActionException {
+        tryMove(d);
+        myLocation = rc.getLocation();
+    }
+
     protected boolean pathHelper(MapLocation target, Direction best) throws GameActionException {
         if (best != null) {
             stuck = 0;
-            tryMove(best);
-            myLocation = rc.getLocation();
+            go(best);
             return true;
         } else {
             if (!hasHistory) {

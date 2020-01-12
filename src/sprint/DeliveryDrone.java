@@ -111,7 +111,7 @@ public class DeliveryDrone extends Unit {
     }
 
     @Override
-    boolean path(MapLocation target) throws GameActionException {
+    public boolean path(MapLocation target) throws GameActionException {
         MapLocation me = history.peekFirst();
         if (me.equals(target)) {
             return false;
