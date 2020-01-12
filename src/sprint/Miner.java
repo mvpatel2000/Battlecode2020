@@ -139,7 +139,6 @@ public class Miner extends Unit {
 
     // Returns location of nearest soup
     public MapLocation updateNearestSoupLocation() throws GameActionException {
-        int scanRadius = rc.getCurrentSensorRadiusSquared();
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
         if (destination != null && !(rc.canSenseLocation(destination) && rc.senseSoup(destination) == 0)) {
@@ -164,6 +163,7 @@ public class Miner extends Unit {
 
 //        System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         Iterator<MapLocation> soupIterator = soupLocations.iterator();
+        int scanRadius = rc.getCurrentSensorRadiusSquared();
         while (soupIterator.hasNext()) {
             MapLocation soupLocation = soupIterator.next();
             int soupDistance = myLocation.distanceSquaredTo(soupLocation);
