@@ -42,6 +42,11 @@ public abstract class Unit extends Robot {
         hasHistory = true;
     }
 
+    protected Direction adj(Direction in, int k) {
+        return intToDirection((directionToInt(in) + k) % 8);
+    }
+
+
     boolean tryMove() throws GameActionException {
         for (Direction dir : directions)
             if (tryMove(dir))

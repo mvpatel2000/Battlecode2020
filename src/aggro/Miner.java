@@ -18,7 +18,6 @@ public class Miner extends Unit {
     List<MapLocation> target;
     boolean aggroDone;
 
-
     //TODO: Need another int[] to read soup Priorities
     //given by HQ. Check comment in updateActiveLocations.
     int[] soupMiningTiles;
@@ -33,7 +32,7 @@ public class Miner extends Unit {
         if (aggro) {
             target = new ArrayList<>();
             MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->
-                                x.getType().equals(RobotType.HQ) && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new)[0].location;
+                    x.getType().equals(RobotType.HQ) && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new)[0].location;
             if (rc.getMapWidth() > rc.getMapHeight()) {
                 target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y));
                 target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1));
@@ -68,13 +67,31 @@ public class Miner extends Unit {
         super.run();
 
         if (aggro) {
+            if (aggroDone && !target.isEmpty() && myLocation.distanceSquaredTo(target.get(0)) < 3 && Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                    x.getLocation().distanceSquaredTo(target.get(0)) < 3 && x.getType().equals(RobotType.LANDSCAPER)
+                            && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new).length >= 3) {
+                path(myLocation.add(adj(toward(myLocation, target.get(0)), 4)));
+                return;
+            }
+            if (aggroDone && !target.isEmpty() && Arrays.stream(rc.senseNearbyRobots()).anyMatch(x ->
+                    !x.getTeam().equals(rc.getTeam()) &&
+                            (x.getType().equals(RobotType.DELIVERY_DRONE)
+                                    || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
+                    && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
+                for (Direction d : directions) {
+                    if (myLocation.add(d).distanceSquaredTo(target.get(0)) > 2 && rc.canBuildRobot(RobotType.NET_GUN, d)) {
+                        rc.buildRobot(RobotType.NET_GUN, d);
+                        return;
+                    }
+                }
+            }
             if (target.isEmpty() || aggroDone)
                 return;
             RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
             if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                     && myLocation.distanceSquaredTo(target.get(0)) < 3) {
                 for (Direction d : directions)
-                    if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && myLocation.add(d).distanceSquaredTo(target.get(0)) < 3) {
+                    if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && myLocation.add(d).distanceSquaredTo(target.get(0)) < 2) {
                         rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
                         aggroDone = true;
                         return;
