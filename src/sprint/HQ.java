@@ -4,6 +4,7 @@ import battlecode.common.*;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class HQ extends Building {
 
@@ -21,6 +22,10 @@ public class HQ extends Building {
         refinery = new Refinery(rc);
         minerCount = 0;
         initialScan();
+        soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
+        soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
+        soupsPerTile.add(new int[]{getTileNumber(new MapLocation(myLocation.x, MAP_HEIGHT - myLocation.y - 1)), -1});
+        System.out.println((MAP_WIDTH-myLocation.x-1)+" " + (MAP_HEIGHT-myLocation.y-1));
         /*
         for(int i=0; i<numRows*numCols; i++) {
             MapLocation cen = getCenterFromTileNumber(i);
@@ -78,7 +83,7 @@ public class HQ extends Building {
                 }
                 MapLocation cen = getCenterFromTileNumber(x[0]);
                 rc.setIndicatorDot(cen, 255, 0, 255);
-                m.writePatch(x[0], 1); //TODO: use x[1] in the future
+                m.writePatch(x[0], soupToPower(x[1]));
 
                 if(i==soupsPerTile.size()-1) {
                     lastPatchNum = x[0];

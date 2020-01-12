@@ -186,8 +186,7 @@ public abstract class Robot {
          int row = tnum / numCols;
          int centerx = squareWidth*col + squareWidth/2;
          int centery = squareHeight*row + squareHeight/2;
-         MapLocation centerLoc = new MapLocation(centerx, centery);
-         return centerLoc;
+         return new MapLocation(centerx, centery);
      }
 
      MapLocation[] getAllCellsFromTileNumber(int tnum) throws GameActionException {
@@ -206,7 +205,9 @@ public abstract class Robot {
 
      //TODO: Better, easily invertible function
     int soupToPower(int soupAmount) {
-        return Math.min((soupAmount+99)/100, 63);
+         if (soupAmount == -1)
+             return 63;
+         return Math.min((soupAmount+99)/100, 62); // 63 is used for HQ search
     }
 
     int getTileNumber(MapLocation loc) throws GameActionException {
