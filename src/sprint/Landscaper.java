@@ -1,6 +1,7 @@
 package sprint;
 
 import java.util.*;
+
 import battlecode.common.*;
 
 // TODO: heal d.school if it is being attacked.  Haven't started this yet; it is straightforward if in lategame.  But it is nontrivial if in early game.
@@ -56,8 +57,7 @@ public class Landscaper extends Unit {
             updateHoldPositionLoc();
             System.out.println("My hold position location: ");
             System.out.println(holdPositionLoc);
-        }
-        else {
+        } else {
             System.out.println("I am an offensive landscaper");
         }
     }
@@ -65,7 +65,7 @@ public class Landscaper extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        
+
         updateNearbyBots();
 
         if (defensive) {
@@ -79,14 +79,12 @@ public class Landscaper extends Unit {
             if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc
                 System.out.println("Pathing towards my holdPositionLoc: " + holdPositionLoc.toString());
                 path(holdPositionLoc);
-            }
-            else { // i have already reached my position in the turtle, and can now do the dirty work
+            } else { // i have already reached my position in the turtle, and can now do the dirty work
                 if (wallPhase < 2) { // i am an inner landscaper
                     if (rc.canDigDirt(hqDir)) { // first priority: heal HQ
                         System.out.println("Healing HQ");
                         tryDig(hqDir);
-                    }
-                    else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
+                    } else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
                         Direction digDir = hqDir.opposite();
                         if (baseDist == 2) {
                             digDir = hqDir.rotateRight().rotateRight();
@@ -96,28 +94,26 @@ public class Landscaper extends Unit {
                         }
                         System.out.println("Digging dirt from direction " + digDir.toString());
                         tryDig(digDir);
-                    }
-                    else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
+                    } else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
                         System.out.println("Dumping dirt under myself");
                         tryDeposit(Direction.CENTER);
-                    }
-                    else { // inner wall tight; distribute to the lowest point of the inner wall around it
+                    } else { // inner wall tight; distribute to the lowest point of the inner wall around it
                         Direction dump = Direction.CENTER;
                         int height = rc.senseElevation(myLocation.add(dump));
-                        if(rc.senseElevation(myLocation.add(hqDir.rotateLeft())) < height) { // check rotate left
+                        if (rc.senseElevation(myLocation.add(hqDir.rotateLeft())) < height) { // check rotate right
                             dump = hqDir.rotateLeft();
                             height = rc.senseElevation(myLocation.add(hqDir.rotateLeft()));
                         }
-                        if(rc.senseElevation(myLocation.add(hqDir.rotateRight())) < height) { // check rotate right
+                        if (rc.senseElevation(myLocation.add(hqDir.rotateRight())) < height) { // check rotate left
                             dump = hqDir.rotateRight();
                             height = rc.senseElevation(myLocation.add(hqDir.rotateRight()));
                         }
                         if (baseDist == 1) {
-                            if(rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft())) < height) {
+                            if (rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft())) < height) {
                                 dump = hqDir.rotateLeft().rotateLeft();
                                 height = rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft()));
                             }
-                            if(rc.senseElevation(myLocation.add(hqDir.rotateRight().rotateRight())) < height) {
+                            if (rc.senseElevation(myLocation.add(hqDir.rotateRight().rotateRight())) < height) {
                                 dump = hqDir.rotateRight().rotateRight();
                                 height = rc.senseElevation(myLocation.add(hqDir.rotateRight().rotateRight()));
                             }
@@ -125,24 +121,55 @@ public class Landscaper extends Unit {
                         System.out.println("Dumping dirt in direction " + dump.toString());
                         tryDeposit(dump);
                     }
-                }
-                else if (wallPhase == 2) { // i am an outer landscaper
+                } else if (wallPhase == 2) { // i am an outer landscaper
                     if (rc.getDirtCarrying() == 0) { // dig dirt.  Note that outer landscapers keep their dirt at 0 or 1 while inner landscapers keep their dirt maximized.
                         // TODO: handle the case where we can't dig where we want to because of buildings, e.g. enemy net guns.
                         System.out.println("Digging dirt from direction " + outerRingDig[outerRingIndex]);
                         tryDig(outerRingDig[outerRingIndex]);
-                    }
-                    else if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION) { // deposit under myself if i'm not tall enough yet
+                    } else if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION) { // deposit under myself if i'm not tall enough yet
                         System.out.println("Dumping dirt under myself");
                         tryDeposit(Direction.CENTER);
-                    }
-                    else {
+                    } else {
                         System.out.println("Dumping dirt in direction " + outerRingDeposit[outerRingIndex].toString());
                         tryDeposit(outerRingDeposit[outerRingIndex]);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Attack-path to provided hq location
+     */
+    public boolean attack(MapLocation hq) throws GameActionException {
+        RobotInfo target = Arrays.stream(rc.senseNearbyRobots()) // get closest enemy structure
+                .filter(x -> (x.getType().equals(RobotType.HQ)
+                        || x.getType().equals(RobotType.DESIGN_SCHOOL)
+                        || x.getType().equals(RobotType.FULFILLMENT_CENTER)) && !x.team.equals(rc.getTeam()))
+                .min(Comparator.comparingInt(x -> x.getLocation().distanceSquaredTo(myLocation))).orElse(null);
+        if (target == null) {
+            return path(hq); // go to provided hq location
+        }
+        Direction d = toward(myLocation, target.getLocation());
+        if (myLocation.add(d).equals(target.getLocation())) { // attack adjacent building
+            if (!tryDeposit(d)) {
+                tryDig(adj(d, 4));
+            }
+            return true;
+        }
+
+        if (target.getType().equals(RobotType.HQ) && myLocation.add(d).distanceSquaredTo(target.getLocation()) < 3) {
+            if (canMove(d)) { // charge headquarter
+                tryMove(d);
+                return true;
+            } else {
+                if (!tryDig(d)) { // dig into wall
+                    tryDeposit(adj(d, 4));
+                }
+                return true;
+            }
+        }
+        return path(target.getLocation()); // approach target
     }
 
     boolean tryDeposit(Direction dir) throws GameActionException {
@@ -207,8 +234,7 @@ public class Landscaper extends Unit {
                     }
                 }
             }
-        }
-        else {
+        } else {
             if (rc.senseElevation(myLocation) < -5 || rc.senseElevation(myLocation) > 10) { // I am in a pit/hill, just stay
                 holdPositionLoc = myLocation;
                 for (int i = 0; i < 16; i++) { // update outerRingIndex
@@ -218,8 +244,7 @@ public class Landscaper extends Unit {
                 }
                 // TODO: there's a random edge case where a landscaper gets stuck in a pit/hill but is not part of the outer wall.
                 // I don't handle this for now.
-            }
-            else {
+            } else {
                 holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
                 while (nearbyBotsMap.containsKey(holdPositionLoc) || (rc.canSenseLocation(holdPositionLoc) && (rc.senseElevation(holdPositionLoc) < -5 || rc.senseElevation(holdPositionLoc) > 10))) {
                     // if the holdposition is occupied or is a pit/hill that we can't path to, then try the next holdposition in the ring

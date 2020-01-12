@@ -5,19 +5,27 @@ import battlecode.common.*;
 import java.util.*;
 
 public abstract class Unit extends Robot {
+
     private enum Hand {LEFT, RIGHT}
 
     protected Deque<MapLocation> history;
     protected Map<MapLocation, Integer> historySet;
     protected boolean hasHistory;
     protected int stuck;
+    protected Direction facing;
+    protected Hand dir;
+    protected int rand;
+    protected int time;
 
-    public static int HISTORY_SIZE = 30;
+    public static int HISTORY_SIZE = 5;
 
     public Unit(RobotController rc) throws GameActionException {
         super(rc);
         stuck = 0;
         clearHistory();
+        facing = null;
+        dir = null;
+        rand = 0;
     }
 
     public void clearHistory() {
@@ -29,6 +37,9 @@ public abstract class Unit extends Robot {
             history.addFirst(loc);
         }
         historySet.put(loc, HISTORY_SIZE);
+        dir = null;
+        facing = null;
+        time = 0;
     }
 
     @Override
@@ -81,30 +92,122 @@ public abstract class Unit extends Robot {
         return itr.next();
     }
 
-    boolean path(MapLocation target) throws GameActionException {
+
+    protected Direction right(Direction in) {
+        return intToDirection((directionToInt(in) + 2) % 8);
+    }
+
+    protected Direction left(Direction in) {
+        return intToDirection((directionToInt(in) + 6) % 8);
+    }
+
+    protected Direction adj(Direction in, int k) {
+        return intToDirection((directionToInt(in) + k) % 8);
+    }
+
+    protected boolean canMove(Direction in) {
+        MapLocation me = history.peekFirst().add(in);
+        try {
+            return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me);
+        } catch (GameActionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean path(MapLocation target) throws GameActionException {
+        System.out.println("Pathing to: " + target);
+        if (rc.getCooldownTurns() >= 1)
+            return true;
         MapLocation me = history.peekFirst();
         if (me.equals(target)) {
             return false;
         }
-        Direction best = Arrays.stream(directions).filter(x -> {
-            try {
-                MapLocation next = me.add(x);
-                return rc.canMove(x) && !(rc.canSenseLocation(next) && rc.senseFlooding(next))
-                        && historySet.getOrDefault(next, 0) == 0
-                        && !(me.add(toward(me, history.peekLast())).equals(next));
-            } catch (GameActionException e) {
-                return false;
+        double cost = Double.POSITIVE_INFINITY;
+        Direction best = null;
+        double pcost = Double.POSITIVE_INFINITY;
+        Direction pbest = null;
+        for (Direction x : directions) {
+            MapLocation next = me.add(x);
+            int tmpcost = next.distanceSquaredTo(target);
+            if (tmpcost < cost) {
+                cost = tmpcost;
+                best = x;
             }
-        }).min(Comparator.comparing(x ->
-                me.add(x).distanceSquaredTo(target))).orElse(null);
+            if (tmpcost < pcost && canMove(x)) {
+                pcost = tmpcost;
+                pbest = x;
+            }
+        }
+        int itr = 0;
+        if (Math.random() < 0.2 && dir == null) {
+            return pathHelper(target, pbest);
+        }
+        while ((dir != null && !canMove(facing)) || (dir == null && !canMove(best))) {
+            if (itr == 0)
+                time++;
+            if (time == 10)
+                break;
+            itr++;
+            if (dir == null) {
+                if (Math.random() < 0.5)
+                    rand = 1 - rand;
+                if (Math.random() < 0.3)
+                    best = adj(best, rand * 2 + 7);
+                facing = best;
+            }
+            if (rand == 1) {
+                Direction l = right(facing);
+                if (canMove(l) && dir != Hand.RIGHT) {
+                    dir = Hand.LEFT;
+                    go(l);
+                    return true;
+                }
+                Direction r = left(facing);
+                if (canMove(r) && dir != Hand.LEFT) {
+                    dir = Hand.RIGHT;
+                    go(r);
+                    return true;
+                }
+            }
+            if (rand == 0) {
+                Direction r = left(facing);
+                if (canMove(r) && dir != Hand.LEFT) {
+                    dir = Hand.RIGHT;
+                    go(r);
+                    return true;
+                }
+                Direction l = right(facing);
+                if (canMove(l) && dir != Hand.RIGHT) {
+                    dir = Hand.LEFT;
+                    go(l);
+                    return true;
+                }
+            }
+            if (itr == 8)
+                break;
+            facing = adj(facing, rand * 2 + 7);
+        }
+        dir = null;
+        time = 0;
+        if (facing != null && canMove(facing)) {
+            go(facing);
+            facing = null;
+            return true;
+        }
+        facing = null;
         return pathHelper(target, best);
+    }
+
+    protected void go(Direction d) throws GameActionException {
+        tryMove(d);
+        myLocation = rc.getLocation();
     }
 
     protected boolean pathHelper(MapLocation target, Direction best) throws GameActionException {
         if (best != null) {
             stuck = 0;
-            tryMove(best);
-            myLocation = rc.getLocation();
+            go(best);
             return true;
         } else {
             if (!hasHistory) {
@@ -123,22 +226,21 @@ public abstract class Unit extends Robot {
         }
     }
 
-
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
         int mindist = 50000;
         Direction bestdir = null;
         for (Direction dir : directions) {
-            if(rc.canMove(dir)) {
+            if (rc.canMove(dir)) {
                 MapLocation newLoc = myLocation.add(dir);
                 int thisdist = newLoc.distanceSquaredTo(target);
-                if(thisdist < mindist) {
+                if (thisdist < mindist) {
                     mindist = thisdist;
                     bestdir = dir;
                 }
             }
         }
 
-        if(bestdir == null) {
+        if (bestdir == null) {
             return false;
         } else {
             tryMove(bestdir);
