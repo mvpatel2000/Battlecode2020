@@ -62,10 +62,48 @@ public class Miner extends Unit {
             readMessage = true;
         }
 
+        checkBuildBuildings();
+
         harvest();
         //TODO: Modify Harvest to build refineries if mining location > some dist from base
         //TODO: Handle case where no stuff found. Switch to explore mode
     }
+
+    public void checkBuildBuildings() throws GameActionException {
+        if (!rc.isReady())
+            return;
+        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(),allyTeam);
+        boolean existsNetGun = false;
+        boolean existsDesignSchool = false;
+        boolean existsFulfillmentCenter = false;
+        for (RobotInfo robot : allyRobots) {
+            switch (robot.getType()) {
+                case NET_GUN:
+                    existsNetGun = true;
+                    break;
+                case DESIGN_SCHOOL:
+                    existsDesignSchool = true;
+                    break;
+                case FULFILLMENT_CENTER:
+                    existsFulfillmentCenter = true;
+                    break;
+            }
+        }
+        if (rc.getTeamSoup() > 1000) {
+            for (Direction dir : directions) {
+                if (!existsNetGun) {
+                    tryBuild(RobotType.NET_GUN, dir);
+                } else if (!existsDesignSchool) {
+                    tryBuild(RobotType.DESIGN_SCHOOL, dir);
+                } else if (!existsFulfillmentCenter) {
+                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+                } else {
+                    tryBuild(RobotType.VAPORATOR, dir);
+                }
+            }
+        }
+    }
+
 
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
