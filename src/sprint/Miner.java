@@ -48,9 +48,7 @@ public class Miner extends Unit {
 
         readMessage = false;
         if (rc.getRoundNum() % 5 == 4) {
-            //int jbInit = Clock.getBytecodeNum();
             updateActiveLocations(destination);
-            //System.out.println("Miner update active locs takes " + Integer.toString(Clock.getBytecodeNum()-jbInit) + " bytecode.");
             readMessage = true;
         }
 
@@ -79,9 +77,6 @@ public class Miner extends Unit {
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
-                    if (!readMessage) {
-                        updateActiveLocations(destination);
-                    }
                     destination = updateNearestSoupLocation();
                     clearHistory();
                 }
@@ -89,9 +84,6 @@ public class Miner extends Unit {
             else {                                                            // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {
-                    if (!readMessage) {
-                        updateActiveLocations(destination);
-                    }
                     sendSoupMessageIfShould(destination, true);
                     destination = updateNearestSoupLocation();
                 }
@@ -108,7 +100,7 @@ public class Miner extends Unit {
         }
         else {                                                                // in transit
             path(destination);
-            if (destination != baseLocation) {                                // keep checking soup location
+            if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
             }
         }
