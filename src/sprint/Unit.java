@@ -92,19 +92,20 @@ public abstract class Unit extends Robot {
         return itr.next();
     }
 
-    private Direction left(Direction in) {
+
+    protected Direction right(Direction in) {
         return intToDirection((directionToInt(in) + 2) % 8);
     }
 
-    private Direction right(Direction in) {
+    protected Direction left(Direction in) {
         return intToDirection((directionToInt(in) + 6) % 8);
     }
 
-    private Direction adj(Direction in, int k) {
+    protected Direction adj(Direction in, int k) {
         return intToDirection((directionToInt(in) + k) % 8);
     }
 
-    private boolean canMove(Direction in) {
+    protected boolean canMove(Direction in) {
         MapLocation me = history.peekFirst().add(in);
         try {
             return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me);
@@ -156,13 +157,13 @@ public abstract class Unit extends Robot {
                 facing = best;
             }
             if (rand == 1) {
-                Direction l = left(facing);
+                Direction l = right(facing);
                 if (canMove(l) && dir != Hand.RIGHT) {
                     dir = Hand.LEFT;
                     go(l);
                     return true;
                 }
-                Direction r = right(facing);
+                Direction r = left(facing);
                 if (canMove(r) && dir != Hand.LEFT) {
                     dir = Hand.RIGHT;
                     go(r);
@@ -170,13 +171,13 @@ public abstract class Unit extends Robot {
                 }
             }
             if (rand == 0) {
-                Direction r = right(facing);
+                Direction r = left(facing);
                 if (canMove(r) && dir != Hand.LEFT) {
                     dir = Hand.RIGHT;
                     go(r);
                     return true;
                 }
-                Direction l = left(facing);
+                Direction l = right(facing);
                 if (canMove(l) && dir != Hand.RIGHT) {
                     dir = Hand.LEFT;
                     go(l);
