@@ -42,6 +42,20 @@ public abstract class Unit extends Robot {
         hasHistory = true;
     }
 
+    protected Direction adj(Direction in, int k) {
+        return intToDirection((directionToInt(in) + k) % 8);
+    }
+
+    protected boolean canMove(Direction in) {
+        MapLocation me = history.peekFirst().add(in);
+        try {
+            return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me);
+        } catch (GameActionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     boolean tryMove() throws GameActionException {
         for (Direction dir : directions)
             if (tryMove(dir))
@@ -123,22 +137,21 @@ public abstract class Unit extends Robot {
         }
     }
 
-
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
         int mindist = 50000;
         Direction bestdir = null;
         for (Direction dir : directions) {
-            if(rc.canMove(dir)) {
+            if (rc.canMove(dir)) {
                 MapLocation newLoc = myLocation.add(dir);
                 int thisdist = newLoc.distanceSquaredTo(target);
-                if(thisdist < mindist) {
+                if (thisdist < mindist) {
                     mindist = thisdist;
                     bestdir = dir;
                 }
             }
         }
 
-        if(bestdir == null) {
+        if (bestdir == null) {
             return false;
         } else {
             tryMove(bestdir);
