@@ -17,6 +17,7 @@ public class Miner extends Unit {
     boolean aggro;
     List<MapLocation> target;
     boolean aggroDone;
+    Direction sideStep;
 
     //TODO: Need another int[] to read soup Priorities
     //given by HQ. Check comment in updateActiveLocations.
@@ -73,6 +74,18 @@ public class Miner extends Unit {
                 path(myLocation.add(adj(toward(myLocation, target.get(0)), 4)));
                 return;
             }
+            if (aggroDone && sideStep != null) {
+                for (Direction d : directions) {
+                    if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 3
+                            && myLocation.add(d).distanceSquaredTo(myLocation.add(sideStep)) > 2
+                            && canMove(d)) {
+                        tryMove(d);
+                        sideStep = null;
+                        return;
+                    }
+                }
+                return;
+            }
             if (aggroDone && !target.isEmpty() && Arrays.stream(rc.senseNearbyRobots()).anyMatch(x ->
                     !x.getTeam().equals(rc.getTeam()) &&
                             (x.getType().equals(RobotType.DELIVERY_DRONE)
@@ -94,6 +107,7 @@ public class Miner extends Unit {
                     if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && myLocation.add(d).distanceSquaredTo(target.get(0)) < 2) {
                         rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
                         aggroDone = true;
+                        sideStep = d;
                         return;
                     }
                 return;
@@ -112,7 +126,9 @@ public class Miner extends Unit {
         }
 
         readMessage = false;
-        if (rc.getRoundNum() % 5 == 4) {
+        if (rc.getRoundNum() % 5 == 4)
+
+        {
             updateActiveLocations(destination);
             readMessage = true;
         }
