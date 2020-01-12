@@ -4,29 +4,26 @@ import battlecode.common.*;
 
 public class DesignSchool extends Building {
 
-    MapLocation baseLocation;
+    MapLocation hqLocation = null;
     boolean defensive;
-    boolean primaryDefensive; // For now only the primary defensive d.school does anything.
+    boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
-    int closeInnerWallAt;
+    int DEFAULT_CLOSE_INNER_WALL_AT = 300;
+    int closeInnerWallAt = DEFAULT_CLOSE_INNER_WALL_AT; // TODO: tweak this
 
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
         //System.out.println(myLocation);
-        baseLocation = null;
         int hqID = rc.getTeam().equals(Team.valueOf("A")) ? 0 : 1;
         defensive = rc.canSenseRobot(hqID);
-        primaryDefensive = false;
         if (defensive) {
-            RobotInfo baseInfo = rc.senseRobot(hqID);
-            baseLocation = baseInfo.location;
+            RobotInfo hqInfo = rc.senseRobot(hqID);
+            hqLocation = hqInfo.location;
             //System.out.println("I am a defensive d.school. Found our HQ:");
-            //System.out.println(baseInfo);
+            //System.out.println(hqInfo);
 
             // Determine if I am the primary defensive d.school or if I am an extra.
             primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
-
-            closeInnerWallAt = 300;
         }
 	    else {
 	    	//System.out.println("I am an offensive d.school");
@@ -36,17 +33,34 @@ public class DesignSchool extends Building {
     @Override
     public void run() throws GameActionException  {
     	if (existsNearbyEnemy()) {
+    		//System.out.println("Enemy detected!  I will hurry and close this wall.");
     		closeInnerWallAt = 0;
     	}
-        if (primaryDefensive && (numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // primary defensive d.school. TODO: constant 400 should be tweaked
-        	Direction spawnDir = myLocation.directionTo(baseLocation);
-        	for (int i = 8; i > 0; i--) {
-        		if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
-        			numLandscapersMade++;
-        		}
-        		else {
-        			spawnDir = spawnDir.rotateLeft();
-        		}
+        if (primaryDefensive) { // primary defensive d.school.
+        	if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+	        	Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
+	        	for (int i = 8; i > 0; i--) {
+	        		if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+	        			numLandscapersMade++;
+	        		}
+	        		else {
+	        			spawnDir = spawnDir.rotateLeft();
+	        		}
+	        	}
+        	}
+        	else if(numLandscapersMade >= 8 && numLandscapersMade < 19) { // WALL PHASE 2
+        		Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+        		for (int i = 8; i > 0; i--) {
+	        		if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+	        			numLandscapersMade++;
+	        		}
+	        		else {
+	        			spawnDir = spawnDir.rotateRight();
+	        		}
+	        	}
+        	}
+        	else if(numLandscapersMade == 19) {
+        		tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(hqLocation).rotateLeft().rotateLeft());
         	}
         }
     }

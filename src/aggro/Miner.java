@@ -74,7 +74,7 @@ public class Miner extends Unit {
             if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                     && myLocation.distanceSquaredTo(target.get(0)) < 3) {
                 for (Direction d : directions)
-                    if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && myLocation.add(d).distanceSquaredTo(target.get(0)) < 3) {
+                    if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
                         rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
                         aggroDone = true;
                         return;
@@ -118,7 +118,7 @@ public class Miner extends Unit {
                 //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
                 // }
                 // build d.school
-                if (!dSchoolExists) {
+                if (!dSchoolExists && rc.getRoundNum() > 110) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
 

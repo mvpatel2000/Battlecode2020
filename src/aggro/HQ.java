@@ -21,7 +21,7 @@ public class HQ extends Building {
         refinery = new Refinery(rc);
         minerCount = 0;
         for (Direction dir : directions) {
-            if (minerCount < 10 && tryBuild(RobotType.MINER, dir))
+            if (minerCount < 5 && tryBuild(RobotType.MINER, dir))
                 minerCount++;
         }
         initialScan();
@@ -40,8 +40,9 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 10 && tryBuild(RobotType.MINER, dir))
+            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
                 minerCount++;
+            }
         }
         if(rc.getRoundNum()!=1) {
             readMessages();

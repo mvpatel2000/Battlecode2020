@@ -6,7 +6,7 @@ public class FulfillmentCenter extends Building {
 
     int droneCount = 0;
 
-    public FulfillmentCenter(RobotController rc) {
+    public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
     }
 
