@@ -76,11 +76,7 @@ public class HQ extends Building {
                 if(i>=numToSend) {
                     break;
                 }
-                //System.out.print("I am sending patchnum ");
-                //System.out.print(x[0]);
-                //System.out.print(" to the miners");
                 MapLocation cen = getCenterFromTileNumber(x[0]);
-                //System.out.println(cen);
                 rc.setIndicatorDot(cen, 255, 0, 255);
                 m.writePatch(x[0], 1); //TODO: use x[1] in the future
 
@@ -101,10 +97,6 @@ public class HQ extends Building {
 
     void addToSoupList(int tileNum, int soupThere) throws GameActionException {
         boolean added = false;
-        System.out.println("adding " + Integer.toString(tileNum));
-        for(int[] sss : soupsPerTile) {
-            System.out.println("SSI know soup at " + Integer.toString(sss[0]));
-        }
         for(int j=0; j<soupsPerTile.size(); j++) {
             ///////////////////////////////
             //TODO: instead of inserting s.soupThere
@@ -135,10 +127,6 @@ public class HQ extends Building {
                 if(m.schema == 1) {
                     SoupMessage s = new SoupMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
-                        // for(int[] sss : soupsPerTile) {
-                        //     System.out.println("I know soup at " + Integer.toString(sss[0]));
-                        // }
-                        System.out.println("Miners telling me there is no soup at " + Integer.toString(s.tile));
                         //delete from arraylist of soups
                         for(int j=0; j<soupsPerTile.size(); j++) {
                             if(soupsPerTile.get(j)[0]==s.tile) {

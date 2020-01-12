@@ -104,6 +104,7 @@ public abstract class Unit extends Robot {
         if (best != null) {
             stuck = 0;
             tryMove(best);
+            myLocation = rc.getLocation();
             return true;
         } else {
             if (!hasHistory) {
