@@ -27,7 +27,7 @@ public class Miner extends Unit {
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
 
-        aggro = rc.getRoundNum() == 4;
+        aggro = rc.getRoundNum() == 2;
 
         aggroDone = false;
         if (aggro) {
@@ -73,7 +73,12 @@ public class Miner extends Unit {
             RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
             if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                     && myLocation.distanceSquaredTo(target.get(0)) < 3) {
-                aggroDone = true;
+                for (Direction d : directions)
+                    if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && myLocation.add(d).distanceSquaredTo(target.get(0)) < 3) {
+                        rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
+                        aggroDone = true;
+                        return;
+                    }
                 return;
             }
             if (locAt(5).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0))) {

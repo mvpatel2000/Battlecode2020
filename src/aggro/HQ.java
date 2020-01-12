@@ -20,6 +20,10 @@ public class HQ extends Building {
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
+        for (Direction dir : directions) {
+            if (minerCount < 10 && tryBuild(RobotType.MINER, dir))
+                minerCount++;
+        }
         initialScan();
         /*
         for(int i=0; i<numRows*numCols; i++) {
