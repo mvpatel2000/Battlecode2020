@@ -138,7 +138,7 @@ public class DeliveryDrone extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-        System.out.println("start map scan "+Clock.getBytecodeNum());
+        // System.out.println("start map scan "+Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x-5,0); x <= Math.min(myLocation.x+5,MAP_WIDTH-1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
             for (int y : getLocationsToCheck((waterChecked[x] >> Math.max(myLocation.y-5,0)) & 1023)) {
@@ -151,9 +151,9 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
-        System.out.println("end map scan "+Clock.getBytecodeNum());
+        // System.out.println("end map scan "+Clock.getBytecodeNum());
 
-        System.out.println("start find nearest "+Clock.getBytecodeNum());
+        // System.out.println("start find nearest "+Clock.getBytecodeNum());
         Iterator<MapLocation> soupIterator = waterLocations.iterator();
         while (soupIterator.hasNext()) {
             MapLocation soupLocation = soupIterator.next();
@@ -163,7 +163,7 @@ public class DeliveryDrone extends Unit {
                 distanceToNearest = soupDistance;
             }
         }
-        System.out.println("end find nearest "+Clock.getBytecodeNum());
+        // System.out.println("end find nearest "+Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;

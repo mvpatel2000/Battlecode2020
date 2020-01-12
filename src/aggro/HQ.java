@@ -1,4 +1,4 @@
-package sprint;
+package aggro;
 
 import battlecode.common.*;
 import java.util.HashMap;

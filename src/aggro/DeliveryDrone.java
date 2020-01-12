@@ -1,276 +1,174 @@
-package sprint;
+package aggro;
 
 import battlecode.common.*;
 
 import java.util.*;
 
-public class Miner extends Unit {
+public class DeliveryDrone extends Unit {
 
-    long[] soupChecked; // align to top right
-    List<MapLocation> soupLocations = new ArrayList<MapLocation>();
+    long[] waterChecked = new long[64]; // align to top right
+    List<MapLocation> waterLocations = new ArrayList<>();
 
-    MapLocation destination;
+    MapLocation nearestWaterLocation;
     MapLocation baseLocation;
+    MapLocation hqLocation;
+    MapLocation destination;
 
-    boolean dSchoolExists;
-    boolean fulfillmentCenterExists;
+    boolean carryingEnemy;
+    boolean carryingAlly;
 
-    //TODO: Need another int[] to read soup Priorities
-    //given by HQ. Check comment in updateActiveLocations.
-    int[] soupMiningTiles;
-    boolean readMessage;
-
-    public Miner(RobotController rc) throws GameActionException {
+    public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
-
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
-            RobotInfo r = rc.senseRobotAtLocation(t);
-            if (r != null && r.getType() == RobotType.HQ) {
-                baseLocation = t;
+            if (rc.canSenseLocation(t)) {
+                RobotInfo r = rc.senseRobotAtLocation(t);
+                if (r != null && r.getType() == RobotType.FULFILLMENT_CENTER) {
+                    baseLocation = t;
+                    break;
+                }
+            }
+        }
+
+        for (RobotInfo robot : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam)) {
+            if (robot.getType() == RobotType.HQ) {
+                hqLocation = robot.getLocation();
                 break;
             }
         }
 
-        dSchoolExists = false;
-        fulfillmentCenterExists = false;
-        soupChecked = new long[64];
-        soupMiningTiles = new int[numCols*numRows];
-        destination = updateNearestSoupLocation();
-        updateActiveLocations(destination);
+        destination = hqLocation != null ? hqLocation : baseLocation;
+        carryingEnemy = false;
+        carryingAlly = false;
+
+        nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
+    @Override
+    public void run()  throws GameActionException  {
+        super.run();
+        if (rc.getRoundNum() > 300) {
+            destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
+        }
+
+        //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
+        if (carryingEnemy) { // go to water and drop
+            int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
+            if (distanceToDestination <= 2) { // drop
+                Direction dropDir = myLocation.directionTo(nearestWaterLocation);
+                if (rc.canDropUnit(dropDir)) {
+                    rc.dropUnit(dropDir);
+                    carryingEnemy = false;
+                }
+            }
+            else {
+                if ((nearestWaterLocation == baseLocation || nearestWaterLocation == hqLocation)
+                        && myLocation.distanceSquaredTo(destination) > 8) {
+                    path(nearestWaterLocation);
+                }
+                else {
+                    tryMove();
+                }
+                path(nearestWaterLocation);
+                nearestWaterLocation = updateNearestWaterLocation();
+            }
+        }
+        else {
+            RobotInfo[] enemyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
+            RobotInfo nearest = null;
+            int distToNearest = MAX_SQUARED_DISTANCE;
+            for (RobotInfo enemyRobot : enemyRobots) {
+                if (enemyRobot.team == allyTeam || enemyRobot.type == RobotType.DELIVERY_DRONE
+                        || enemyRobot.type == RobotType.FULFILLMENT_CENTER || enemyRobot.type == RobotType.HQ
+                        || enemyRobot.type == RobotType.NET_GUN || enemyRobot.type == RobotType.REFINERY
+                        || enemyRobot.type == RobotType.DESIGN_SCHOOL || enemyRobot.type == RobotType.VAPORATOR)
+                    continue;
+                int distToEnemy = myLocation.distanceSquaredTo(enemyRobot.location);
+                if (distToEnemy < distToNearest) {
+                    nearest = enemyRobot;
+                    distToNearest = distToEnemy;
+                }
+            }
+            if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
+                rc.pickUpUnit(nearest.getID());
+                carryingEnemy = true;
+            }
+            else if (nearest != null) {
+                path(nearest.location); // to nearest enemy.
+                nearestWaterLocation = updateNearestWaterLocation();
+            }
+            else { // go back to base
+                if (myLocation.distanceSquaredTo(destination) > 8) {
+                    path(destination);
+                }
+                else {
+                    tryMove();
+                }
+                nearestWaterLocation = updateNearestWaterLocation();
+            }
+        }
+    }
 
     @Override
-    public void run() throws GameActionException {
-        super.run();
-
-        readMessage = false;
-        if (rc.getRoundNum() % 5 == 4) {
-            updateActiveLocations(destination);
-            readMessage = true;
+    boolean path(MapLocation target) throws GameActionException {
+        MapLocation me = history.peekFirst();
+        if (me.equals(target)) {
+            return false;
         }
-
-        harvest();
-        //TODO: Modify Harvest to build refineries if mining location > some dist from base
-        //TODO: Handle case where no stuff found. Switch to explore mode
+        RobotInfo[] guns = Arrays.stream(rc.senseNearbyRobots()).filter(robot ->
+                            !robot.team.equals(rc.getTeam())
+                            && (robot.getType().equals(RobotType.HQ) || robot.getType().equals(RobotType.NET_GUN)))
+                            .toArray(RobotInfo[]::new);
+        Direction best = Arrays.stream(directions).filter(x -> {
+            MapLocation next = me.add(x);
+            return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
+                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        }).min(Comparator.comparing(x ->
+                me.add(x).distanceSquaredTo(target))).orElse(null);
+        return pathHelper(target, best);
     }
 
-    public void harvest() throws GameActionException {
-        int distanceToDestination = myLocation.distanceSquaredTo(destination);
-
-//        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
-        if (distanceToDestination <= 2) {                                     // at destination
-            if (destination == baseLocation) {                                // at HQ
-                Direction hqDir = myLocation.directionTo(destination);
-
-                // build fulfillment center
-                // if (!fulfillmentCenterExists) {
-                //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-                // }
-                // build d.school
-                if (!dSchoolExists) {
-                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
-                }
-
-                if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
-                    rc.depositSoup(hqDir, rc.getSoupCarrying());
-                if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
-                    destination = updateNearestSoupLocation();
-                    clearHistory();
-                }
-            }
-            else {                                                            // mining
-                Direction soupDir = myLocation.directionTo(destination);
-                if (rc.senseSoup(destination) == 0) {
-                    sendSoupMessageIfShould(destination, true);
-                    destination = updateNearestSoupLocation();
-                }
-                else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
-                    refineryCheck(); //TODO: Fix this method and make it better
-                    destination = baseLocation;
-                    clearHistory();
-                }
-                else if (rc.isReady()) {                                      // mine
-                    sendSoupMessageIfShould(destination, false);
-                    rc.mineSoup(soupDir);
-                }
-            }
-        }
-        else {                                                                // in transit
-            path(destination);
-            if (destination != baseLocation && !readMessage) {                // keep checking soup location
-                destination = updateNearestSoupLocation();
-            }
-        }
-//        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-    }
-
-    // Updates base location and builds refinery if base is too far
-    public void refineryCheck() throws GameActionException {
-        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-        for (RobotInfo robot : robots) {
-            if (robot.getType() == RobotType.REFINERY || (robot.getType() == RobotType.HQ && rc.getRoundNum() < 100) ) {
-                if (myLocation.distanceSquaredTo(robot.getLocation()) < myLocation.distanceSquaredTo(baseLocation)) {
-                    baseLocation = robot.getLocation();
-                }
-            }
-        }
-        //TODO: Better measure of distance than straightline. Consider path length?
-        if (myLocation.distanceSquaredTo(baseLocation) > 25) {
-            //TODO: build a refinery smarter and in good direction.
-            //TODO: Handle case where you dont have enough resources and then are stuck? I think soln is better pathing so it can get back
-            //build new refinery!
-            for (Direction dir : directions) {
-                if (rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) { // TODO: add check for fulfillmentCenterExists
-                    rc.buildRobot(RobotType.REFINERY, dir);
-                    baseLocation = myLocation.add(dir);
-                }
-            }
-        }
-    }
-
-    // Returns location of nearest soup
-    public MapLocation updateNearestSoupLocation() throws GameActionException {
+    // Returns location of nearest water
+    public MapLocation updateNearestWaterLocation() throws GameActionException {
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
-        if (destination != null && !(rc.canSenseLocation(destination) && rc.senseSoup(destination) == 0)) {
-            nearest = destination;
+        if (nearestWaterLocation != null && !(rc.canSenseLocation(nearestWaterLocation) && rc.senseSoup(nearestWaterLocation) == 0)) {
+            nearest = nearestWaterLocation;
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-//        System.out.println("start map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+        // System.out.println("start map scan "+Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x-5,0); x <= Math.min(myLocation.x+5,MAP_WIDTH-1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
-            for (int y : getLocationsToCheck((soupChecked[x] >> Math.min(Math.max(myLocation.y - 5,0),MAP_HEIGHT-1)) & 1023)) {
+            for (int y : getLocationsToCheck((waterChecked[x] >> Math.max(myLocation.y-5,0)) & 1023)) {
                 MapLocation newLoc = new MapLocation(x, myLocation.y + y-5);
                 if (rc.canSenseLocation(newLoc)) {
-                    if (rc.senseSoup(newLoc) > 0) {
-                        soupLocations.add(newLoc);
+                    if (rc.senseFlooding(newLoc)) {
+                        waterLocations.add(newLoc);
                     }
-                    soupChecked[x] = soupChecked[x] | (1L << Math.min(Math.max(myLocation.y + y - 5,0),MAP_HEIGHT-1));
+                    waterChecked[x] = waterChecked[x] | (1 << myLocation.y + y - 5);
                 }
             }
         }
-//        System.out.println("end map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+        // System.out.println("end map scan "+Clock.getBytecodeNum());
 
-//        System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-        Iterator<MapLocation> soupIterator = soupLocations.iterator();
-        int scanRadius = rc.getCurrentSensorRadiusSquared();
+        // System.out.println("start find nearest "+Clock.getBytecodeNum());
+        Iterator<MapLocation> soupIterator = waterLocations.iterator();
         while (soupIterator.hasNext()) {
             MapLocation soupLocation = soupIterator.next();
             int soupDistance = myLocation.distanceSquaredTo(soupLocation);
             if (soupDistance < distanceToNearest) {
-                // Note: Uses soupDistance comparison instead of rc.canSenseLocation since location guarenteed to be on map
-                if (soupDistance < scanRadius && rc.senseSoup(soupLocation) == 0)
-                    soupIterator.remove();
-                else {
-                    nearest = soupLocation;
-                    distanceToNearest = soupDistance;
-                }
+                nearest = soupLocation;
+                distanceToNearest = soupDistance;
             }
         }
-//        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+        // System.out.println("end find nearest "+Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;
         }
-        return new MapLocation(0,0); // TODO: Fix this. Should go into explore mode.
-    }
-
-    /**
-     * Communicating with the HQ
-     */
-
-    //Find message from HQ given a round number rn
-    //Checks block of round number rn, loops through messages
-    public boolean findMessageFromHQ(int rn) throws GameActionException {
-        Transaction[] msgs = rc.getBlock(rn);
-        for (int k=0; k<msgs.length; k++) {
-            int[] msg = msgs[k].getMessage();
-            Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-            if(m.origin==true) {
-                if(m.schema==2) {
-                    MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    // System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
-                    for (int j=0; j<p.numPatchesWritten; j++) {
-                        if(soupMiningTiles[p.patches[j]]==0) {
-                            //For weighting, set another array so that
-                            // arr[p.patches[j]] = p.weights[j]
-                            soupMiningTiles[p.patches[j]] = 1;
-                            MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
-                            // System.out.print("HQ told me about this new soup tile: ");
-                            // System.out.println(p.patches[j]);
-                            rc.setIndicatorDot(cLoc, 255, 255, 255);
-                            soupLocations.add(cLoc);
-                        }
-                    }
-//                            System.out.println("end reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    public boolean updateActiveLocations(MapLocation destination) throws GameActionException {
-//        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-        int rn = rc.getRoundNum();
-        int del = (rn-1)%messageFrequency;
-        int prev1 = rn-1-(Math.floorMod(del-messageModulus, messageFrequency));
-        int prev2 = prev1 - messageFrequency;
-        for(int i=prev1; i<rn; i++) {
-            if(i>0) {
-                if(findMessageFromHQ(i)) {
-                    return true;
-                }
-            }
-        }
-        for (int i=prev2; i<prev1; i++) {
-            if(i>0) {
-                if(findMessageFromHQ(i)) {
-                    return true;
-                }
-            }
-        }
-        System.out.println("CRITICAL ERROR! NO MESSAGE IN 10 TURNS");
-        return false;
-    }
-
-    public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
-        int tnum = getTileNumber(destination);
-        if(soupMiningTiles[tnum] == 0 || noSoup) {
-            int soupTotal = 0;
-            MapLocation[] tileLocs = getAllCellsFromTileNumber(tnum);
-            for (MapLocation m : tileLocs) {
-                if(rc.canSenseLocation(m)) {
-                    soupTotal += rc.senseSoup(m);
-                } else {
-                    return;
-                }
-            }
-            // 0 when hq doesn't know about it
-            // System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
-            if(!noSoup || soupTotal==0) {
-                generateSoupMessage(destination, soupToPower(soupTotal));
-            }
-            soupMiningTiles[tnum] = 1;
-        }
-    }
-
-    public void generateSoupMessage(MapLocation destination, int soupAmount) throws GameActionException {
-        int tnum = getTileNumber(destination);
-        if(soupAmount>0) {
-            // System.out.println("Telling HQ about Soup at tile: " + Integer.toString(tnum));
-            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 255, 255, 0);
-        } else {
-            // System.out.println("Telling HQ about NO SOUP at tile: " + Integer.toString(tnum));
-            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
-        }
-        SoupMessage s = new SoupMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-        s.writeTile(tnum);
-        s.writeSoupAmount(soupAmount);
-        sendMessage(s.getMessage(), 1);
+        return hqLocation != null ? hqLocation : baseLocation;
     }
 
     public int[] getLocationsToCheck(long mask) {
@@ -2326,6 +2224,5 @@ public class Miner extends Unit {
         }
         return new int[]{};
     }
-
 
 }
