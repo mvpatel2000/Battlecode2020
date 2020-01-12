@@ -48,7 +48,9 @@ public class Miner extends Unit {
 
         readMessage = false;
         if (rc.getRoundNum() % 5 == 4) {
+            //int jbInit = Clock.getBytecodeNum();
             updateActiveLocations(destination);
+            //System.out.println("Miner update active locs takes " + Integer.toString(Clock.getBytecodeNum()-jbInit) + " bytecode.");
             readMessage = true;
         }
 
@@ -188,39 +190,59 @@ public class Miner extends Unit {
     /**
      * Communicating with the HQ
      */
-    public void updateActiveLocations(MapLocation destination) throws GameActionException {
-//        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-        for (int i=1; i<10; i++) {
-            int rn = rc.getRoundNum()-i;
-            if(rn>0) {
-                Transaction[] msgs = rc.getBlock(rn);
-                for (int k=0; k<msgs.length; k++) {
-                    int[] msg = msgs[k].getMessage();
-                    Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    if(m.origin==true) {
-                        if(m.schema==2) {
-                            MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            // System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
-                            for (int j=0; j<p.numPatchesWritten; j++) {
-                                if(soupMiningTiles[p.patches[j]]==0) {
-                                    //For weighting, set another array so that
-                                    // arr[p.patches[j]] = p.weights[j]
-                                    soupMiningTiles[p.patches[j]] = 1;
-                                    MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
-                                    // System.out.print("HQ told me about this new soup tile: ");
-                                    // System.out.println(p.patches[j]);
-                                    // rc.setIndicatorDot(cLoc, 255, 255, 255);
-                                    soupLocations.add(cLoc);
-                                }
-                            }
-//                            System.out.println("end reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-                            return;
+
+    //Find message from HQ given a round number rn
+    //Checks block of round number rn, loops through messages
+    public boolean findMessageFromHQ(int rn) throws GameActionException {
+        Transaction[] msgs = rc.getBlock(rn);
+        for (int k=0; k<msgs.length; k++) {
+            int[] msg = msgs[k].getMessage();
+            Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+            if(m.origin==true) {
+                if(m.schema==2) {
+                    MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    // System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
+                    for (int j=0; j<p.numPatchesWritten; j++) {
+                        if(soupMiningTiles[p.patches[j]]==0) {
+                            //For weighting, set another array so that
+                            // arr[p.patches[j]] = p.weights[j]
+                            soupMiningTiles[p.patches[j]] = 1;
+                            MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
+                            // System.out.print("HQ told me about this new soup tile: ");
+                            // System.out.println(p.patches[j]);
+                            rc.setIndicatorDot(cLoc, 255, 255, 255);
+                            soupLocations.add(cLoc);
                         }
                     }
+//                            System.out.println("end reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public boolean updateActiveLocations(MapLocation destination) throws GameActionException {
+//        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+        int rn = rc.getRoundNum();
+        int del = (rn-1)%messageFrequency;
+        int prev1 = rn-1-(Math.floorMod(del-messageModulus, messageFrequency));
+        int prev2 = prev1 - messageFrequency;
+        for(int i=prev1; i<rn; i++) {
+            if(i>0) {
+                if(findMessageFromHQ(i)) {
+                    return true;
+                }
+            }
+        }
+        for (int i=prev2; i<prev1; i++) {
+            if(i>0) {
+                if(findMessageFromHQ(i)) {
+                    return true;
                 }
             }
         }
         System.out.println("CRITICAL ERROR! NO MESSAGE IN 10 TURNS");
+        return false;
     }
 
     public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
