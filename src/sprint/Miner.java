@@ -189,7 +189,7 @@ public class Miner extends Unit {
      * Communicating with the HQ
      */
     public void updateActiveLocations(MapLocation destination) throws GameActionException {
-        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+//        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         for (int i=1; i<10; i++) {
             int rn = rc.getRoundNum()-i;
             if(rn>0) {
@@ -213,13 +213,14 @@ public class Miner extends Unit {
                                     soupLocations.add(cLoc);
                                 }
                             }
-                            break;
+//                            System.out.println("end reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+                            return;
                         }
                     }
                 }
             }
         }
-        System.out.println("end reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+        System.out.println("CRITICAL ERROR! NO MESSAGE IN 10 TURNS");
     }
 
     public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
