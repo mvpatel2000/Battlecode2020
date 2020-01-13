@@ -124,7 +124,7 @@ public abstract class Unit extends Robot {
     }
 
     protected boolean pathRandom(MapLocation target, boolean random) throws GameActionException {
-        System.out.println("Pathing to: " + target);
+        // System.out.println("Pathing to: " + target);
         if (rc.getCooldownTurns() >= 1)
             return true;
         MapLocation me = history.peekFirst();

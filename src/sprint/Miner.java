@@ -23,11 +23,11 @@ public class Miner extends Unit {
     boolean dSchoolExists;
     boolean fulfillmentCenterExists;
 
-    boolean aggro;
-    List<MapLocation> target;
-    boolean aggroDone;
+    boolean aggro; // true if the one aggro miner
+    List<MapLocation> target; // possible enemy HQ locations (target.get(0) is the one after HQ found)
+    boolean aggroDone; // done with aggro phase
     boolean hasRun = false;
-    MapLocation dLoc;
+    MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
 
     //TODO: Need another int[] to read soup Priorities
@@ -144,20 +144,20 @@ public class Miner extends Unit {
     }
 
     private void handleAggro() throws GameActionException {
-        if (aggroDone
-                && !target.isEmpty()
-                && myLocation.distanceSquaredTo(target.get(0)) < 3
-                && Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+        if (aggroDone // if done finding HQ
+                && !target.isEmpty() // was successful
+                && myLocation.distanceSquaredTo(target.get(0)) < 3 // next to enemy HQ
+                && Arrays.stream(rc.senseNearbyRobots()).filter(x -> // >= 3 of my landscapers
                         x.getLocation().distanceSquaredTo(target.get(0)) < 3 && x.getType().equals(RobotType.LANDSCAPER)
                         && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new).length >= 3
-                && myLocation.distanceSquaredTo(dLoc) < 3
-                && Arrays.stream(directions).allMatch(d ->
+                && myLocation.distanceSquaredTo(dLoc) < 3 // next to d.school
+                && Arrays.stream(directions).allMatch(d -> // enemy HQ is surrounded
                         target.get(0).add(d).equals(myLocation)
                         || rc.senseNearbyRobots(target.get(0).add(d), 0, null).length > 0)) {
-            path(myLocation.add(adj(toward(myLocation, target.get(0)), 4)));
+            path(myLocation.add(adj(toward(myLocation, target.get(0)), 4))); // then step back
             return;
         }
-        if (aggroDone && dLoc != null) {
+        if (aggroDone && dLoc != null) { // move to opposite side of d.school around HQ
             for (Direction d : directions) {
                 int dist = myLocation.add(d).distanceSquaredTo(dLoc);
                 if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 3
@@ -172,9 +172,11 @@ public class Miner extends Unit {
         if (aggroDone && !target.isEmpty() && Arrays.stream(rc.senseNearbyRobots()).anyMatch(x ->
                 !x.getTeam().equals(rc.getTeam()) &&
                         (x.getType().equals(RobotType.DELIVERY_DRONE)
-                                || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
-                && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
-            if(rc.getTeamSoup() < 250 && !hasSentHalt) {
+                                || x.getType().equals(RobotType.FULFILLMENT_CENTER))) // if I am next to enemy HQ, aggro is done
+                                                                                       // and I sense enemy drone/starport
+                                                                                        // and I don't see any of my netguns
+                && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))){
+            if (rc.getTeamSoup() < 250 && !hasSentHalt) { // send save resources message if can't build netgun
                 HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                 h.writeEnemyHQTile(getTileNumber(target.get(0)));
                 //make sure this sends successfully.
@@ -182,6 +184,7 @@ public class Miner extends Unit {
                     hasSentHalt = true;
                 }
             }
+            // try and build netgun as close to enemy HQ as possible but not next to d.school
             Direction d = Arrays.stream(directions).filter(x ->
                     rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
                     myLocation.add(x).distanceSquaredTo(target.get(0)))).orElse(null);
@@ -191,8 +194,9 @@ public class Miner extends Unit {
             }
 
         }
-        if (target.isEmpty() || aggroDone)
+        if (target.isEmpty() || aggroDone) // stop if aggro is done
             return;
+        // If next to enemy HQ, end aggro and build d.school
         RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
         if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                 && myLocation.distanceSquaredTo(target.get(0)) < 3) {
@@ -205,6 +209,7 @@ public class Miner extends Unit {
                 }
             return;
         }
+        // Build starport if stuck during aggro
         if (locAt(10).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0)) && rc.getRoundNum() > 20) {
 //            System.out.println("Trying to build starport");
 //            for (Direction d : directions) {
@@ -215,7 +220,9 @@ public class Miner extends Unit {
 //            }
             aggroDone = true;
         }
+        // path to next candidate enemy HQ location
         aggroPath(target.get(0));
+        // if not there, try next location
         if (myLocation.equals(target.get(0)))
             target.remove(0);
     }
@@ -256,7 +263,7 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-       System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
+       System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
         if (dSchoolExists) {
@@ -271,7 +278,7 @@ public class Miner extends Unit {
         }
 
         if (distanceToDestination <= 2) {                                     // at destination
-            if (turnsToBase >= 0) {                                           // at HQ
+            if (turnsToBase >= 0) {                                           // at base
 
                 // build d.school
                 if (!dSchoolExists && !holdProduction) {
@@ -281,9 +288,9 @@ public class Miner extends Unit {
 //                if (!dSchoolExists) {
 //                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
 //                }
-
-                if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
-                    rc.depositSoup(hqDir, rc.getSoupCarrying());
+                Direction toBase = myLocation.directionTo(baseLocation);
+                if (rc.canDepositSoup(toBase))                                 // deposit. Note: Second check is redundant?
+                    rc.depositSoup(toBase, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
                     destination = updateNearestSoupLocation();
                     turnsToBase = -1;
@@ -329,6 +336,10 @@ public class Miner extends Unit {
                 }
             }
         }
+        if (myLocation.distanceSquaredTo(baseLocation) > 25)
+            rc.setIndicatorLine(myLocation, baseLocation, 255,0,0);
+        else
+            rc.setIndicatorLine(myLocation, baseLocation, 255,255,255);
         //TODO: Better measure of distance than straightline. Consider path length?
         if (myLocation.distanceSquaredTo(baseLocation) > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100)) {
             //TODO: build a refinery smarter and in good direction.
