@@ -115,6 +115,75 @@ public abstract class Unit extends Robot {
         }
     }
 
+    public boolean aggroPath(MapLocation target) throws GameActionException {
+        System.out.println("Pathing to: " + target);
+        if (rc.getCooldownTurns() >= 1)
+            return true;
+        MapLocation me = history.peekFirst();
+        if (me.equals(target)) {
+            return false;
+        }
+        double cost = Double.POSITIVE_INFINITY;
+        Direction best = null;
+        double pcost = Double.POSITIVE_INFINITY;
+        Direction pbest = null;
+        for (Direction x : directions) {
+            MapLocation next = me.add(x);
+            int tmpcost = next.distanceSquaredTo(target);
+            if (tmpcost < cost) {
+                cost = tmpcost;
+                best = x;
+            }
+            if (tmpcost < pcost && canMove(x)) {
+                pcost = tmpcost;
+                pbest = x;
+            }
+        }
+        if (following != null && !canMove(facing) && canMove(following) && time < 20) {
+            time++;
+            go(following);
+            return false;
+        }
+        if (following != null && !canMove(facing) && (!canMove(following) || time >= 20)) {
+            time = 0;
+            following = null;
+            facing = null;
+            best = following;
+        }
+        if (following == null && !canMove(best)) {
+            if (Math.random() < 0.5) {
+                for (int i = 0; i < 8; i++) {
+                    Direction d = adj(best, i);
+                    if (canMove(d)) {
+                        facing = best;
+                        following = d;
+                        tryMove(d);
+                        return true;
+                    }
+                }
+                for (int i = 0; i < 8; i++) {
+                    Direction d = adj(best, 8 - i);
+                    if (canMove(d)) {
+                        facing = best;
+                        following = d;
+                        tryMove(d);
+                        return true;
+                    }
+                }
+            }
+        }
+        time = 0;
+        if (facing != null && canMove(facing)) {
+            go(facing);
+            following = null;
+            facing = null;
+            return true;
+        }
+        facing = null;
+        following = null;
+        return pathHelper(target, best);
+    }
+
     public boolean path(MapLocation target) throws GameActionException {
         System.out.println("Pathing to: " + target);
         if (rc.getCooldownTurns() >= 1)
@@ -145,6 +214,7 @@ public abstract class Unit extends Robot {
         if (following != null && !canMove(facing) && canMove(following) && time < 20) {
             time++;
             go(following);
+            return false;
         }
         if (following != null && !canMove(facing) && (!canMove(following) || time >= 20)) {
             time = 0;

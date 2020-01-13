@@ -155,7 +155,7 @@ public class Miner extends Unit {
                     aggroDone = true;
                 }
         }*/
-        path(target.get(0));
+        aggroPath(target.get(0));
         if (myLocation.equals(target.get(0)))
             target.remove(0);
         return;
