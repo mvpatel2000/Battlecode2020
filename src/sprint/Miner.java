@@ -428,7 +428,7 @@ public class Miner extends Unit {
         //System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            System.out.println(msg[0]);
+            //System.out.println(msg[0]);
             Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
             if (m.origin) {
                 if (m.schema == 2 && !foundHQMessage) {
