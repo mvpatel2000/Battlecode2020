@@ -11,6 +11,7 @@ public class HQ extends Building {
     private NetGun netgun;
     private Refinery refinery;
     int minerCount;
+    int minerCooldown = 0;
     //each elements is an [tilenum, soupHere]
     List<int[]> soupsPerTile = new ArrayList<int[]>();
 
@@ -57,10 +58,18 @@ public class HQ extends Building {
         }
         super.run();
         netgun.shoot();
+        minerCooldown--;
         if(!holdProduction) {
+            int soupSum = 0;
+            for (int[] soupPerTile : soupsPerTile) {
+                if (soupPerTile[1] > 0) {
+                    soupSum += soupPerTile[1];
+                }
+            }
             for (Direction dir : directions) {
-                if ((minerCount < 4 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
+                if ((minerCount < 4 || (soupSum > 0 && rc.getRoundNum() >= 200 && minerCount < 10 && minerCooldown < 0)) && tryBuild(RobotType.MINER, dir)) {
                     minerCount++;
+                    minerCooldown = 5;
                 }
             }
         }
