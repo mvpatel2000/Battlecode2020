@@ -52,6 +52,9 @@ public class HQ extends Building {
      */
     @Override
     public void run() throws GameActionException {
+        if(holdProduction) {
+            checkIfContinueHold();
+        }
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {

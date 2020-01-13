@@ -235,20 +235,24 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
+//        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
-                //if (!fulfillmentCenterExists) {
+                //if (!fulfillmentCenterExists & !holdProduction) {
                 //    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
                 //}
                 // build d.school
                 if (!dSchoolExists && !holdProduction) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
+                // build d.school
+//                if (!dSchoolExists) {
+//                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+//                }
 
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
@@ -387,7 +391,7 @@ public class Miner extends Unit {
             if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0 ) {
                 MapLocation newTileLocation = getCenterFromTileNumber(newTile);
                 if (myLocation.distanceSquaredTo(newTileLocation) >= scanRadius || !rc.senseFlooding(newTileLocation)) {
-                    rc.setIndicatorDot(newTileLocation, 255, 0,0);
+                    //rc.setIndicatorDot(newTileLocation, 255, 0,0);
                     return newTileLocation;
                 }
             }
@@ -483,7 +487,7 @@ public class Miner extends Unit {
                 }
             }
             // 0 when hq doesn't know about it
-            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
+//            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
             if(!noSoup || soupTotal==0) {
                 generateSoupMessage(destination, soupToPower(soupTotal));
             }
