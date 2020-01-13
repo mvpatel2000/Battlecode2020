@@ -82,7 +82,7 @@ public class DeliveryDrone extends Unit {
                         return;
                     }
                 }
-                if (myLocation == nearestWaterLocation) {
+                if (myLocation.equals(nearestWaterLocation)) {
                     for (Direction dir : directions) { // you're on the water
                         if (rc.isReady() && rc.canMove(dir)) {
                             rc.move(dir);
