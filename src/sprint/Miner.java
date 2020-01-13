@@ -283,7 +283,7 @@ public class Miner extends Unit {
             if (turnsToBase >= 0) {                                           // at base
 
                 // build d.school
-                if (!dSchoolExists && !holdProduction) {
+                if (!dSchoolExists && !holdProduction && (rc.getRoundNum() > 90 || existsNearbyEnemy())) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
 

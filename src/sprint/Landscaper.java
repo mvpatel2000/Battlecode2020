@@ -25,7 +25,7 @@ public class Landscaper extends Unit {
     int outerRingIndex = 0;
     int OUTER_RING_TARGET_ELEVATION = 50; // TODO: tweak constant
     int INNER_WALL_FORCE_TAKEOFF_DEFAULT = 440;
-    int INNER_WALL_FORCE_TAKEOFF_CONTESTED= 360;
+    int INNER_WALL_FORCE_TAKEOFF_CONTESTED = 360;
     int forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
     boolean currentlyInInnerWall = false;
 
@@ -249,8 +249,14 @@ public class Landscaper extends Unit {
                             minElev = rc.senseElevation(myLocation.add(d));
                         }
                     }
-                    System.out.println("Dumping dirt in direction " + dumpDir.toString());
-                    tryDeposit(dumpDir);
+                    if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION && minElev > rc.senseElevation(myLocation)) { // deposit under myself if i'm not tall enough yet
+                        System.out.println("Dumping dirt under myself");
+                        tryDeposit(Direction.CENTER);
+                    }
+                    else {
+                        System.out.println("Dumping dirt in direction " + dumpDir.toString());
+                        tryDeposit(dumpDir);
+                    }
                 }
             }
         }
@@ -290,10 +296,11 @@ public class Landscaper extends Unit {
         nearbyBots = rc.senseNearbyRobots();
         // System.out.println("Bots around me: ");
         nearbyBotsMap.clear();
+        forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
         for (RobotInfo botInfo : nearbyBots) {
             nearbyBotsMap.put(botInfo.location, botInfo);
             // System.out.println(botInfo);
-            if (botInfo.team.equals(enemyTeam)) {
+            if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.MINER) || botInfo.type.equals(RobotType.LANDSCAPER))) {
                 forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_CONTESTED;
             }
         }
@@ -312,6 +319,7 @@ public class Landscaper extends Unit {
                     }
                 }
             }
+            wallPhase = 0;
             if (currentlyInInnerWall && numInnerWallOurs == 7 && holdPositionLoc != null && myLocation.equals(holdPositionLoc)) {
                 System.out.println("I see that the inner wall is tight!");
                 wallPhase = 1;
