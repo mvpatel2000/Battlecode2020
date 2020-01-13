@@ -25,7 +25,6 @@ gradlew.bat
 gradle.properties
 version.txt
 build.gradle
-*gradle*
 
 # User-specific stuff:
 battlecode-scaffold.iws
