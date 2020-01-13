@@ -148,7 +148,7 @@ public class Landscaper extends Unit {
                     boolean foundDigSite = false;
                     int hqElevation = rc.senseElevation(hqLocation);
                     for (Direction d : directions) {
-                        if (!nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > ) {
+                        if (!nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
                             foundDigSite = true;
                             System.out.println("Digging dirt from direction " + d.toString());
                         }
