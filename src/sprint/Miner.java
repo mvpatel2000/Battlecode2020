@@ -45,7 +45,6 @@ public class Miner extends Unit {
 
         aggro = rc.getRoundNum() == 2;
         aggroDone = false;
-        aggro = false;
         if (aggro) {
             target = new ArrayList<>();
             MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->
