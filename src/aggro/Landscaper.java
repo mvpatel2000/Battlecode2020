@@ -272,6 +272,7 @@ public class Landscaper extends Unit {
                     outerRingIndex = i;
                     System.out.println("I'm already in the outer ring.");
                     holdPositionLoc = myLocation;
+                    amInOuterRing = true;
                     break;
                 }
             }
