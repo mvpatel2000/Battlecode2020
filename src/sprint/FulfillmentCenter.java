@@ -5,6 +5,7 @@ import battlecode.common.*;
 public class FulfillmentCenter extends Building {
 
     int droneCount = 0;
+    MapLocation hqLocation = null;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -12,8 +13,11 @@ public class FulfillmentCenter extends Building {
     int previousSoup = 200;
     MapLocation enemyHQLocApprox = null;
 
+
     public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
+        hqLocation = checkForLocationMessage();
+        rc.setIndicatorDot(hqLocation, 126, 50, 255);
     }
 
     @Override
