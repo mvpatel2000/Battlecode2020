@@ -407,11 +407,11 @@ public class Miner extends Unit {
     //Checks block of round number rn, loops through messages
     //Currently: Checks for Patch message from HQ
     //           Checks for haltProductionMessage from a Miner
-    public boolean findMessageFromAllies(int rn) throws GameActionException {
+    public int findMessageFromAllies(int rn, boolean hqm, boolean prodm) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-        boolean foundHQMessage=false;
-        boolean foundProdMessage=false;
-
+        boolean foundHQMessage=hqm;
+        boolean foundProdMessage=prodm;
+        int found = 0;
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -432,6 +432,7 @@ public class Miner extends Unit {
                         }
                     }
                     foundHQMessage=true;
+                    found += 1;
                 }
             } else if(m.schema == 3 && !foundProdMessage) {
                 HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -441,37 +442,60 @@ public class Miner extends Unit {
                 enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
                 rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                 foundProdMessage=true;
+                found += 2;
             }
 
             if(foundHQMessage && foundProdMessage) {
-                break;
+                return found;
             }
         }
-        return false;
+        return found;
     }
 
+    //Returns true if it finds all messages it's looking for
     public boolean updateActiveLocations() throws GameActionException {
 //        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         int rn = rc.getRoundNum();
         int del = (rn-1)%messageFrequency;
         int prev1 = rn-1-(Math.floorMod(del-messageModulus, messageFrequency));
         int prev2 = prev1 - messageFrequency;
+        boolean foundhq = false;
+        boolean foundprod = false;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
-                if(findMessageFromAllies(i)) {
+                int numfound = findMessageFromAllies(i, foundhq, foundprod);
+                if(numfound==3) {
+                    foundhq = true;
+                    foundprod = true;
+                } else if(numfound==2) {
+                    foundprod = true;
+                } else if(numfound==1) {
+                    foundhq = true;
+                }
+                if(foundhq && foundprod) {
                     return true;
                 }
             }
         }
         for (int i=prev2; i<prev1; i++) {
             if(i>0) {
-                if(findMessageFromAllies(i)) {
+                int numfound = findMessageFromAllies(i, foundhq, foundprod);
+                if(numfound==3) {
+                    foundhq = true;
+                    foundprod = true;
+                } else if(numfound==2) {
+                    foundprod = true;
+                } else if(numfound==1) {
+                    foundhq = true;
+                }
+                if(foundhq && foundprod) {
                     return true;
                 }
             }
         }
-
-        System.out.println("CRITICAL ERROR! NO MESSAGE IN 10 TURNS");
+        if(!foundhq) {
+            System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
+        }
         return false;
     }
 
