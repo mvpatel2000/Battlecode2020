@@ -26,6 +26,8 @@ public class DeliveryDrone extends Unit {
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
+        hqLocation = checkForLocationMessage();
+        rc.setIndicatorDot(hqLocation, 126, 50, 255);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
             if (rc.canSenseLocation(t)) {
@@ -38,13 +40,6 @@ public class DeliveryDrone extends Unit {
         }
         if (baseLocation == null)
             baseLocation = myLocation;
-
-        for (RobotInfo robot : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam)) {
-            if (robot.getType() == RobotType.HQ) {
-                hqLocation = robot.getLocation();
-                break;
-            }
-        }
 
         tilesVisited = new int[numRows * numCols];
         stuckCount = 0;
