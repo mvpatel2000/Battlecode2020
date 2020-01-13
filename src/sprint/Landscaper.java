@@ -130,7 +130,7 @@ public class Landscaper extends Unit {
 
     public void defense() throws GameActionException {
         Direction hqDir = myLocation.directionTo(hqLocation);
-        int baseDist = myLocation.distanceSquaredTo(hqLocation);
+        int hqDist = myLocation.distanceSquaredTo(hqLocation);
 
         // TODO: If we start exceeding bytecode limits, investigate ways to not do these two functions every turn.
         updateHoldPositionLoc();
@@ -171,13 +171,13 @@ public class Landscaper extends Unit {
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
                         if (hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
                             foundDigSite = true;
-                            System.out.println("Digging from pile in direction " + d.toString());
-                            tryDig(d);
+                            System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
+                            tryDig(myLocation.directionTo(hqLocation.add(d)));
                         }
                     }
                     if (!foundDigSite) {
                         Direction digDir = hqDir.opposite();
-                        if (baseDist == 2) {
+                        if (hqDist == 2) {
                             digDir = hqDir.rotateRight().rotateRight();
                         }
                         if (!rc.canDigDirt(digDir)) {
@@ -202,7 +202,7 @@ public class Landscaper extends Unit {
                         dump = hqDir.rotateRight();
                         height = rc.senseElevation(myLocation.add(hqDir.rotateRight()));
                     }
-                    if (baseDist == 1) {
+                    if (hqDist == 1) {
                         if(rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft())) < height) {
                             dump = hqDir.rotateLeft().rotateLeft();
                             height = rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft()));

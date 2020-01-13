@@ -159,6 +159,34 @@ public abstract class Robot {
         }
     }
 
+    /**
+     * Communication methods.
+     * Generally, most communication methods should go into the specific
+     * robotType file. Put communication everyone will use here.
+     */
+    //Returns MapLocation if it finds a LocationMessage from our HQ.
+    //returns null if it doesn't.
+    public MapLocation checkForLocationMessage() throws GameActionException {
+        int rn = rc.getRoundNum();
+        for(int i=1; i<=3; i++) {
+            if(i<rn) {
+                Transaction[] msgs = rc.getBlock(i);
+                for (Transaction transaction : msgs) {
+                    int[] msg = transaction.getMessage();
+                    Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if (m.origin) {
+                        if(m.schema == 4) {
+                            //location message
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            return new MapLocation(l.xLoc, l.yLoc);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
      /**
      * Grid used for communication
      * discretization.

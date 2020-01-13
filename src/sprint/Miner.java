@@ -32,8 +32,12 @@ public class Miner extends Unit {
 
     //TODO: Need another int[] to read soup Priorities
     //given by HQ. Check comment in updateActiveLocations.
-    boolean holdProduction;
-    MapLocation enemyHQLocApprox;
+
+    //For halting production and resuming it.
+    boolean holdProduction = false;
+    int turnAtProductionHalt = -1;
+    int previousSoup = 200;
+    MapLocation enemyHQLocApprox = null;
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
@@ -71,8 +75,6 @@ public class Miner extends Unit {
         soupMiningTiles = new int[numCols*numRows];
         tilesVisited = new int[numRows * numCols];
         turnsToBase = -1;
-        holdProduction = false;
-        enemyHQLocApprox = null;
         destination = updateNearestSoupLocation();
         updateActiveLocations();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
@@ -82,6 +84,9 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
+        if(holdProduction) {
+            checkIfContinueHold();
+        }
 
         if (aggro) {
             handleAggro();
@@ -99,6 +104,25 @@ public class Miner extends Unit {
         checkBuildBuildings();
 
         harvest();
+        previousSoup = rc.getTeamSoup();
+    }
+
+    //Returns true if should continue halting production
+    //Returns false if should not continue halting production
+    private boolean checkIfContinueHold() throws GameActionException {
+        //resume production after 10 turns, at most
+        if(rc.getRoundNum()-turnAtProductionHalt>10) {
+            holdProduction = false;
+            return false;
+        }
+        //-200 soup in one turn good approximation for building net gun
+        //so we resume earlier than 10 turns if this happens
+        if(previousSoup - rc.getTeamSoup() > 200) {
+            holdProduction = false;
+            return false;
+        }
+        //if neither condition happens (10 turns or -200), continue holding production
+        return true;
     }
 
     private void handleAggro() throws GameActionException {
@@ -211,7 +235,7 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
+//        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
         Direction hqDir = myLocation.directionTo(hqLocation);
@@ -228,6 +252,10 @@ public class Miner extends Unit {
                 if (!dSchoolExists && !holdProduction) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
+                // build d.school
+//                if (!dSchoolExists) {
+//                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+//                }
 
                 if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
@@ -367,7 +395,7 @@ public class Miner extends Unit {
             if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0 ) {
                 MapLocation newTileLocation = getCenterFromTileNumber(newTile);
                 if (myLocation.distanceSquaredTo(newTileLocation) >= scanRadius || !rc.senseFlooding(newTileLocation)) {
-                    rc.setIndicatorDot(newTileLocation, 255, 0,0);
+                    //rc.setIndicatorDot(newTileLocation, 255, 0,0);
                     return newTileLocation;
                 }
             }
@@ -413,6 +441,7 @@ public class Miner extends Unit {
                 HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                 System.out.print("HOLDING PRODUCTION!");
                 holdProduction = true;
+                turnAtProductionHalt = rc.getRoundNum();
                 enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
                 rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                 foundProdMessage=true;
@@ -462,7 +491,7 @@ public class Miner extends Unit {
                 }
             }
             // 0 when hq doesn't know about it
-            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
+//            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
             if(!noSoup || soupTotal==0) {
                 generateSoupMessage(destination, soupToPower(soupTotal));
             }
