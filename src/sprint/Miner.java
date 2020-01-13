@@ -218,9 +218,9 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
-                //if (!fulfillmentCenterExists & !holdProduction) {
-                //    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-                //}
+                if (!fulfillmentCenterExists & !holdProduction) {
+                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+                }
                 // build d.school
                 if (!dSchoolExists && !holdProduction) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
