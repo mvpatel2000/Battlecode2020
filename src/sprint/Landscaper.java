@@ -49,7 +49,9 @@ public class Landscaper extends Unit {
                 break;
             }
         }
-        System.out.println("Found my d.school: " + baseLocation.toString());
+        if (baseLocation != null) {
+            System.out.println("Found my d.school: " + baseLocation.toString());
+        }
 
         // scan for HQ location
         hqLocation = null;
@@ -97,6 +99,7 @@ public class Landscaper extends Unit {
 
     public void aggro() throws GameActionException {
         // update d.school location
+        baseLocation = null;
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
             if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).type.equals(RobotType.DESIGN_SCHOOL) && nearbyBotsMap.get(t).team.equals(allyTeam)) {
@@ -108,7 +111,7 @@ public class Landscaper extends Unit {
         Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
 
         if (rc.getDirtCarrying() == 0) { // dig
-            if (rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
+            if (baseLocation != null && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
                 System.out.println("Digging under d.school at " + baseLocation.toString());
                 tryDig(myLocation.directionTo(baseLocation));
             }
