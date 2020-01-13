@@ -86,7 +86,7 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        if(holdProduction) {
+        if (holdProduction) {
             checkIfContinueHold();
         }
 
@@ -211,7 +211,7 @@ public class Miner extends Unit {
         }
         // Build starport if stuck during aggro
         if (locAt(10).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0)) && rc.getRoundNum() > 20) {
-//            //System.out.println("Trying to build starport");
+//            System.out.println("Trying to build starport");
 //            for (Direction d : directions) {
 //                if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
 //                    rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
@@ -264,8 +264,8 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-       //System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
-       //System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+       System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
+       System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
         if (dSchoolExists) {
             refineryCheck();
@@ -274,7 +274,7 @@ public class Miner extends Unit {
         Direction hqDir = myLocation.directionTo(hqLocation);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
-        //System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
+        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         if (outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
             fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
         }
@@ -322,7 +322,7 @@ public class Miner extends Unit {
                 destination = updateNearestSoupLocation();
             }
         }
-//        //System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+//        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
     }
 
     // Updates base location and builds refinery if base is too far
@@ -346,7 +346,7 @@ public class Miner extends Unit {
         else {
             //rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
         }
-        if ( (distToBase > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100))
+        if ( (distToBase > 25 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
             && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 25 || turnsToBase > 10)) {
             //TODO: build a refinery smarter and in good direction.
             //build new refinery!
@@ -370,7 +370,7 @@ public class Miner extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-//        //System.out.println("start map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+//        System.out.println("start map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x-5,0); x <= Math.min(myLocation.x+5,MAP_WIDTH-1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
             for (int y : getLocationsToCheck((soupChecked[x] >> Math.min(Math.max(myLocation.y - 5,0),MAP_HEIGHT-1)) & 1023)) {
@@ -384,9 +384,9 @@ public class Miner extends Unit {
                 }
             }
         }
-//        //System.out.println("end map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+//        System.out.println("end map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
 
-//        //System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+//        System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         Iterator<MapLocation> soupIterator = soupLocations.iterator();
         Iterator<Integer> priorityIterator = soupPriorities.iterator();
         int scanRadius = rc.getCurrentSensorRadiusSquared();
@@ -420,7 +420,7 @@ public class Miner extends Unit {
                 }
             }
         }
-//        //System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+//        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
 
         if (nearest != null) {
             lastSoupLocation = nearest;
@@ -459,22 +459,22 @@ public class Miner extends Unit {
         boolean foundHQMessage=hqm;
         boolean foundProdMessage=prodm;
         int found = 0;
-        ////System.out.println("reading messages from " + Integer.toString(rn) + " round.");
+        //System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            ////System.out.println(msg[0]);
+            //System.out.println(msg[0]);
             Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
             if (m.origin) {
                 if (m.schema == 2 && !foundHQMessage) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    ////System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
+                    //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
                     for (int j = 0; j < p.numPatchesWritten; j++) {
                         if (soupMiningTiles[p.patches[j]] == 0) {
                             //For weighting, set another array so that
                             soupMiningTiles[p.patches[j]] = 1;
                             MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
                             // System.out.print("HQ told me about this new soup tile: ");
-                            // //System.out.println(p.patches[j]);
+                            // System.out.println(p.patches[j]);
                             // //rc.setIndicatorDot(cLoc, 255, 255, 255);
                             soupLocations.add(cLoc);
                             soupPriorities.add(p.weights[j]);
@@ -507,7 +507,7 @@ public class Miner extends Unit {
 
     //Returns true if it finds all messages it's looking for
     public boolean updateActiveLocations() throws GameActionException {
-        ////System.out.println("start reading");
+        //System.out.println("start reading");
         int rn = rc.getRoundNum();
         int del = (rn-1)%messageFrequency;
         int prev1 = rn-1-(Math.floorMod(del-messageModulus, messageFrequency));
@@ -547,7 +547,7 @@ public class Miner extends Unit {
             }
         }
         if(!foundhq) {
-            //System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
+            System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
         }
         return false;
     }
@@ -564,7 +564,7 @@ public class Miner extends Unit {
                 }
             }
             // 0 when hq doesn't know about it
-//            //System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
+//            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
             if(!noSoup || soupTotal==0) {
                 generateSoupMessage(destination, soupToPower(soupTotal));
             }
@@ -575,10 +575,10 @@ public class Miner extends Unit {
     public void generateSoupMessage(MapLocation destination, int soupAmount) throws GameActionException {
         int tnum = getTileNumber(destination);
 //        if (soupAmount>0) {
-//            //System.out.println("Telling HQ about Soup at tile: " + Integer.toString(tnum));
+//            System.out.println("Telling HQ about Soup at tile: " + Integer.toString(tnum));
 //            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 255, 255, 0);
 //        } else {
-//            //System.out.println("Telling HQ about NO SOUP at tile: " + Integer.toString(tnum));
+//            System.out.println("Telling HQ about NO SOUP at tile: " + Integer.toString(tnum));
 //            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
 //        }
         SoupMessage s = new SoupMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
