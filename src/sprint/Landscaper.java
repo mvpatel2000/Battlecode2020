@@ -300,32 +300,34 @@ public class Landscaper extends Unit {
     }
 
     void checkWallStage() throws GameActionException {
-        int numInnerWallOurs = 0; // number of OUR LANSCAPERS in the inner wall (not counting current robot if applicable)
-        int numInnerWall = 0; // number of ALL ROBOTS in the inner wall (not counting current robot if applicable)
-        for (Direction dir : directions) {
-            if (nearbyBotsMap.containsKey(hqLocation.add(dir))) {
-                numInnerWall++;
-                RobotInfo botInfo = nearbyBotsMap.get(hqLocation.add(dir));
-                if (botInfo.type.equals(RobotType.LANDSCAPER) && botInfo.team.equals(allyTeam)) {
-                    numInnerWallOurs++;
+        if (wallPhase < 2) {
+            int numInnerWallOurs = 0; // number of OUR LANSCAPERS in the inner wall (not counting current robot if applicable)
+            int numInnerWall = 0; // number of ALL ROBOTS in the inner wall (not counting current robot if applicable)
+            for (Direction dir : directions) {
+                if (nearbyBotsMap.containsKey(hqLocation.add(dir))) {
+                    numInnerWall++;
+                    RobotInfo botInfo = nearbyBotsMap.get(hqLocation.add(dir));
+                    if (botInfo.type.equals(RobotType.LANDSCAPER) && botInfo.team.equals(allyTeam)) {
+                        numInnerWallOurs++;
+                    }
                 }
             }
-        }
-        if (numInnerWallOurs == 7 && holdPositionLoc != null && myLocation.equals(holdPositionLoc)) {
-            System.out.println("I see that the inner wall is tight!");
-            wallPhase = 1;
-        }
-        else if (numInnerWall == 7 && holdPositionLoc != null && currentlyInInnerWall && myLocation.equals(holdPositionLoc) && rc.getRoundNum() > 300) { // TODO: important constant round num 300
-            System.out.println("The inner wall is full, including some enemies.  Trying to close it off right now.");
-            wallPhase = 1;
-        }
-        else if (currentlyInInnerWall && rc.getRoundNum() > forceInnerWallTakeoffAt) {
-            System.out.println("It's round " + Integer.toString(forceInnerWallTakeoffAt) + " and about time to force the inner wall up even if it's not closed.");
-            wallPhase = 1;
-        }
-        else if (numInnerWall == 8 || (rc.getRoundNum() > forceInnerWallTakeoffAt && !currentlyInInnerWall)) {
-            System.out.println("The inner wall is already full.  So I am an outer landscaper.");
-            wallPhase = 2;
+            if (currentlyInInnerWall && numInnerWallOurs == 7 && holdPositionLoc != null && myLocation.equals(holdPositionLoc)) {
+                System.out.println("I see that the inner wall is tight!");
+                wallPhase = 1;
+            }
+            else if (numInnerWall == 7 && holdPositionLoc != null && currentlyInInnerWall && myLocation.equals(holdPositionLoc) && rc.getRoundNum() > 300) { // TODO: important constant round num 300
+                System.out.println("The inner wall is full, including some enemies.  Trying to close it off right now.");
+                wallPhase = 1;
+            }
+            else if (currentlyInInnerWall && rc.getRoundNum() > forceInnerWallTakeoffAt) {
+                System.out.println("It's round " + Integer.toString(forceInnerWallTakeoffAt) + " and about time to force the inner wall up even if it's not closed.");
+                wallPhase = 1;
+            }
+            else if (numInnerWall == 8 || (rc.getRoundNum() > forceInnerWallTakeoffAt && !currentlyInInnerWall)) {
+                System.out.println("The inner wall is already full.  So I am an outer landscaper.");
+                wallPhase = 2;
+            }
         }
         System.out.println("Wall phase: " + Integer.toString(wallPhase));
     }

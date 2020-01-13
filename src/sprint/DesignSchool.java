@@ -2,6 +2,9 @@ package sprint;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+import java.util.function.Function;
+
 public class DesignSchool extends Building {
 
     MapLocation hqLocation = null;
@@ -70,7 +73,15 @@ public class DesignSchool extends Building {
         previousSoup = rc.getTeamSoup();
     }
 
+    private int countAggroLandscapers(Team t) {
+        return Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                x.getLocation().distanceSquaredTo(enemyHQLocation) < 3
+                        && x.getType().equals(RobotType.LANDSCAPER)
+                        && x.getTeam().equals(t)).toArray(RobotInfo[]::new).length;
+    }
+
     public void aggro() throws GameActionException {
+        if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
         if (wallProxy && !holdProduction) {
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
@@ -82,10 +93,11 @@ public class DesignSchool extends Building {
     }
 
     public void defense() throws GameActionException {
-        if (existsNearbyEnemy() && numLandscapersMade >= 3) {
-            System.out.println("Enemy detected!  I will hurry and close this wall.");
-            closeInnerWallAt = 0;
-        }
+        // Removing emergency close wall because drones should be able to handle it
+        // if (existsNearbyEnemy() && numLandscapersMade >= 5) {
+        //     System.out.println("Enemy detected!  I will hurry and close this wall.");
+        //     closeInnerWallAt = 0;
+        // }
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
             if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
