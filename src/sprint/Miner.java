@@ -14,7 +14,7 @@ public class Miner extends Unit {
 
     MapLocation destination;
     MapLocation baseLocation;
-    boolean goingToBase;
+    int turnsToBase;
     int[] tilesVisited;
 
     boolean dSchoolExists;
@@ -42,10 +42,10 @@ public class Miner extends Unit {
         soupChecked = new long[64];
         soupMiningTiles = new int[numCols*numRows];
         tilesVisited = new int[numRows * numCols];
-        goingToBase = false;
+        turnsToBase = -1;
 
         destination = updateNearestSoupLocation();
-        updateActiveLocations(destination);
+        updateActiveLocations();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
@@ -58,7 +58,7 @@ public class Miner extends Unit {
 
         readMessage = false;
         if (rc.getRoundNum() % messageFrequency == messageModulus+2) {
-            updateActiveLocations(destination);
+            updateActiveLocations();
             readMessage = true;
         }
 
@@ -111,7 +111,7 @@ public class Miner extends Unit {
         System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         if (distanceToDestination <= 2) {                                     // at destination
-            if (goingToBase) {                                                // at HQ
+            if (turnsToBase >= 0) {                                           // at HQ
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
@@ -127,7 +127,7 @@ public class Miner extends Unit {
                     rc.depositSoup(hqDir, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
                     destination = updateNearestSoupLocation();
-                    goingToBase = false;
+                    turnsToBase = -1;
                     clearHistory();
                 }
             }
@@ -140,7 +140,7 @@ public class Miner extends Unit {
                 else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
                     refineryCheck(); //TODO: Fix this method and make it better
                     destination = baseLocation;
-                    goingToBase = true;
+                    turnsToBase++;
                     clearHistory();
                 }
                 else if (rc.isReady()) {                                      // mine
@@ -150,6 +150,8 @@ public class Miner extends Unit {
             }
         }
         else {                                                                // in transit
+            if (turnsToBase >= 0)
+                turnsToBase++;
             path(destination);
             if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
@@ -301,7 +303,7 @@ public class Miner extends Unit {
         return false;
     }
 
-    public boolean updateActiveLocations(MapLocation destination) throws GameActionException {
+    public boolean updateActiveLocations() throws GameActionException {
 //        System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         int rn = rc.getRoundNum();
         int del = (rn-1)%messageFrequency;
