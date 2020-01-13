@@ -136,15 +136,21 @@ public class Landscaper extends Unit {
         updateHoldPositionLoc();
         checkWallStage();
 
-        
-        if (rc.getDirtCarrying() > 0) { // zeroth priority: kill an an enemy building
-            for (Direction d : directions) {
-                if (nearbyBotsMap.containsKey(myLocation.add(d))) {
-                    RobotInfo botInfo = nearbyBotsMap.get(myLocation.add(d));
-                    if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.DESIGN_SCHOOL) || botInfo.type.equals(RobotType.FULFILLMENT_CENTER) || botInfo.type.equals(RobotType.NET_GUN))) {
+        for (Direction d : directions) {// zeroth priority: kill an an enemy building
+            if (nearbyBotsMap.containsKey(myLocation.add(d))) {
+                RobotInfo botInfo = nearbyBotsMap.get(myLocation.add(d));
+                if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.DESIGN_SCHOOL) || botInfo.type.equals(RobotType.FULFILLMENT_CENTER) || botInfo.type.equals(RobotType.NET_GUN))) {
+                    if (rc.getDirtCarrying() > 0) {
                         System.out.println("Dumping dirt on enemy building at " + botInfo.location);
-                        tryDeposit(d);
-                        return;
+                        if (tryDeposit(d)) {
+                            return;
+                        }
+                    }
+                    else {
+                        System.out.println("Attempting to gather dirt in an emergency to kill the enemy building");
+                        if (tryDig(d.opposite())) {
+                            return;
+                        }
                     }
                 }
             }
@@ -163,7 +169,7 @@ public class Landscaper extends Unit {
                     boolean foundDigSite = false;
                     int hqElevation = rc.senseElevation(hqLocation);
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
-                        if (hqLocation.add(d).isAdjacentTo(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
+                        if (hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
                             foundDigSite = true;
                             System.out.println("Digging from pile in direction " + d.toString());
                             tryDig(d);
@@ -231,6 +237,12 @@ public class Landscaper extends Unit {
     boolean tryDeposit(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canDepositDirt(dir)) {
             rc.depositDirt(dir);
+            if (dir.equals(Direction.CENTER)) {
+                rc.setIndicatorDot(myLocation, 150, 160, 110);
+            }
+            else {
+                rc.setIndicatorLine(myLocation, myLocation.add(dir), 150, 160, 110);
+            }
             return true;
         } else {
             return false;
@@ -240,6 +252,12 @@ public class Landscaper extends Unit {
     boolean tryDig(Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canDigDirt(dir)) {
             rc.digDirt(dir);
+            if (dir.equals(Direction.CENTER)) {
+                rc.setIndicatorDot(myLocation, 250, 250, 250);
+            }
+            else {
+                rc.setIndicatorLine(myLocation, myLocation.add(dir), 250, 250, 250);
+            }
             return true;
         } else {
             return false;

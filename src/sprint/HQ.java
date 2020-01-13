@@ -24,7 +24,7 @@ public class HQ extends Building {
         minerCount = 0;
 
         for (Direction dir : directions) {
-            if (minerCount < 5 && tryBuild(RobotType.MINER, dir)) {
+            if (minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
                 minerCount++;
             }
         }
@@ -49,7 +49,7 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
+            if ((minerCount < 4 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
                 minerCount++;
             }
         }

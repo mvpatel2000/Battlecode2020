@@ -15,7 +15,7 @@ public class Miner extends Unit {
     boolean readMessage;
 
     MapLocation destination;
-    MapLocation hqlocation;
+    MapLocation hqLocation;
     MapLocation baseLocation;
     int turnsToBase;
     int[] tilesVisited;
@@ -60,7 +60,7 @@ public class Miner extends Unit {
             RobotInfo r = rc.senseRobotAtLocation(t);
             if (r != null && r.getType() == RobotType.HQ) {
                 baseLocation = t;
-                hqlocation = t;
+                hqLocation = t;
                 break;
             }
         }
@@ -175,7 +175,7 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady() || myLocation.distanceSquaredTo(hqlocation) < 35 || rc.getTeamSoup() < 1000)
+        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 1000)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(),allyTeam);
         boolean existsNetGun = false;
@@ -213,14 +213,17 @@ public class Miner extends Unit {
 
         System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+        
+        Direction hqDir = myLocation.directionTo(hqLocation);
+        MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
+        boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
+        if (outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
+            fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+        }
+
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at HQ
-                Direction hqDir = myLocation.directionTo(destination);
 
-                // build fulfillment center
-                //if (!fulfillmentCenterExists) {
-                //    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-                //}
                 // build d.school
                 if (!dSchoolExists && !holdProduction) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
@@ -255,6 +258,7 @@ public class Miner extends Unit {
         else {                                                                // in transit
             if (turnsToBase >= 0)
                 turnsToBase++;
+            refineryCheck();
             path(destination);
             if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
@@ -274,7 +278,7 @@ public class Miner extends Unit {
             }
         }
         //TODO: Better measure of distance than straightline. Consider path length?
-        if (myLocation.distanceSquaredTo(baseLocation) > 25) {
+        if (myLocation.distanceSquaredTo(baseLocation) > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100)) {
             //TODO: build a refinery smarter and in good direction.
             //TODO: Handle case where you dont have enough resources and then are stuck? I think soln is better pathing so it can get back
             //build new refinery!
