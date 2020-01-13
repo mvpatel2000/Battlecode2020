@@ -254,7 +254,7 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-       System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
+       System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
         if (dSchoolExists) {
@@ -269,7 +269,7 @@ public class Miner extends Unit {
         }
 
         if (distanceToDestination <= 2) {                                     // at destination
-            if (turnsToBase >= 0) {                                           // at HQ
+            if (turnsToBase >= 0) {                                           // at base
 
                 // build d.school
                 if (!dSchoolExists && !holdProduction) {
@@ -279,9 +279,9 @@ public class Miner extends Unit {
 //                if (!dSchoolExists) {
 //                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
 //                }
-
-                if (rc.canDepositSoup(hqDir))                                 // deposit. Note: Second check is redundant?
-                    rc.depositSoup(hqDir, rc.getSoupCarrying());
+                Direction toBase = myLocation.directionTo(baseLocation);
+                if (rc.canDepositSoup(toBase))                                 // deposit. Note: Second check is redundant?
+                    rc.depositSoup(toBase, rc.getSoupCarrying());
                 if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
                     destination = updateNearestSoupLocation();
                     turnsToBase = -1;
@@ -327,6 +327,10 @@ public class Miner extends Unit {
                 }
             }
         }
+        if (myLocation.distanceSquaredTo(baseLocation) > 25)
+            rc.setIndicatorLine(myLocation, baseLocation, 255,0,0);
+        else
+            rc.setIndicatorLine(myLocation, baseLocation, 255,255,255);
         //TODO: Better measure of distance than straightline. Consider path length?
         if (myLocation.distanceSquaredTo(baseLocation) > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100)) {
             //TODO: build a refinery smarter and in good direction.
