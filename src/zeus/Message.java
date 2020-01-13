@@ -1,6 +1,4 @@
-package smite;
-
-import java.util.Arrays;
+package zeus;
 
 public class Message {
 
@@ -13,7 +11,7 @@ public class Message {
     final int MAP_HEIGHT;
     final int MAP_WIDTH;
     final int team;
-    final int arbitraryConstant = 98234;
+    final int arbitraryConstant = 89560;
 
     int headerLen = 16;
     int schema = 0; //default message type

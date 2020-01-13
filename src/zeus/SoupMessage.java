@@ -1,4 +1,4 @@
-package smite;
+package zeus;
 
 import java.util.Arrays;
 import java.util.Comparator;
