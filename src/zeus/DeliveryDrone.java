@@ -1,4 +1,4 @@
-package smite;
+package zeus;
 
 import battlecode.common.*;
 
@@ -9,10 +9,19 @@ public class DeliveryDrone extends Unit {
     long[] waterChecked = new long[64]; // align to top right
     List<MapLocation> waterLocations = new ArrayList<>();
 
+    final int[][] SPIRAL_ORDER = {{0,0}, {-1,0}, {0,-1}, {0,1}, {1,0}, {-1,-1}, {-1,1}, {1,-1}, {1,1}, {-2,0}, {0,-2}, {0,2}, {2,0}, {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1}, {-2,-2}, {-2,2}, {2,-2}, {2,2}, {-3,0}, {0,-3}, {0,3}, {3,0}, {-3,-1}, {-3,1}, {-1,-3}, {-1,3}, {1,-3}, {1,3}, {3,-1}, {3,1}, {-3,-2}, {-3,2}, {-2,-3}, {-2,3}, {2,-3}, {2,3}, {3,-2}, {3,2}, {-4,0}, {0,-4}, {0,4}, {4,0}, {-4,-1}, {-4,1}, {-1,-4}, {-1,4}, {1,-4}, {1,4}, {4,-1}, {4,1}, {-3,-3}, {-3,3}, {3,-3}, {3,3}, {-4,-2}, {-4,2}, {-2,-4}, {-2,4}, {2,-4}, {2,4}, {4,-2}, {4,2}, {-5,0}, {-4,-3}, {-4,3}, {-3,-4}, {-3,4}, {0,-5}, {0,5}, {3,-4}, {3,4}, {4,-3}, {4,3}, {5,0}, {-5,-1}, {-5,1}, {-1,-5}, {-1,5}, {1,-5}, {1,5}, {5,-1}, {5,1}, {-5,-2}, {-5,2}, {-2,-5}, {-2,5}, {2,-5}, {2,5}, {5,-2}, {5,2}, {-4,-4}, {-4,4}, {4,-4}, {4,4}, {-5,-3}, {-5,3}, {-3,-5}, {-3,5}, {3,-5}, {3,5}, {5,-3}, {5,3}};
+    int[] tilesVisited;
+    int stuckCount;
+
     MapLocation nearestWaterLocation;
     MapLocation baseLocation;
     MapLocation hqLocation;
+    MapLocation enemyLocation;
+    boolean enemyVisited;
     MapLocation destination;
+
+    boolean attackDrone;
+    final int DEFEND_TURN = 900;
 
     boolean carryingEnemy;
     boolean carryingAlly;
@@ -29,47 +38,57 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
+        if (baseLocation == null)
+            baseLocation = myLocation;
+        hqLocation = checkForLocationMessage();
+        hqLocation = hqLocation != null ? hqLocation : baseLocation;
 
-        for (RobotInfo robot : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam)) {
-            if (robot.getType() == RobotType.HQ) {
-                hqLocation = robot.getLocation();
-                break;
-            }
-        }
+        tilesVisited = new int[numRows * numCols];
+        stuckCount = 0;
 
-        destination = hqLocation != null ? hqLocation : baseLocation;
+        destination = hqLocation;
+        enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
+        enemyVisited = false;
         carryingEnemy = false;
         carryingAlly = false;
+
+        attackDrone = false;
+        Direction toBase = myLocation.directionTo(baseLocation);
+        if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(baseLocation)) {
+            attackDrone = true;
+        }
 
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
     @Override
-    public void run()  throws GameActionException  {
+    public void run() throws GameActionException  {
         super.run();
-        if (rc.getRoundNum() > 300) {
-            destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
-        }
+
+        tilesVisited[getTileNumber(myLocation)] = 1;
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
-                Direction dropDir = myLocation.directionTo(nearestWaterLocation);
-                if (rc.canDropUnit(dropDir)) {
-                    rc.dropUnit(dropDir);
-                    carryingEnemy = false;
+                for (Direction dir : directions) { // drop anywhere wet
+                    if (rc.isReady() && rc.canDropUnit(dir) &&
+                            rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
+                        rc.dropUnit(dir);
+                        carryingEnemy = false;
+                        return;
+                    }
+                }
+                if (myLocation == nearestWaterLocation) {
+                    for (Direction dir : directions) { // you're on the water
+                        if (rc.isReady() && rc.canMove(dir)) {
+                            rc.move(dir);
+                        }
+                    }
                 }
             }
             else {
-                if ((nearestWaterLocation == baseLocation || nearestWaterLocation == hqLocation)
-                        && myLocation.distanceSquaredTo(destination) > 8) {
-                    path(nearestWaterLocation);
-                }
-                else {
-                    tryMove();
-                }
                 path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -91,19 +110,40 @@ public class DeliveryDrone extends Unit {
                 }
             }
             if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
-                rc.pickUpUnit(nearest.getID());
-                carryingEnemy = true;
-            }
-            else if (nearest != null) {
+                if (rc.isReady()) {
+                    rc.pickUpUnit(nearest.getID());
+                    carryingEnemy = true;
+                }
+            } else if (nearest != null) {
                 path(nearest.location); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
-            }
-            else { // go back to base
-                if (myLocation.distanceSquaredTo(destination) > 8) {
+            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { //TODO: Replace with attack thing
+                if (!enemyVisited) {
+                    if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
+                        path(enemyLocation);
+                    }
+                    else {
+                        enemyVisited = true;
+                        destination = getNearestUnexploredTile();
+                    }
+                } else {
+                    if (myLocation.distanceSquaredTo(destination) <= 4 || stuckCount > 8) {
+                        destination = getNearestUnexploredTile();
+                        stuckCount = 0;
+                    }
+                    else {
+                        stuckCount++;
+                    }
                     path(destination);
                 }
-                else {
-                    tryMove();
+                nearestWaterLocation = updateNearestWaterLocation();
+            } else { // go back to base
+                destination = hqLocation;
+                int distance = myLocation.distanceSquaredTo(destination);
+                if (distance > 64 || (rc.getRoundNum() > DEFEND_TURN && distance > 8)) {
+                    path(destination);
+                } else if (rc.getRoundNum() < DEFEND_TURN) {
+                    path(myLocation.add(myLocation.directionTo(hqLocation).opposite().rotateLeft()));
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -117,17 +157,19 @@ public class DeliveryDrone extends Unit {
             return false;
         }
         RobotInfo[] guns = Arrays.stream(rc.senseNearbyRobots()).filter(robot ->
-                            !robot.team.equals(rc.getTeam())
+                            !robot.team.equals(allyTeam)
                             && (robot.getType().equals(RobotType.HQ) || robot.getType().equals(RobotType.NET_GUN)))
                             .toArray(RobotInfo[]::new);
         Direction best = Arrays.stream(directions).filter(x -> {
             MapLocation next = me.add(x);
             return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
-                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+                    && myLocation.distanceSquaredTo(enemyLocation) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
         }).min(Comparator.comparing(x ->
                 me.add(x).distanceSquaredTo(target))).orElse(null);
         return pathHelper(target, best);
     }
+
 
     // Returns location of nearest water
     public MapLocation updateNearestWaterLocation() throws GameActionException {
@@ -151,9 +193,17 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
+
+        for (Direction dir : directionsWithCenter) {
+            MapLocation newLoc = myLocation.add(dir);
+            if (rc.canSenseLocation(newLoc) && rc.senseFlooding(newLoc)) {
+                return newLoc;
+            }
+        }
         // //System.out.println("end map scan "+Clock.getBytecodeNum());
 
         // //System.out.println("start find nearest "+Clock.getBytecodeNum());
+        int ctr = 0;
         Iterator<MapLocation> soupIterator = waterLocations.iterator();
         while (soupIterator.hasNext()) {
             MapLocation soupLocation = soupIterator.next();
@@ -162,13 +212,35 @@ public class DeliveryDrone extends Unit {
                 nearest = soupLocation;
                 distanceToNearest = soupDistance;
             }
+            ctr++;
+            if (ctr % 5 == 0) {
+                if (Clock.getBytecodesLeft() < 500) {
+                    break;
+                }
+            }
         }
         // //System.out.println("end find nearest "+Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;
         }
-        return hqLocation != null ? hqLocation : baseLocation;
+        return getNearestUnexploredTile();
+    }
+
+    //TODO: Optimize this. Scan outward with switch statements? Replace int[] for tiles with bits?
+    public MapLocation getNearestUnexploredTile() throws GameActionException {
+        int currentTile = getTileNumber(myLocation);
+        int scanRadius = rc.getCurrentSensorRadiusSquared();
+        for(int[] shift : SPIRAL_ORDER) {
+            int newTile = currentTile + shift[0] + numCols * shift[1];
+            if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0 ) {
+                MapLocation newTileLocation = getCenterFromTileNumber(newTile);
+                if (myLocation.distanceSquaredTo(newTileLocation) >= scanRadius || !rc.senseFlooding(newTileLocation)) {
+                    return newTileLocation;
+                }
+            }
+        }
+        return enemyLocation; // explored entire map and no water seen??
     }
 
     public int[] getLocationsToCheck(long mask) {

@@ -1,7 +1,4 @@
-package smite;
-
-import java.util.Arrays;
-import java.util.Comparator;
+package zeus;
 
 public class MinePatchMessage extends Message {
 

@@ -1,4 +1,4 @@
-package smite;
+package zeus;
 
 import battlecode.common.*;
 import java.util.HashMap;
@@ -16,15 +16,22 @@ public class HQ extends Building {
 
     int[][] visible = {{0,0}, {-1,0}, {0,-1}, {0,1}, {1,0}, {-1,-1}, {-1,1}, {1,-1}, {1,1}, {-2,0}, {0,-2}, {0,2}, {2,0}, {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1}, {-2,-2}, {-2,2}, {2,-2}, {2,2}, {-3,0}, {0,-3}, {0,3}, {3,0}, {-3,-1}, {-3,1}, {-1,-3}, {-1,3}, {1,-3}, {1,3}, {3,-1}, {3,1}, {-3,-2}, {-3,2}, {-2,-3}, {-2,3}, {2,-3}, {2,3}, {3,-2}, {3,2}, {-4,0}, {0,-4}, {0,4}, {4,0}, {-4,-1}, {-4,1}, {-1,-4}, {-1,4}, {1,-4}, {1,4}, {4,-1}, {4,1}, {-3,-3}, {-3,3}, {3,-3}, {3,3}, {-4,-2}, {-4,2}, {-2,-4}, {-2,4}, {2,-4}, {2,4}, {4,-2}, {4,2}, {-5,0}, {-4,-3}, {-4,3}, {-3,-4}, {-3,4}, {0,-5}, {0,5}, {3,-4}, {3,4}, {4,-3}, {4,3}, {5,0}, {-5,-1}, {-5,1}, {-1,-5}, {-1,5}, {1,-5}, {1,5}, {5,-1}, {5,1}, {-5,-2}, {-5,2}, {-2,-5}, {-2,5}, {2,-5}, {2,5}, {5,-2}, {5,2}, {-4,-4}, {-4,4}, {4,-4}, {4,4}, {-5,-3}, {-5,3}, {-3,-5}, {-3,5}, {3,-5}, {3,5}, {5,-3}, {5,3}, {-6,0}, {0,-6}, {0,6}, {6,0}, {-6,-1}, {-6,1}, {-1,-6}, {-1,6}, {1,-6}, {1,6}, {6,-1}, {6,1}, {-6,-2}, {-6,2}, {-2,-6}, {-2,6}, {2,-6}, {2,6}, {6,-2}, {6,2}, {-5,-4}, {-5,4}, {-4,-5}, {-4,5}, {4,-5}, {4,5}, {5,-4}, {5,4}, {-6,-3}, {-6,3}, {-3,-6}, {-3,6}, {3,-6}, {3,6}, {6,-3}, {6,3}};
 
+    //For halting production and resuming it.
+    boolean holdProduction = false;
+    int turnAtProductionHalt = -1;
+    int previousSoup = 200;
+    MapLocation enemyHQLocApprox = null;
+
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
+        writeLocationMessage();
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
 
-        for (Direction dir : directions) {  
-            if (minerCount < 5 && tryBuild(RobotType.MINER, dir)) {
-                minerCount++;   
+        for (Direction dir : directions) {
+            if (minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
+                minerCount++;
             }
         }
 
@@ -45,17 +52,23 @@ public class HQ extends Building {
      */
     @Override
     public void run() throws GameActionException {
+        if(holdProduction) {
+            checkIfContinueHold();
+        }
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {   
-                minerCount++;   
+            if ((minerCount < 4 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
+                minerCount++;
             }
         }
         if(rc.getRoundNum()!=1) {
             readMessages();
         }
         generateMessage();
+
+        //should always be the last thing
+        previousSoup = rc.getTeamSoup();
     }
 
     // Get soups around HQ initially, put in soupsPerTile arraylist for
@@ -76,6 +89,12 @@ public class HQ extends Building {
                 addToSoupList(key, soupval/50);
             }
         }
+    }
+
+    void writeLocationMessage() throws GameActionException {
+        LocationMessage l = new LocationMessage(MAP_WIDTH, MAP_HEIGHT, teamNum);
+        l.writeLocation(myLocation.x, myLocation.y);
+        sendMessage(l.getMessage(), 1);
     }
 
     void generateMessage() throws GameActionException {
@@ -129,8 +148,27 @@ public class HQ extends Building {
         }
     }
 
+    //Returns true if should continue halting production
+    //Returns false if should not continue halting production
+    private boolean checkIfContinueHold() throws GameActionException {
+        //resume production after 10 turns, at most
+        if(rc.getRoundNum()-turnAtProductionHalt>10) {
+            holdProduction = false;
+            return false;
+        }
+        //-200 soup in one turn good approximation for building net gun
+        //so we resume earlier than 10 turns if this happens
+        if(previousSoup - rc.getTeamSoup() > 200) {
+            holdProduction = false;
+            return false;
+        }
+        //if neither condition happens (10 turns or -200), continue holding production
+        return true;
+    }
+
     void readMessages() throws GameActionException {
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
+        int lookingForMessages = 2;
         for (int i=0; i<msgs.length; i++) {
             int[] msg = msgs[i].getMessage();
             Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -151,7 +189,21 @@ public class HQ extends Building {
                         //miner telling me there is soup at tile
                         addToSoupList(s.tile, s.soupThere);
                     }
+                    lookingForMessages-=1;
                 }
+                if(m.schema == 3) {
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    System.out.print("HOLDING PRODUCTION!");
+                    holdProduction = true;
+                    turnAtProductionHalt = rc.getRoundNum();
+                    enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                    lookingForMessages-=1;
+                }
+            }
+            //found all the messages I was looking for
+            //save computation by not looking at any more.
+            if(lookingForMessages==0) {
+                break;
             }
         }
     }

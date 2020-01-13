@@ -8,7 +8,7 @@ public class DesignSchool extends Building {
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
-    int DEFAULT_CLOSE_INNER_WALL_AT = 300;
+    int DEFAULT_CLOSE_INNER_WALL_AT = 400;
     int closeInnerWallAt = DEFAULT_CLOSE_INNER_WALL_AT; // TODO: tweak this
     int startOuterWallAt = 0;
 
