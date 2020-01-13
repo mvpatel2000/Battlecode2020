@@ -10,6 +10,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int DEFAULT_CLOSE_INNER_WALL_AT = 300;
     int closeInnerWallAt = DEFAULT_CLOSE_INNER_WALL_AT; // TODO: tweak this
+    int startOuterWallAt = 0;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -89,7 +90,7 @@ public class DesignSchool extends Building {
             if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
-                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+                    if ((rc.getTeamSoup() >= Math.min(150 + 8 * numLandscapersMade, 200)) && tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         numLandscapersMade++;
                     }
                     else {
@@ -98,6 +99,12 @@ public class DesignSchool extends Building {
                 }
             }
             else if(numLandscapersMade >= 8 && numLandscapersMade < 19) { // WALL PHASE 2
+                if (startOuterWallAt == 0) {
+                    startOuterWallAt = rc.getRoundNum();
+                }
+                if (rc.getRoundNum() - startOuterWallAt < 80) {
+                    return;
+                }
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
