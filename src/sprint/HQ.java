@@ -156,7 +156,7 @@ public class HQ extends Building {
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
-        if(rc.getRoundNum()-turnAtProductionHalt>10) {
+        if(rc.getRoundNum()-turnAtProductionHalt>30) {
             System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
