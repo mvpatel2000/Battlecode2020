@@ -103,6 +103,20 @@ public class Miner extends Unit {
 
         checkBuildBuildings();
 
+        if (!dSchoolExists || !fulfillmentCenterExists) {
+            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+            for (RobotInfo robot : nearbyRobots) {
+                switch (robot.getType()) {
+                    case DESIGN_SCHOOL:
+                        dSchoolExists = true;
+                        break;
+                    case FULFILLMENT_CENTER:
+                        fulfillmentCenterExists = true;
+                        break;
+                }
+            }
+        }
+
         harvest();
         previousSoup = rc.getTeamSoup();
     }
@@ -186,12 +200,14 @@ public class Miner extends Unit {
             return;
         }
         if (locAt(10).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0)) && rc.getRoundNum() > 20) {
-            System.out.println("Trying to build starport");
-            for (Direction d : directions)
-                if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
-                    rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
-                    aggroDone = true;
-                }
+//            System.out.println("Trying to build starport");
+//            for (Direction d : directions) {
+//                if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+//                    rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+//                    aggroDone = true;
+//                }
+//            }
+            aggroDone = true;
         }
         aggroPath(target.get(0));
         if (myLocation.equals(target.get(0)))
@@ -231,14 +247,13 @@ public class Miner extends Unit {
         }
     }
 
-
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
-        if (fulfillmentCenterExists && dSchoolExists) {
+        if (dSchoolExists) {
             refineryCheck();
         }
         
