@@ -1,4 +1,4 @@
-package smite;
+package zeus;
 
 import battlecode.common.*;
 
