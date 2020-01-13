@@ -20,10 +20,11 @@ build/*
 *.ipr
 *.iws
 /.idea/
+gradlew
+gradlew.bat
+gradle.properties
 version.txt
-*.properties
-*gradle*
-
+build.gradle
 
 # User-specific stuff:
 battlecode-scaffold.iws

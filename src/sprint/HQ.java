@@ -18,13 +18,14 @@ public class HQ extends Building {
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
+        writeLocationMessage();
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
 
-        for (Direction dir : directions) {  
+        for (Direction dir : directions) {
             if (minerCount < 5 && tryBuild(RobotType.MINER, dir)) {
-                minerCount++;   
+                minerCount++;
             }
         }
 
@@ -48,8 +49,8 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {   
-                minerCount++;   
+            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
+                minerCount++;
             }
         }
         if(rc.getRoundNum()!=1) {
@@ -76,6 +77,12 @@ public class HQ extends Building {
                 addToSoupList(key, soupval/50);
             }
         }
+    }
+
+    void writeLocationMessage() throws GameActionException {
+        LocationMessage l = new LocationMessage(MAP_WIDTH, MAP_HEIGHT, teamNum);
+        l.writeLocation(myLocation.x, myLocation.y);
+        sendMessage(l.getMessage(), 1);
     }
 
     void generateMessage() throws GameActionException {

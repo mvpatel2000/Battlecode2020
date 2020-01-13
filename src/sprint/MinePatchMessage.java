@@ -1,8 +1,5 @@
 package sprint;
 
-import java.util.Arrays;
-import java.util.Comparator;
-
 public class MinePatchMessage extends Message {
 
     Message m;
