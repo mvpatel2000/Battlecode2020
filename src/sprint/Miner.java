@@ -346,7 +346,7 @@ public class Miner extends Unit {
         else {
             rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
         }
-        if ( (distToBase > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100))
+        if ( (distToBase > 25 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
             && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 25 || turnsToBase > 10)) {
             //TODO: build a refinery smarter and in good direction.
             //build new refinery!
