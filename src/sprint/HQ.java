@@ -40,7 +40,6 @@ public class HQ extends Building {
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(myLocation.x, MAP_HEIGHT - myLocation.y - 1)), -1});
-        System.out.println((MAP_WIDTH-myLocation.x-1)+" " + (MAP_HEIGHT-myLocation.y-1));
         /*
         for(int i=0; i<numRows*numCols; i++) {
             MapLocation cen = getCenterFromTileNumber(i);
@@ -156,7 +155,7 @@ public class HQ extends Building {
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
-        if(rc.getRoundNum()-turnAtProductionHalt>10) {
+        if(rc.getRoundNum()-turnAtProductionHalt>30) {
             System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
