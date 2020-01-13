@@ -163,7 +163,8 @@ public class DeliveryDrone extends Unit {
         Direction best = Arrays.stream(directions).filter(x -> {
             MapLocation next = me.add(x);
             return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
-                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+                    && myLocation.distanceSquaredTo(enemyLocation) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
         }).min(Comparator.comparing(x ->
                 me.add(x).distanceSquaredTo(target))).orElse(null);
         return pathHelper(target, best);

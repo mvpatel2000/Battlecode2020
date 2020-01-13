@@ -241,7 +241,7 @@ public class Miner extends Unit {
         if (fulfillmentCenterExists && dSchoolExists) {
             refineryCheck();
         }
-
+        
         Direction hqDir = myLocation.directionTo(hqLocation);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
@@ -444,12 +444,16 @@ public class Miner extends Unit {
                     found += 1;
                 }
             } else if(m.schema == 3 && !foundProdMessage) {
-                HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                System.out.print("HOLDING PRODUCTION!");
-                holdProduction = true;
-                turnAtProductionHalt = rc.getRoundNum();
-                enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
-                rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                //don't actually do anything if you are the miner that sent the halt
+                //you shouldn't halt production, we need you to build the net gun.
+                if(!hasSentHalt) {
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    System.out.print("HOLDING PRODUCTION!");
+                    holdProduction = true;
+                    turnAtProductionHalt = rc.getRoundNum();
+                    enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                    rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                }
                 foundProdMessage=true;
                 found += 2;
             }
