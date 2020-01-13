@@ -40,7 +40,7 @@ public class HQ extends Building {
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(myLocation.x, MAP_HEIGHT - myLocation.y - 1)), -1});
-        //System.out.println((MAP_WIDTH-myLocation.x-1)+" " + (MAP_HEIGHT-myLocation.y-1));
+        System.out.println((MAP_WIDTH-myLocation.x-1)+" " + (MAP_HEIGHT-myLocation.y-1));
         /*
         for(int i=0; i<numRows*numCols; i++) {
             MapLocation cen = getCenterFromTileNumber(i);
@@ -157,14 +157,14 @@ public class HQ extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>10) {
-            //System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            //System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -199,7 +199,7 @@ public class HQ extends Building {
                 }
                 if(m.schema == 3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    //System.out.println("HOLDING PRODUCTION!");
+                    System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);

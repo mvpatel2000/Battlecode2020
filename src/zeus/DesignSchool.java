@@ -2,6 +2,9 @@ package zeus;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+import java.util.function.Function;
+
 public class DesignSchool extends Building {
 
     MapLocation hqLocation = null;
@@ -23,26 +26,26 @@ public class DesignSchool extends Building {
 
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
-        //System.out.println(myLocation);
+        System.out.println(myLocation);
         int hqID = rc.getTeam().equals(Team.valueOf("A")) ? 0 : 1;
         defensive = rc.canSenseRobot(hqID);
         if (defensive) {
             RobotInfo hqInfo = rc.senseRobot(hqID);
             hqLocation = hqInfo.location;
-            //System.out.println("I am a defensive d.school. Found our HQ:");
-            //System.out.println(hqInfo);
+            System.out.println("I am a defensive d.school. Found our HQ:");
+            System.out.println(hqInfo);
 
             // Determine if I am the primary defensive d.school or if I am an extra.
             primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
         }
         else {
-            //System.out.println("I am an offensive d.school.");
+            System.out.println("I am an offensive d.school.");
             int enemyHQID = 1 - hqID;
             if (rc.canSenseRobot(enemyHQID)) {
                 RobotInfo enemyHQInfo = rc.senseRobot(enemyHQID);
                 enemyHQLocation = enemyHQInfo.location;
                 if (enemyHQLocation.isAdjacentTo(myLocation)) {
-                    //System.out.println("I am a wall proxy");
+                    System.out.println("I am a wall proxy");
                     wallProxy = true;
                 }
             }
@@ -70,22 +73,31 @@ public class DesignSchool extends Building {
         previousSoup = rc.getTeamSoup();
     }
 
+    private int countAggroLandscapers(Team t) {
+        return Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                x.getLocation().distanceSquaredTo(enemyHQLocation) < 3
+                        && x.getType().equals(RobotType.LANDSCAPER)
+                        && x.getTeam().equals(t)).toArray(RobotInfo[]::new).length;
+    }
+
     public void aggro() throws GameActionException {
+        if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
         if (wallProxy && !holdProduction) {
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
                 if(tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(t))) {
-                    //System.out.println("Built aggressive landscaper at " + t.toString());
+                    System.out.println("Built aggressive landscaper at " + t.toString());
                 }
             }
         }
     }
 
     public void defense() throws GameActionException {
-        if (existsNearbyEnemy() && numLandscapersMade >= 3) {
-            //System.out.println("Enemy detected!  I will hurry and close this wall.");
-            closeInnerWallAt = 0;
-        }
+        // Removing emergency close wall because drones should be able to handle it
+        // if (existsNearbyEnemy() && numLandscapersMade >= 5) {
+        //     System.out.println("Enemy detected!  I will hurry and close this wall.");
+        //     closeInnerWallAt = 0;
+        // }
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
             if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
