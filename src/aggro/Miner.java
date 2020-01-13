@@ -18,6 +18,7 @@ public class Miner extends Unit {
     List<MapLocation> target;
     boolean aggroDone;
     Direction sideStep;
+    boolean hasSideStepped = false;
 
     //TODO: Need another int[] to read soup Priorities
     //given by HQ. Check comment in updateActiveLocations.
@@ -70,7 +71,8 @@ public class Miner extends Unit {
         if (aggro) {
             if (aggroDone && !target.isEmpty() && myLocation.distanceSquaredTo(target.get(0)) < 3 && Arrays.stream(rc.senseNearbyRobots()).filter(x ->
                     x.getLocation().distanceSquaredTo(target.get(0)) < 3 && x.getType().equals(RobotType.LANDSCAPER)
-                            && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new).length >= 3) {
+                            && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new).length >= 3 && !hasSideStepped
+                    && Arrays.stream(directions).allMatch(d -> rc.senseNearbyRobots(target.get(0).add(d), 0, null).length > 0)) {
                 path(myLocation.add(adj(toward(myLocation, target.get(0)), 4)));
                 return;
             }
@@ -81,6 +83,7 @@ public class Miner extends Unit {
                             && canMove(d)) {
                         tryMove(d);
                         sideStep = null;
+                        hasSideStepped = true;
                         return;
                     }
                 }
@@ -104,7 +107,7 @@ public class Miner extends Unit {
             if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                     && myLocation.distanceSquaredTo(target.get(0)) < 3) {
                 for (Direction d : directions)
-                    if (rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d) && myLocation.add(d).distanceSquaredTo(target.get(0)) < 2) {
+                    if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
                         rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
                         aggroDone = true;
                         sideStep = d;
@@ -151,7 +154,7 @@ public class Miner extends Unit {
                 //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
                 // }
                 // build d.school
-                if (!dSchoolExists) {
+                if (!dSchoolExists && rc.getRoundNum() > 110) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
 

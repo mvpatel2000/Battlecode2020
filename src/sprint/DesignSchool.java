@@ -60,7 +60,9 @@ public class DesignSchool extends Building {
 	        	}
         	}
         	else if(numLandscapersMade == 19) {
-        		tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(hqLocation).rotateLeft().rotateLeft());
+                if (tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(hqLocation).rotateLeft().rotateLeft())) {
+                    numLandscapersMade++;
+                }
         	}
         }
     }

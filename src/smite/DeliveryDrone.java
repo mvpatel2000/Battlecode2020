@@ -21,10 +21,12 @@ public class DeliveryDrone extends Unit {
         super(rc);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
-            RobotInfo r = rc.senseRobotAtLocation(t);
-            if (r != null && r.getType() == RobotType.FULFILLMENT_CENTER) {
-                baseLocation = t;
-                break;
+            if (rc.canSenseLocation(t)) {
+                RobotInfo r = rc.senseRobotAtLocation(t);
+                if (r != null && r.getType() == RobotType.FULFILLMENT_CENTER) {
+                    baseLocation = t;
+                    break;
+                }
             }
         }
 
@@ -46,15 +48,11 @@ public class DeliveryDrone extends Unit {
     @Override
     public void run()  throws GameActionException  {
         super.run();
-
         if (rc.getRoundNum() > 300) {
-            destination = destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
+            destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
         }
-        //System.out.println(hqLocation +" " + baseLocation);
-
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
-
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
@@ -65,7 +63,14 @@ public class DeliveryDrone extends Unit {
                 }
             }
             else {
-                pathWithWater(nearestWaterLocation);
+                if ((nearestWaterLocation == baseLocation || nearestWaterLocation == hqLocation)
+                        && myLocation.distanceSquaredTo(destination) > 8) {
+                    path(nearestWaterLocation);
+                }
+                else {
+                    tryMove();
+                }
+                path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
@@ -90,19 +95,42 @@ public class DeliveryDrone extends Unit {
                 carryingEnemy = true;
             }
             else if (nearest != null) {
-                pathWithWater(nearest.location); // to nearest enemy.
+                path(nearest.location); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
             }
             else { // go back to base
-                pathWithWater(destination);
+                if (myLocation.distanceSquaredTo(destination) > 8) {
+                    path(destination);
+                }
+                else {
+                    tryMove();
+                }
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
     }
 
+    @Override
+    boolean path(MapLocation target) throws GameActionException {
+        MapLocation me = history.peekFirst();
+        if (me.equals(target)) {
+            return false;
+        }
+        RobotInfo[] guns = Arrays.stream(rc.senseNearbyRobots()).filter(robot ->
+                            !robot.team.equals(rc.getTeam())
+                            && (robot.getType().equals(RobotType.HQ) || robot.getType().equals(RobotType.NET_GUN)))
+                            .toArray(RobotInfo[]::new);
+        Direction best = Arrays.stream(directions).filter(x -> {
+            MapLocation next = me.add(x);
+            return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
+                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        }).min(Comparator.comparing(x ->
+                me.add(x).distanceSquaredTo(target))).orElse(null);
+        return pathHelper(target, best);
+    }
+
     // Returns location of nearest water
     public MapLocation updateNearestWaterLocation() throws GameActionException {
-        int scanRadius = rc.getCurrentSensorRadiusSquared();
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
         if (nearestWaterLocation != null && !(rc.canSenseLocation(nearestWaterLocation) && rc.senseSoup(nearestWaterLocation) == 0)) {
@@ -110,7 +138,7 @@ public class DeliveryDrone extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-        //System.out.println("start map scan "+Clock.getBytecodeNum());
+        // //System.out.println("start map scan "+Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x-5,0); x <= Math.min(myLocation.x+5,MAP_WIDTH-1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
             for (int y : getLocationsToCheck((waterChecked[x] >> Math.max(myLocation.y-5,0)) & 1023)) {
@@ -123,9 +151,9 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
-        //System.out.println("end map scan "+Clock.getBytecodeNum());
+        // //System.out.println("end map scan "+Clock.getBytecodeNum());
 
-        //System.out.println("start find nearest "+Clock.getBytecodeNum());
+        // //System.out.println("start find nearest "+Clock.getBytecodeNum());
         Iterator<MapLocation> soupIterator = waterLocations.iterator();
         while (soupIterator.hasNext()) {
             MapLocation soupLocation = soupIterator.next();
@@ -135,7 +163,7 @@ public class DeliveryDrone extends Unit {
                 distanceToNearest = soupDistance;
             }
         }
-        //System.out.println("end find nearest "+Clock.getBytecodeNum());
+        // //System.out.println("end find nearest "+Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;

@@ -16,6 +16,7 @@ if __name__ == '__main__':
 		with open(f, 'r') as file:
 			content = file.read()
 		out_content = re.sub('System.out.println', '//System.out.println', content)
+		out_content = re.sub('rc.setIndicatorDot', '//rc.setIndicatorDot', out_content)
 		out_content = re.sub('package [^\n]*;', 'package smite;', out_content)
 		with open(out, 'w') as out_file:
 			out_file.write(out_content)
