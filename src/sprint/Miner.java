@@ -86,7 +86,7 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        if(holdProduction) {
+        if (holdProduction) {
             checkIfContinueHold();
         }
 
