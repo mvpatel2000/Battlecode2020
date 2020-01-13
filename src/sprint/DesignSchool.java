@@ -82,7 +82,7 @@ public class DesignSchool extends Building {
     }
 
     public void defense() throws GameActionException {
-        if (existsNearbyEnemy()) {
+        if (existsNearbyEnemy() && numLandscapersMade >= 3) {
             System.out.println("Enemy detected!  I will hurry and close this wall.");
             closeInnerWallAt = 0;
         }
@@ -90,7 +90,7 @@ public class DesignSchool extends Building {
             if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
-                    if ((rc.getTeamSoup() >= Math.min(150 + 8 * numLandscapersMade, 200)) && tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         numLandscapersMade++;
                     }
                     else {

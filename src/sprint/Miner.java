@@ -238,6 +238,10 @@ public class Miner extends Unit {
 //        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
+        if (fulfillmentCenterExists && dSchoolExists) {
+            refineryCheck();
+        }
+
         Direction hqDir = myLocation.directionTo(hqLocation);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
@@ -286,7 +290,6 @@ public class Miner extends Unit {
         else {                                                                // in transit
             if (turnsToBase >= 0)
                 turnsToBase++;
-            refineryCheck();
             path(destination);
             if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
@@ -311,7 +314,9 @@ public class Miner extends Unit {
             //TODO: Handle case where you dont have enough resources and then are stuck? I think soln is better pathing so it can get back
             //build new refinery!
             for (Direction dir : directions) {
-                if (rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) { // TODO: add check for fulfillmentCenterExists
+                MapLocation candidateBuildLoc = myLocation.add(dir);
+                boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
+                if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) { // TODO: add check for fulfillmentCenterExists
                     rc.buildRobot(RobotType.REFINERY, dir);
                     baseLocation = myLocation.add(dir);
                 }

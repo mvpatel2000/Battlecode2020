@@ -31,7 +31,7 @@ public class FulfillmentCenter extends Building {
         super.run();
 
         for (Direction dir : directions) {
-            if ((rc.getTeamSoup() >= Math.min(150 + 8 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 10 || rc.getRoundNum() > 655))
+            if ((rc.getTeamSoup() >= Math.min(175 + 4 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 10 || rc.getRoundNum() > 655))
                 buildDrone();
         }
         if(rc.getRoundNum()%5==3) {
