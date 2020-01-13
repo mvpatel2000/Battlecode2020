@@ -23,32 +23,36 @@ public class Miner extends Unit {
     boolean dSchoolExists;
     boolean fulfillmentCenterExists;
 
-    boolean aggro;  
-    List<MapLocation> target;   
-    boolean aggroDone;  
-    boolean hasRun = false; 
+    boolean aggro;
+    List<MapLocation> target;
+    boolean aggroDone;
+    boolean hasRun = false;
     MapLocation dLoc;
+    boolean hasSentHalt = false;
 
+    //TODO: Need another int[] to read soup Priorities
+    //given by HQ. Check comment in updateActiveLocations.
+    boolean holdProduction;
+    MapLocation enemyHQLocApprox;
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
 
         aggro = rc.getRoundNum() == 2;
         aggroDone = false;
-        aggro = false; // TODO: DELETE
-        if (aggro) {    
-            target = new ArrayList<>(); 
-            MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->  
-                    x.getType().equals(RobotType.HQ) && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new)[0].location;    
-            if (rc.getMapWidth() > rc.getMapHeight()) { 
-                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y)); 
-                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1)); 
-                target.add(new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1));    
-            } else {    
-                target.add(new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1));    
-                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1)); 
-                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y)); 
-            }   
+        if (aggro) {
+            target = new ArrayList<>();
+            MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                    x.getType().equals(RobotType.HQ) && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new)[0].location;
+            if (rc.getMapWidth() > rc.getMapHeight()) {
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y));
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1));
+                target.add(new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1));
+            } else {
+                target.add(new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1));
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1));
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y));
+            }
         }
 
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
@@ -67,7 +71,8 @@ public class Miner extends Unit {
         soupMiningTiles = new int[numCols*numRows];
         tilesVisited = new int[numRows * numCols];
         turnsToBase = -1;
-
+        holdProduction = false;
+        enemyHQLocApprox = null;
         destination = updateNearestSoupLocation();
         updateActiveLocations();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
@@ -78,9 +83,9 @@ public class Miner extends Unit {
     public void run() throws GameActionException {
         super.run();
 
-        if (aggro) {    
-            handleAggro();  
-            return; 
+        if (aggro) {
+            handleAggro();
+            return;
         }
 
         tilesVisited[getTileNumber(myLocation)] = 1;
@@ -112,26 +117,35 @@ public class Miner extends Unit {
         }
         if (aggroDone && dLoc != null) {
             for (Direction d : directions) {
+                int dist = myLocation.add(d).distanceSquaredTo(dLoc);
                 if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 3
-                        && myLocation.add(d).distanceSquaredTo(dLoc) > myLocation.distanceSquaredTo(dLoc)
+                        && (dist > myLocation.distanceSquaredTo(dLoc) || dist == 4)
+                        && myLocation.distanceSquaredTo(dLoc) != 4
                         && canMove(d)) {
                     tryMove(d);
                     return;
                 }
             }
-            return;
         }
         if (aggroDone && !target.isEmpty() && Arrays.stream(rc.senseNearbyRobots()).anyMatch(x ->
                 !x.getTeam().equals(rc.getTeam()) &&
                         (x.getType().equals(RobotType.DELIVERY_DRONE)
                                 || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
                 && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
-            for (Direction d : directions) {
-                if (myLocation.add(d).distanceSquaredTo(target.get(0)) > 2 && rc.canBuildRobot(RobotType.NET_GUN, d)) {
-                    rc.buildRobot(RobotType.NET_GUN, d);
-                    return;
-                }
+            if(rc.getTeamSoup() < 250 && !hasSentHalt) {
+                hasSentHalt = true;
+                HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                h.writeEnemyHQTile(getTileNumber(target.get(0)));
+                sendMessage(h.getMessage(), 2);
             }
+            Direction d = Arrays.stream(directions).filter(x ->
+                    rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
+                    myLocation.add(x).distanceSquaredTo(target.get(0)))).orElse(null);
+            if (d != null) {
+                rc.buildRobot(RobotType.NET_GUN, d);
+                return;
+            }
+
         }
         if (target.isEmpty() || aggroDone)
             return;
@@ -204,8 +218,12 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
-                if (!fulfillmentCenterExists) {
-                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+                //if (!fulfillmentCenterExists & !holdProduction) {
+                //    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+                //}
+                // build d.school
+                if (!dSchoolExists && !holdProduction) {
+                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
                 // build d.school
 //                if (!dSchoolExists) {
@@ -361,15 +379,20 @@ public class Miner extends Unit {
      * Communicating with the HQ
      */
 
-    //Find message from HQ given a round number rn
+    //Find message from allies given a round number rn
     //Checks block of round number rn, loops through messages
-    public boolean findMessageFromHQ(int rn) throws GameActionException {
+    //Currently: Checks for Patch message from HQ
+    //           Checks for haltProductionMessage from a Miner
+    public boolean findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
+        boolean foundHQMessage=false;
+        boolean foundProdMessage=false;
+
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
             if (m.origin) {
-                if (m.schema == 2) {
+                if (m.schema == 2 && !foundHQMessage) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     // System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
                     for (int j = 0; j < p.numPatchesWritten; j++) {
@@ -384,9 +407,19 @@ public class Miner extends Unit {
                             soupPriorities.add(p.weights[j]);
                         }
                     }
-//                            System.out.println("end reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-                    return true;
+                    foundHQMessage=true;
                 }
+            } else if(m.schema == 3 && !foundProdMessage) {
+                HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                System.out.print("HOLDING PRODUCTION!");
+                holdProduction = true;
+                enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                foundProdMessage=true;
+            }
+
+            if(foundHQMessage && foundProdMessage) {
+                break;
             }
         }
         return false;
@@ -400,18 +433,19 @@ public class Miner extends Unit {
         int prev2 = prev1 - messageFrequency;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
-                if(findMessageFromHQ(i)) {
+                if(findMessageFromAllies(i)) {
                     return true;
                 }
             }
         }
         for (int i=prev2; i<prev1; i++) {
             if(i>0) {
-                if(findMessageFromHQ(i)) {
+                if(findMessageFromAllies(i)) {
                     return true;
                 }
             }
         }
+
         System.out.println("CRITICAL ERROR! NO MESSAGE IN 10 TURNS");
         return false;
     }
