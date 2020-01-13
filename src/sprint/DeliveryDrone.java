@@ -54,9 +54,10 @@ public class DeliveryDrone extends Unit {
 
         attackDrone = false;
         Direction toBase = myLocation.directionTo(baseLocation);
-        if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(baseLocation)) {
+        if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(hqLocation)) {
             attackDrone = true;
         }
+
 
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
@@ -69,6 +70,7 @@ public class DeliveryDrone extends Unit {
         tilesVisited[getTileNumber(myLocation)] = 1;
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
+//        System.out.println(myLocation + " " + destination);
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
@@ -114,10 +116,10 @@ public class DeliveryDrone extends Unit {
                     rc.pickUpUnit(nearest.getID());
                     carryingEnemy = true;
                 }
-            } else if (nearest != null) {
+            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100)) { // don't rush enemy HQ after defend turn
                 path(nearest.location); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
-            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { //TODO: Replace with attack thing
+            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) {
                 if (!enemyVisited) {
                     if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
                         path(enemyLocation);
@@ -128,6 +130,7 @@ public class DeliveryDrone extends Unit {
                     }
                 } else {
                     if (myLocation.distanceSquaredTo(destination) <= 4 || stuckCount > 8) {
+                        tilesVisited[getTileNumber(destination)] = 1;
                         destination = getNearestUnexploredTile();
                         stuckCount = 0;
                     }
@@ -140,18 +143,20 @@ public class DeliveryDrone extends Unit {
             } else { // go back to base
                 destination = hqLocation;
                 int distance = myLocation.distanceSquaredTo(destination);
-                if (distance > 64 || (rc.getRoundNum() > DEFEND_TURN && distance > 8)) {
+                if (distance > 35 || (rc.getRoundNum() > DEFEND_TURN && distance > 8)) {
                     path(destination);
                 } else if (rc.getRoundNum() < DEFEND_TURN) {
                     path(myLocation.add(myLocation.directionTo(hqLocation).opposite().rotateLeft()));
                 }
-                nearestWaterLocation = updateNearestWaterLocation();
+                if (rc.getRoundNum() < DEFEND_TURN)
+                    nearestWaterLocation = updateNearestWaterLocation();
             }
         }
     }
 
     @Override
     public boolean path(MapLocation target) throws GameActionException {
+//        System.out.println("Pathing to: " + target);
         MapLocation me = history.peekFirst();
         if (me.equals(target)) {
             return false;
@@ -164,7 +169,7 @@ public class DeliveryDrone extends Unit {
             MapLocation next = me.add(x);
             return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
                     robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-                    && myLocation.distanceSquaredTo(enemyLocation) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
+                    && next.distanceSquaredTo(enemyLocation) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
         }).min(Comparator.comparing(x ->
                 me.add(x).distanceSquaredTo(target))).orElse(null);
         return pathHelper(target, best);
