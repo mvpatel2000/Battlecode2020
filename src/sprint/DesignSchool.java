@@ -2,6 +2,9 @@ package sprint;
 
 import battlecode.common.*;
 
+import java.util.Arrays;
+import java.util.function.Function;
+
 public class DesignSchool extends Building {
 
     MapLocation hqLocation = null;
@@ -70,7 +73,15 @@ public class DesignSchool extends Building {
         previousSoup = rc.getTeamSoup();
     }
 
+    private int countAggroLandscapers(Team t) {
+        return Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                x.getLocation().distanceSquaredTo(enemyHQLocation) < 3
+                        && x.getType().equals(RobotType.LANDSCAPER)
+                        && x.getTeam().equals(t)).toArray(RobotInfo[]::new).length;
+    }
+
     public void aggro() throws GameActionException {
+        if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
         if (wallProxy && !holdProduction) {
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
