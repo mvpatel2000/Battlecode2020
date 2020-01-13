@@ -239,8 +239,8 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-//        System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
-//        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+       //System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
+       //System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
 
         if (fulfillmentCenterExists && dSchoolExists) {
             refineryCheck();
