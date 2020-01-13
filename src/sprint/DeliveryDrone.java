@@ -61,7 +61,6 @@ public class DeliveryDrone extends Unit {
 
     @Override
     public void run() throws GameActionException  {
-        rc.setIndicatorLine(myLocation,nearestWaterLocation, 255,255,255);
         super.run();
 
         tilesVisited[getTileNumber(myLocation)] = 1;
