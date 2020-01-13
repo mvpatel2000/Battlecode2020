@@ -18,7 +18,7 @@ public abstract class Unit extends Robot {
     protected int time;
 
     public static int WALL_FOLLOW_LENGTH = 10 ;
-    public static int HISTORY_SIZE = 10;
+    public static int HISTORY_SIZE = 30;
 
     public Unit(RobotController rc) throws GameActionException {
         super(rc);
@@ -139,21 +139,26 @@ public abstract class Unit extends Robot {
                 pbest = x;
             }
         }
-        if (following != null && !canMove(facing) && canMove(following) && time < 20) {
-            time++;
-            go(following);
-            return false;
+        if (following != null && !canMove(facing) && canMove(following)) {
+            if (time > 20) {
+                time = 0;
+                following = null;
+                facing = null;
+            } else {
+                time++;
+                go(following);
+                return false;
+            }
         }
-        if (following != null && !canMove(facing) && (!canMove(following) || time >= 20)) {
-            time = 0;
+        if (following != null && !canMove(facing) && !canMove(following)) {
+            best = following;
             following = null;
             facing = null;
-            best = following;
         }
         if (following == null && !canMove(best)) {
             if (Math.random() < 0.5) {
-                for (int i = 0; i < 8; i++) {
-                    Direction d = adj(best, i);
+                for (int i = 0; i < 16; i++) {
+                    Direction d = adj(best, i % 2 == 0 ? i / 2 : 8 - i / 2);
                     if (canMove(d)) {
                         facing = best;
                         following = d;
@@ -161,8 +166,9 @@ public abstract class Unit extends Robot {
                         return true;
                     }
                 }
-                for (int i = 0; i < 8; i++) {
-                    Direction d = adj(best, 8 - i);
+            } else {
+                for (int i = 0; i < 16; i++) {
+                    Direction d = adj(best, i % 2 == 0 ? 8 - i / 2 : i / 2);
                     if (canMove(d)) {
                         facing = best;
                         following = d;
@@ -211,16 +217,21 @@ public abstract class Unit extends Robot {
         if (Math.random() < 0.2 && following == null) {
             return pathHelper(target, pbest);
         }
-        if (following != null && !canMove(facing) && canMove(following) && time < 20) {
-            time++;
-            go(following);
-            return false;
+        if (following != null && !canMove(facing) && canMove(following)) {
+            if (time > 20) {
+                time = 0;
+                following = null;
+                facing = null;
+            } else {
+                time++;
+                go(following);
+                return false;
+            }
         }
-        if (following != null && !canMove(facing) && (!canMove(following) || time >= 20)) {
-            time = 0;
+        if (following != null && !canMove(facing) && !canMove(following)) {
+            best = following;
             following = null;
             facing = null;
-            best = following;
         }
         if (following == null && !canMove(best)) {
             if (Math.random() < 0.5) {

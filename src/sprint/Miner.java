@@ -148,17 +148,17 @@ public class Miner extends Unit {
                 }
             return;
         }
-        /*if (locAt(20).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0))) {
+        if (locAt(10).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0)) && rc.getRoundNum() > 20) {
+            System.out.println("Trying to build starport");
             for (Direction d : directions)
                 if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
                     rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
                     aggroDone = true;
                 }
-        }*/
+        }
         aggroPath(target.get(0));
         if (myLocation.equals(target.get(0)))
             target.remove(0);
-        return;
     }
 
     public void checkBuildBuildings() throws GameActionException {
