@@ -71,7 +71,6 @@ public class Miner extends Unit {
 
         dSchoolExists = false;
         fulfillmentCenterExists = false;
-        fulfillmentCenterExists = true; // TODO: REMOVE THIS LINE!!!!!! DEBUG PURPOSES ONLY
 
         soupChecked = new long[64];
         soupMiningTiles = new int[numCols*numRows];
