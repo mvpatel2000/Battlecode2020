@@ -17,7 +17,8 @@ public abstract class Unit extends Robot {
     protected int rand;
     protected int time;
 
-    public static int HISTORY_SIZE = 5;
+    public static int WALL_FOLLOW_LENGTH = 10 ;
+    public static int HISTORY_SIZE = 10;
 
     public Unit(RobotController rc) throws GameActionException {
         super(rc);
@@ -146,7 +147,7 @@ public abstract class Unit extends Robot {
         while ((dir != null && !canMove(facing)) || (dir == null && !canMove(best))) {
             if (itr == 0)
                 time++;
-            if (time == 10)
+            if (time == WALL_FOLLOW_LENGTH)
                 break;
             itr++;
             if (dir == null) {

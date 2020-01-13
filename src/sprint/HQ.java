@@ -21,6 +21,13 @@ public class HQ extends Building {
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
+
+        for (Direction dir : directions) {  
+            if (minerCount < 5 && tryBuild(RobotType.MINER, dir)) {
+                minerCount++;   
+            }
+        }
+
         initialScan();
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
@@ -41,8 +48,9 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 10 && tryBuild(RobotType.MINER, dir))
-                minerCount++;
+            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {   
+                minerCount++;   
+            }
         }
         if(rc.getRoundNum()!=1) {
             readMessages();

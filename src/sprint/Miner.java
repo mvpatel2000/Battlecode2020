@@ -20,6 +20,12 @@ public class Miner extends Unit {
     boolean dSchoolExists;
     boolean fulfillmentCenterExists;
 
+    boolean aggro;  
+    List<MapLocation> target;   
+    boolean aggroDone;  
+    boolean hasRun = false; 
+    MapLocation dLoc;
+
     //TODO: Need another int[] to read soup Priorities
     //given by HQ. Check comment in updateActiveLocations.
     int[] soupMiningTiles;
@@ -27,6 +33,23 @@ public class Miner extends Unit {
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
+
+        aggro = rc.getRoundNum() == 2;  
+        aggroDone = false;  
+        if (aggro) {    
+            target = new ArrayList<>(); 
+            MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->  
+                    x.getType().equals(RobotType.HQ) && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new)[0].location;    
+            if (rc.getMapWidth() > rc.getMapHeight()) { 
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y)); 
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1)); 
+                target.add(new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1));    
+            } else {    
+                target.add(new MapLocation(hq.x, rc.getMapHeight() - hq.y - 1));    
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1)); 
+                target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y)); 
+            }   
+        }
 
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
@@ -54,6 +77,11 @@ public class Miner extends Unit {
     public void run() throws GameActionException {
         super.run();
 
+        if (aggro) {    
+            handleAggro();  
+            return; 
+        }
+
         tilesVisited[getTileNumber(myLocation)] = 1;
 
         readMessage = false;
@@ -67,6 +95,70 @@ public class Miner extends Unit {
         harvest();
         //TODO: Modify Harvest to build refineries if mining location > some dist from base
         //TODO: Handle case where no stuff found. Switch to explore mode
+    }
+
+    private void handleAggro() throws GameActionException {
+        if (aggroDone
+                && !target.isEmpty()
+                && myLocation.distanceSquaredTo(target.get(0)) < 3
+                && Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                        x.getLocation().distanceSquaredTo(target.get(0)) < 3 && x.getType().equals(RobotType.LANDSCAPER)
+                        && x.getTeam().equals(rc.getTeam())).toArray(RobotInfo[]::new).length >= 3
+                && myLocation.distanceSquaredTo(dLoc) < 3
+                && Arrays.stream(directions).allMatch(d ->
+                        target.get(0).add(d).equals(myLocation)
+                        || rc.senseNearbyRobots(target.get(0).add(d), 0, null).length > 0)) {
+            path(myLocation.add(adj(toward(myLocation, target.get(0)), 4)));
+            return;
+        }
+        if (aggroDone && dLoc != null) {
+            for (Direction d : directions) {
+                if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 3
+                        && myLocation.add(d).distanceSquaredTo(dLoc) > myLocation.distanceSquaredTo(dLoc)
+                        && canMove(d)) {
+                    tryMove(d);
+                    return;
+                }
+            }
+            return;
+        }
+        if (aggroDone && !target.isEmpty() && Arrays.stream(rc.senseNearbyRobots()).anyMatch(x ->
+                !x.getTeam().equals(rc.getTeam()) &&
+                        (x.getType().equals(RobotType.DELIVERY_DRONE)
+                                || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
+                && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
+            for (Direction d : directions) {
+                if (myLocation.add(d).distanceSquaredTo(target.get(0)) > 2 && rc.canBuildRobot(RobotType.NET_GUN, d)) {
+                    rc.buildRobot(RobotType.NET_GUN, d);
+                    return;
+                }
+            }
+        }
+        if (target.isEmpty() || aggroDone)
+            return;
+        RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
+        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
+                && myLocation.distanceSquaredTo(target.get(0)) < 3) {
+            for (Direction d : directions)
+                if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
+                    rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
+                    aggroDone = true;
+                    dLoc = myLocation.add(d);
+                    return;
+                }
+            return;
+        }
+        /*if (locAt(20).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0))) {
+            for (Direction d : directions)
+                if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+                    rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+                    aggroDone = true;
+                }
+        }*/
+        path(target.get(0));
+        if (myLocation.equals(target.get(0)))
+            target.remove(0);
+        return;
     }
 
     public void checkBuildBuildings() throws GameActionException {
@@ -119,7 +211,7 @@ public class Miner extends Unit {
                 //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
                 // }
                 // build d.school
-                if (!dSchoolExists) {
+                if (!dSchoolExists && rc.getRoundNum() > 110) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
 
