@@ -30,6 +30,19 @@ public class FulfillmentCenter extends Building {
 
         super.run();
 
+        for (Direction dir : directions) {
+            if ((rc.getTeamSoup() >= Math.min(150 + 8 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 10 || rc.getRoundNum() > 655))
+                buildDrone();
+        }
+        if(rc.getRoundNum()%5==3) {
+            readMessages();
+        }
+
+        //should always be the last thing
+        previousSoup = rc.getTeamSoup();
+    }
+
+    private void buildDrone() throws GameActionException {
         boolean built = false;
         if (attackDroneCount * ATTACK_TO_DEFENSE_RATIO > defendDroneCount) {
             Direction toHQ = myLocation.directionTo(hqLocation);
@@ -69,12 +82,6 @@ public class FulfillmentCenter extends Building {
                 }
             }
         }
-        if(rc.getRoundNum()%5==3) {
-            readMessages();
-        }
-
-        //should always be the last thing
-        previousSoup = rc.getTeamSoup();
     }
 
     //Returns true if should continue halting production
