@@ -1,4 +1,4 @@
-package smite;
+package turtle;
 
 import battlecode.common.*;
 import java.util.HashMap;
