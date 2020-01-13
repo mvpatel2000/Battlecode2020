@@ -224,8 +224,8 @@ public abstract class Unit extends Robot {
         }
         if (following == null && !canMove(best)) {
             if (Math.random() < 0.5) {
-                for (int i = 0; i < 8; i++) {
-                    Direction d = adj(best, i);
+                for (int i = 0; i < 16; i++) {
+                    Direction d = adj(best, i % 2 == 0 ? i / 2 : 8 - i / 2);
                     if (canMove(d)) {
                         facing = best;
                         following = d;
@@ -233,8 +233,9 @@ public abstract class Unit extends Robot {
                         return true;
                     }
                 }
-                for (int i = 0; i < 8; i++) {
-                    Direction d = adj(best, 8 - i);
+            } else {
+                for (int i = 0; i < 16; i++) {
+                    Direction d = adj(best, i % 2 == 0 ? 8 - i / 2 : i / 2);
                     if (canMove(d)) {
                         facing = best;
                         following = d;
