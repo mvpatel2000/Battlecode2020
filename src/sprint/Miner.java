@@ -113,8 +113,10 @@ public class Miner extends Unit {
         }
         if (aggroDone && dLoc != null) {
             for (Direction d : directions) {
+                int dist = myLocation.add(d).distanceSquaredTo(dLoc);
                 if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 3
-                        && myLocation.add(d).distanceSquaredTo(dLoc) > myLocation.distanceSquaredTo(dLoc)
+                        && (dist > myLocation.distanceSquaredTo(dLoc) || dist == 4)
+                        && myLocation.distanceSquaredTo(dLoc) != 4
                         && canMove(d)) {
                     tryMove(d);
                     return;
@@ -127,12 +129,14 @@ public class Miner extends Unit {
                         (x.getType().equals(RobotType.DELIVERY_DRONE)
                                 || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
                 && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
-            for (Direction d : directions) {
-                if (myLocation.add(d).distanceSquaredTo(target.get(0)) > 2 && rc.canBuildRobot(RobotType.NET_GUN, d)) {
-                    rc.buildRobot(RobotType.NET_GUN, d);
-                    return;
-                }
+            Direction d = Arrays.stream(directions).filter(x ->
+                    rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
+                    myLocation.add(x).distanceSquaredTo(target.get(0)))).orElse(null);
+            if (d != null) {
+                rc.buildRobot(RobotType.NET_GUN, d);
+                return;
             }
+
         }
         if (target.isEmpty() || aggroDone)
             return;
