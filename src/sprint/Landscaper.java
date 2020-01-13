@@ -155,9 +155,22 @@ public class Landscaper extends Unit {
                     System.out.println("Digging dirt from direction " + digDir.toString());
                     tryDig(digDir);
                 }
-                else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
-                    System.out.println("Dumping dirt under myself");
-                    tryDeposit(Direction.CENTER);
+                else if (wallPhase == 0) { // inner wall not yet complete; look for enemy building, else deposit under yourself
+                    boolean foundEnemyBuilding = false;
+                    for (Direction d : directions) {
+                        if (nearbyBotsMap.containsKey(myLocation.add(d))) {
+                            RobotInfo botInfo = nearbyBotsMap.get(myLocation.add(d));
+                            if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.DESIGN_SCHOOL) || botInfo.type.equals(RobotType.FULFILLMENT_CENTER) || botInfo.type.equals(RobotType.NET_GUN))) {
+                                System.out.println("Dumping dirt on enemy building at " + botInfo.location);
+                                tryDeposit(d);
+                                foundEnemyBuilding = true;
+                            }
+                        }
+                    }
+                    if (!foundEnemyBuilding) {
+                        System.out.println("Dumping dirt under myself");
+                        tryDeposit(Direction.CENTER);
+                    }
                 }
                 else { // inner wall tight; distribute to the lowest point of the inner wall around it
                     Direction dump = Direction.CENTER;

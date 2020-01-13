@@ -211,7 +211,7 @@ public class Miner extends Unit {
                 //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
                 // }
                 // build d.school
-                if (!dSchoolExists && rc.getRoundNum() > 110) {
+                if (!dSchoolExists) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
 
