@@ -93,10 +93,11 @@ public class DesignSchool extends Building {
     }
 
     public void defense() throws GameActionException {
-        if (existsNearbyEnemy() && numLandscapersMade >= 3) {
-            System.out.println("Enemy detected!  I will hurry and close this wall.");
-            closeInnerWallAt = 0;
-        }
+        // Removing emergency close wall because drones should be able to handle it
+        // if (existsNearbyEnemy() && numLandscapersMade >= 5) {
+        //     System.out.println("Enemy detected!  I will hurry and close this wall.");
+        //     closeInnerWallAt = 0;
+        // }
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
             if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
