@@ -70,7 +70,7 @@ public class DeliveryDrone extends Unit {
         tilesVisited[getTileNumber(myLocation)] = 1;
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
-//        System.out.println(myLocation + " " + destination);
+//        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
@@ -82,15 +82,18 @@ public class DeliveryDrone extends Unit {
                         return;
                     }
                 }
-                if (myLocation == nearestWaterLocation) {
+                nearestWaterLocation = updateNearestWaterLocation(); // Adjacent to explore zone
+                if (myLocation.equals(nearestWaterLocation)) {
                     for (Direction dir : directions) { // you're on the water
                         if (rc.isReady() && rc.canMove(dir)) {
                             rc.move(dir);
                         }
                     }
                 }
+                path(nearestWaterLocation);
             }
             else {
+//                System.out.println(myLocation + " " + nearestWaterLocation);
                 path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -148,8 +151,9 @@ public class DeliveryDrone extends Unit {
                 } else if (rc.getRoundNum() < DEFEND_TURN) {
                     path(myLocation.add(myLocation.directionTo(hqLocation).opposite().rotateLeft()));
                 }
-                if (rc.getRoundNum() < DEFEND_TURN)
+                if (rc.getRoundNum() < DEFEND_TURN) {
                     nearestWaterLocation = updateNearestWaterLocation();
+                }
             }
         }
     }
@@ -180,7 +184,7 @@ public class DeliveryDrone extends Unit {
     public MapLocation updateNearestWaterLocation() throws GameActionException {
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
-        if (nearestWaterLocation != null && !(rc.canSenseLocation(nearestWaterLocation) && rc.senseSoup(nearestWaterLocation) == 0)) {
+        if (nearestWaterLocation != null && !(rc.canSenseLocation(nearestWaterLocation) && !rc.senseFlooding(nearestWaterLocation))) {
             nearest = nearestWaterLocation;
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
@@ -239,10 +243,7 @@ public class DeliveryDrone extends Unit {
         for(int[] shift : SPIRAL_ORDER) {
             int newTile = currentTile + shift[0] + numCols * shift[1];
             if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0 ) {
-                MapLocation newTileLocation = getCenterFromTileNumber(newTile);
-                if (myLocation.distanceSquaredTo(newTileLocation) >= scanRadius || !rc.senseFlooding(newTileLocation)) {
-                    return newTileLocation;
-                }
+                return getCenterFromTileNumber(newTile);
             }
         }
         return enemyLocation; // explored entire map and no water seen??
