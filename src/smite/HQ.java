@@ -4,6 +4,7 @@ import battlecode.common.*;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class HQ extends Building {
 
@@ -20,11 +21,22 @@ public class HQ extends Building {
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
         minerCount = 0;
+
+        for (Direction dir : directions) {  
+            if (minerCount < 5 && tryBuild(RobotType.MINER, dir)) {
+                minerCount++;   
+            }
+        }
+
         initialScan();
+        soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
+        soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
+        soupsPerTile.add(new int[]{getTileNumber(new MapLocation(myLocation.x, MAP_HEIGHT - myLocation.y - 1)), -1});
+        //System.out.println((MAP_WIDTH-myLocation.x-1)+" " + (MAP_HEIGHT-myLocation.y-1));
         /*
         for(int i=0; i<numRows*numCols; i++) {
             MapLocation cen = getCenterFromTileNumber(i);
-            rc.setIndicatorDot(cen, 255, i*3, i*3);
+            //rc.setIndicatorDot(cen, 255, i*3, i*3);
         }*/
     }
 
@@ -36,8 +48,9 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         for (Direction dir : directions) {
-            if (minerCount < 10 && tryBuild(RobotType.MINER, dir))
-                minerCount++;
+            if ((minerCount < 5 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {   
+                minerCount++;   
+            }
         }
         if(rc.getRoundNum()!=1) {
             readMessages();
@@ -77,8 +90,8 @@ public class HQ extends Building {
                     break;
                 }
                 MapLocation cen = getCenterFromTileNumber(x[0]);
-                rc.setIndicatorDot(cen, 255, 0, 255);
-                m.writePatch(x[0], 1); //TODO: use x[1] in the future
+                //rc.setIndicatorDot(cen, 255, 0, 255);
+                m.writePatch(x[0], soupToPower(x[1]));
 
                 if(i==soupsPerTile.size()-1) {
                     lastPatchNum = x[0];
