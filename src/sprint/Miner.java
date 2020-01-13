@@ -274,6 +274,7 @@ public class Miner extends Unit {
         Direction hqDir = myLocation.directionTo(hqLocation);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
+        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         if (outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
             fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
         }
@@ -339,11 +340,12 @@ public class Miner extends Unit {
                 }
             }
         }
-        if (distToBase > 25)
-            rc.setIndicatorLine(myLocation, baseLocation, 255,0,0);
-        else
-            rc.setIndicatorLine(myLocation, baseLocation, 255,255,255);
-        //TODO: Better measure of distance than straightline. Consider path length?
+        if (distToBase > 25) {
+            rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
+        }
+        else {
+            rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
+        }
         if ( (distToBase > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100))
             && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 25 || turnsToBase > 10)) {
             //TODO: build a refinery smarter and in good direction.
@@ -351,7 +353,7 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
-                if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) { // TODO: add check for fulfillmentCenterExists
+                if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     baseLocation = myLocation.add(dir);
                 }
