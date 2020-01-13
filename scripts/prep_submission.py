@@ -23,4 +23,4 @@ if __name__ == '__main__':
 		out_content = re.sub('package [^\n]*;', 'package ' + out_dir_name + ';', out_content)
 		with open(out, 'w') as out_file:
 			out_file.write(out_content)
-	os.system('zip -r ./src/out_name.zip ./src/' + out_dir_name)
+	os.system('zip -r ./src/' + out_dir_name + '.zip ./src/' + out_dir_name)
