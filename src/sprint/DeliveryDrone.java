@@ -19,6 +19,8 @@ public class DeliveryDrone extends Unit {
     MapLocation enemyLocation;
     boolean enemyVisited;
     MapLocation destination;
+
+    boolean attackDrone;
     final int DEFEND_TURN = 900;
 
     boolean carryingEnemy;
@@ -26,8 +28,6 @@ public class DeliveryDrone extends Unit {
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
-        hqLocation = checkForLocationMessage();
-        rc.setIndicatorDot(hqLocation, 126, 50, 255);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
             MapLocation t = myLocation.add(dir);
             if (rc.canSenseLocation(t)) {
@@ -40,15 +40,23 @@ public class DeliveryDrone extends Unit {
         }
         if (baseLocation == null)
             baseLocation = myLocation;
+        hqLocation = checkForLocationMessage();
+        hqLocation = hqLocation != null ? hqLocation : baseLocation;
 
         tilesVisited = new int[numRows * numCols];
         stuckCount = 0;
 
-        destination = hqLocation != null ? hqLocation : baseLocation;
+        destination = hqLocation;
         enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
         enemyVisited = false;
         carryingEnemy = false;
         carryingAlly = false;
+
+        attackDrone = false;
+        Direction toBase = myLocation.directionTo(baseLocation);
+        if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(baseLocation)) {
+            attackDrone = true;
+        }
 
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
@@ -109,7 +117,7 @@ public class DeliveryDrone extends Unit {
             } else if (nearest != null) {
                 path(nearest.location); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
-            } else if (rc.getRoundNum() < DEFEND_TURN) { //TODO: Replace with attack thing
+            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { //TODO: Replace with attack thing
                 if (!enemyVisited) {
                     if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
                         path(enemyLocation);
@@ -130,8 +138,7 @@ public class DeliveryDrone extends Unit {
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
             } else { // go back to base
-                destination = hqLocation != null ? hqLocation : baseLocation;
-                System.out.println(myLocation + " " + destination);
+                destination = hqLocation;
                 int distance = myLocation.distanceSquaredTo(destination);
                 if (distance > 64 || (rc.getRoundNum() > DEFEND_TURN && distance > 8)) {
                     path(destination);

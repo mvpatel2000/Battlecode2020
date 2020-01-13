@@ -4,7 +4,10 @@ import battlecode.common.*;
 
 public class FulfillmentCenter extends Building {
 
-    int droneCount = 0;
+    int attackDroneCount = 0;
+    int defendDroneCount = 0;
+    final double ATTACK_TO_DEFENSE_RATIO = .5;
+
     MapLocation hqLocation = null;
 
     //For halting production and resuming it.
@@ -26,9 +29,45 @@ public class FulfillmentCenter extends Building {
         }
 
         super.run();
-        for (Direction dir : directions) {
-            if (droneCount < 10 && tryBuild(RobotType.DELIVERY_DRONE, dir))
-                droneCount++;
+
+        boolean built = false;
+        if (attackDroneCount * ATTACK_TO_DEFENSE_RATIO > defendDroneCount) {
+            Direction toHQ = myLocation.directionTo(hqLocation);
+            if (tryBuild(RobotType.DELIVERY_DRONE, toHQ)) {
+                defendDroneCount++;
+            } else if (tryBuild(RobotType.DELIVERY_DRONE, toHQ.rotateLeft())) {
+                defendDroneCount++;
+            } else if (tryBuild(RobotType.DELIVERY_DRONE, toHQ.rotateRight())) {
+                defendDroneCount++;
+            } else {
+                built = true;
+            }
+        }
+        else {
+            Direction awayHQ = myLocation.directionTo(hqLocation).opposite();
+            if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ)) {
+                attackDroneCount++;
+            } else if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ.rotateLeft())) {
+                attackDroneCount++;
+            } else if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ.rotateRight())) {
+                attackDroneCount++;
+            } else if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ.rotateLeft().rotateLeft())) {
+                attackDroneCount++;
+            } else if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ.rotateRight().rotateRight())) {
+                attackDroneCount++;
+            } else {
+                built = true;
+            }
+        }
+        if (!built) {
+            for (Direction dir : directions) {
+                if (tryBuild(RobotType.DELIVERY_DRONE, dir)) {
+                    if (attackDroneCount > defendDroneCount) // we built a type that we already had
+                        attackDroneCount++;
+                    else
+                        defendDroneCount++;
+                }
+            }
         }
         if(rc.getRoundNum()%5==3) {
             readMessages();
