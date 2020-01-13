@@ -57,11 +57,14 @@ public class HQ extends Building {
         }
         super.run();
         netgun.shoot();
-        for (Direction dir : directions) {
-            if ((minerCount < 4 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
-                minerCount++;
+        if(!holdProduction) {
+            for (Direction dir : directions) {
+                if ((minerCount < 4 || (rc.getRoundNum() >= 200 && minerCount < 10)) && tryBuild(RobotType.MINER, dir)) {
+                    minerCount++;
+                }
             }
         }
+
         if(rc.getRoundNum()!=1) {
             readMessages();
         }
@@ -153,12 +156,14 @@ public class HQ extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>10) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -193,7 +198,7 @@ public class HQ extends Building {
                 }
                 if(m.schema == 3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.print("HOLDING PRODUCTION!");
+                    //System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);

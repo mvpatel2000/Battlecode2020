@@ -71,6 +71,8 @@ public class Miner extends Unit {
 
         dSchoolExists = false;
         fulfillmentCenterExists = false;
+        fulfillmentCenterExists = true; // TODO: REMOVE THIS LINE!!!!!! DEBUG PURPOSES ONLY
+
         soupChecked = new long[64];
         soupMiningTiles = new int[numCols*numRows];
         tilesVisited = new int[numRows * numCols];
@@ -103,6 +105,20 @@ public class Miner extends Unit {
 
         checkBuildBuildings();
 
+        if (!dSchoolExists || !fulfillmentCenterExists) {
+            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+            for (RobotInfo robot : nearbyRobots) {
+                switch (robot.getType()) {
+                    case DESIGN_SCHOOL:
+                        dSchoolExists = true;
+                        break;
+                    case FULFILLMENT_CENTER:
+                        fulfillmentCenterExists = true;
+                        break;
+                }
+            }
+        }
+
         harvest();
         previousSoup = rc.getTeamSoup();
     }
@@ -112,12 +128,14 @@ public class Miner extends Unit {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>10) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -157,10 +175,12 @@ public class Miner extends Unit {
                                 || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
                 && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
             if(rc.getTeamSoup() < 250 && !hasSentHalt) {
-                hasSentHalt = true;
                 HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                 h.writeEnemyHQTile(getTileNumber(target.get(0)));
-                sendMessage(h.getMessage(), 2);
+                //make sure this sends successfully.
+                if(sendMessage(h.getMessage(), 2)) {
+                    hasSentHalt = true;
+                }
             }
             Direction d = Arrays.stream(directions).filter(x ->
                     rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
@@ -186,12 +206,14 @@ public class Miner extends Unit {
             return;
         }
         if (locAt(10).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0)) && rc.getRoundNum() > 20) {
-            //System.out.println("Trying to build starport");
-            for (Direction d : directions)
-                if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
-                    rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
-                    aggroDone = true;
-                }
+//            //System.out.println("Trying to build starport");
+//            for (Direction d : directions) {
+//                if (rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, d)) {
+//                    rc.buildRobot(RobotType.FULFILLMENT_CENTER, d);
+//                    aggroDone = true;
+//                }
+//            }
+            aggroDone = true;
         }
         aggroPath(target.get(0));
         if (myLocation.equals(target.get(0)))
@@ -231,17 +253,16 @@ public class Miner extends Unit {
         }
     }
 
-
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
        //System.out.println("Start harvest " + rc.getRoundNum() + " " + Clock.getBytecodeNum() + " " + destination + " " + distanceToDestination);
        //System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         
-        if (fulfillmentCenterExists && dSchoolExists) {
+        if (dSchoolExists) {
             refineryCheck();
         }
-        
+
         Direction hqDir = myLocation.directionTo(hqLocation);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
@@ -421,13 +442,15 @@ public class Miner extends Unit {
         boolean foundHQMessage=hqm;
         boolean foundProdMessage=prodm;
         int found = 0;
+        ////System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
+            ////System.out.println(msg[0]);
             Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
             if (m.origin) {
                 if (m.schema == 2 && !foundHQMessage) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    // //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
+                    ////System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
                     for (int j = 0; j < p.numPatchesWritten; j++) {
                         if (soupMiningTiles[p.patches[j]] == 0) {
                             //For weighting, set another array so that
@@ -443,21 +466,21 @@ public class Miner extends Unit {
                     foundHQMessage=true;
                     found += 1;
                 }
-            } else if(m.schema == 3 && !foundProdMessage) {
-                //don't actually do anything if you are the miner that sent the halt
-                //you shouldn't halt production, we need you to build the net gun.
-                if(!hasSentHalt) {
-                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.print("HOLDING PRODUCTION!");
-                    holdProduction = true;
-                    turnAtProductionHalt = rc.getRoundNum();
-                    enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
-                    //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                if(m.schema == 3 && !foundProdMessage) {
+                    //don't actually do anything if you are the miner that sent the halt
+                    //you shouldn't halt production, we need you to build the net gun.
+                    if(!hasSentHalt) {
+                        HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        //System.out.println("HOLDING PRODUCTION!");
+                        holdProduction = true;
+                        turnAtProductionHalt = rc.getRoundNum();
+                        enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                        //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                    }
+                    foundProdMessage=true;
+                    found += 2;
                 }
-                foundProdMessage=true;
-                found += 2;
             }
-
             if(foundHQMessage && foundProdMessage) {
                 return found;
             }
@@ -467,7 +490,7 @@ public class Miner extends Unit {
 
     //Returns true if it finds all messages it's looking for
     public boolean updateActiveLocations() throws GameActionException {
-//        //System.out.println("start reading "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+        ////System.out.println("start reading");
         int rn = rc.getRoundNum();
         int del = (rn-1)%messageFrequency;
         int prev1 = rn-1-(Math.floorMod(del-messageModulus, messageFrequency));

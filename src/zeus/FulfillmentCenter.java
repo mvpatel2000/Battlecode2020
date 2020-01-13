@@ -29,11 +29,11 @@ public class FulfillmentCenter extends Building {
         }
 
         super.run();
-
-        for (Direction dir : directions) {
+        if(!holdProduction) {
             if ((rc.getTeamSoup() >= Math.min(175 + 4 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 10 || rc.getRoundNum() > 655))
                 buildDrone();
         }
+
         if(rc.getRoundNum()%5==3) {
             readMessages();
         }
@@ -44,7 +44,7 @@ public class FulfillmentCenter extends Building {
 
     private void buildDrone() throws GameActionException {
         boolean built = false;
-        if (attackDroneCount * ATTACK_TO_DEFENSE_RATIO > defendDroneCount) {
+        if (attackDroneCount > defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
             Direction toHQ = myLocation.directionTo(hqLocation);
             if (tryBuild(RobotType.DELIVERY_DRONE, toHQ)) {
                 defendDroneCount++;
@@ -89,12 +89,14 @@ public class FulfillmentCenter extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>10) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -129,7 +131,7 @@ public class FulfillmentCenter extends Building {
             if (m.origin) {
                 if(m.schema == 3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.print("HOLDING PRODUCTION!");
+                    //System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);

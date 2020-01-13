@@ -8,7 +8,7 @@ public class DesignSchool extends Building {
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
-    int DEFAULT_CLOSE_INNER_WALL_AT = 300;
+    int DEFAULT_CLOSE_INNER_WALL_AT = 400;
     int closeInnerWallAt = DEFAULT_CLOSE_INNER_WALL_AT; // TODO: tweak this
     int startOuterWallAt = 0;
 
@@ -71,7 +71,7 @@ public class DesignSchool extends Building {
     }
 
     public void aggro() throws GameActionException {
-        if (wallProxy) {
+        if (wallProxy && !holdProduction) {
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
                 if(tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(t))) {
@@ -86,7 +86,7 @@ public class DesignSchool extends Building {
             //System.out.println("Enemy detected!  I will hurry and close this wall.");
             closeInnerWallAt = 0;
         }
-        if (primaryDefensive) { // primary defensive d.school.
+        if (primaryDefensive && !holdProduction) { // primary defensive d.school.
             if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
@@ -147,7 +147,7 @@ public class DesignSchool extends Building {
             if (m.origin) {
                 if(m.schema == 3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.print("HOLDING PRODUCTION!");
+                    //System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
@@ -163,12 +163,14 @@ public class DesignSchool extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>10) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
