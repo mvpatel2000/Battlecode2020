@@ -34,7 +34,7 @@ public class Miner extends Unit {
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
 
-        aggro = rc.getRoundNum() == 2;  
+        aggro = rc.getRoundNum() == 2;
         aggroDone = false;  
         if (aggro) {    
             target = new ArrayList<>(); 
@@ -207,9 +207,9 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
-                // if (!fulfillmentCenterExists) {
-                //     fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-                // }
+//                if (!fulfillmentCenterExists) {
+//                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+//                }
                 // build d.school
                 if (!dSchoolExists && rc.getRoundNum() > 110) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());

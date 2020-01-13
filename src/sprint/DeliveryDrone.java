@@ -12,6 +12,7 @@ public class DeliveryDrone extends Unit {
     MapLocation nearestWaterLocation;
     MapLocation baseLocation;
     MapLocation hqLocation;
+    MapLocation enemyLocation;
     MapLocation destination;
 
     boolean carryingEnemy;
@@ -29,6 +30,8 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
+        if (baseLocation == null)
+            baseLocation = myLocation;
 
         for (RobotInfo robot : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam)) {
             if (robot.getType() == RobotType.HQ) {
@@ -38,6 +41,7 @@ public class DeliveryDrone extends Unit {
         }
 
         destination = hqLocation != null ? hqLocation : baseLocation;
+        enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
         carryingEnemy = false;
         carryingAlly = false;
 
@@ -48,11 +52,9 @@ public class DeliveryDrone extends Unit {
     @Override
     public void run()  throws GameActionException  {
         super.run();
-        if (rc.getRoundNum() > 300) {
-            destination = hqLocation != null ? new MapLocation(MAP_WIDTH-hqLocation.x, MAP_HEIGHT-hqLocation.y) : new MapLocation(MAP_WIDTH-baseLocation.x, MAP_HEIGHT-baseLocation.y);
-        }
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
+        System.out.println(carryingEnemy + " " + destination);
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
@@ -63,13 +65,6 @@ public class DeliveryDrone extends Unit {
                 }
             }
             else {
-                if ((nearestWaterLocation == baseLocation || nearestWaterLocation == hqLocation)
-                        && myLocation.distanceSquaredTo(destination) > 8) {
-                    path(nearestWaterLocation);
-                }
-                else {
-                    tryMove();
-                }
                 path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -99,11 +94,11 @@ public class DeliveryDrone extends Unit {
                 nearestWaterLocation = updateNearestWaterLocation();
             }
             else { // go back to base
-                if (myLocation.distanceSquaredTo(destination) > 8) {
+                int distance = myLocation.distanceSquaredTo(destination);
+                if (distance > 64 || (rc.getRoundNum() > 1000 && distance > 4)) {
                     path(destination);
-                }
-                else {
-                    tryMove();
+                } else {
+                    path(myLocation.add(myLocation.directionTo(hqLocation).opposite().rotateLeft()));
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -151,6 +146,13 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
+
+        for (Direction dir : directionsWithCenter) {
+            MapLocation newLoc = myLocation.add(dir);
+            if (rc.canSenseLocation(newLoc) && rc.senseFlooding(newLoc)) {
+                waterLocations.add(newLoc);
+            }
+        }
         // System.out.println("end map scan "+Clock.getBytecodeNum());
 
         // System.out.println("start find nearest "+Clock.getBytecodeNum());
@@ -168,7 +170,7 @@ public class DeliveryDrone extends Unit {
         if (nearest != null) {
             return nearest;
         }
-        return hqLocation != null ? hqLocation : baseLocation;
+        return enemyLocation;
     }
 
     public int[] getLocationsToCheck(long mask) {
