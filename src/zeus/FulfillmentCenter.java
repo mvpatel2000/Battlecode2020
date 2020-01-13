@@ -30,7 +30,7 @@ public class FulfillmentCenter extends Building {
 
         super.run();
         if(!holdProduction) {
-            if ((rc.getTeamSoup() >= Math.min(150 + 15 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 10 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
+            if ((rc.getTeamSoup() >= Math.min(150 + 15 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
                 buildDrone();
         }
 
@@ -88,7 +88,7 @@ public class FulfillmentCenter extends Building {
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
-        if(rc.getRoundNum()-turnAtProductionHalt>10) {
+        if(rc.getRoundNum()-turnAtProductionHalt>30) {
             System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;

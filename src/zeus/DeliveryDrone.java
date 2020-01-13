@@ -21,7 +21,7 @@ public class DeliveryDrone extends Unit {
     MapLocation destination;
 
     boolean attackDrone;
-    final int DEFEND_TURN = 900;
+    final int DEFEND_TURN;
 
     boolean carryingEnemy;
     boolean carryingAlly;
@@ -56,6 +56,23 @@ public class DeliveryDrone extends Unit {
         Direction toBase = myLocation.directionTo(baseLocation);
         if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(hqLocation)) {
             attackDrone = true;
+        }
+
+        if (rc.canSenseLocation(hqLocation)) {
+            switch (rc.senseElevation(hqLocation)) {
+                case 5:
+                    DEFEND_TURN = 1210-5;
+                    break;
+                case 4:
+                    DEFEND_TURN = 930-5;
+                    break;
+                default:
+                    DEFEND_TURN = 700-5;
+                    break;
+            }
+        }
+        else {
+            DEFEND_TURN = 700-5;
         }
 
 

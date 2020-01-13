@@ -25,6 +25,12 @@ public class HQ extends Building {
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
+
+        int[] message = {18527549, MAP_WIDTH / 2, MAP_HEIGHT / 2, 0, 0, 0, 0};
+        if (rc.canSubmitTransaction(message, 2)) {
+            rc.submitTransaction(message, 2);
+        }
+
         writeLocationMessage();
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);
