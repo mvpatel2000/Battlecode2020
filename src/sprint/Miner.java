@@ -17,6 +17,7 @@ public class Miner extends Unit {
     MapLocation destination;
     MapLocation hqLocation;
     MapLocation baseLocation;
+    MapLocation lastSoupLocation;
     int turnsToBase;
     int[] tilesVisited;
 
@@ -227,7 +228,7 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 1000)
+        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 1000 || rc.getRoundNum() > 530)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(),allyTeam);
         boolean existsNetGun = false;
@@ -247,15 +248,16 @@ public class Miner extends Unit {
             }
         }
         for (Direction dir : directions) {
-            if (!existsNetGun) {
-                tryBuild(RobotType.NET_GUN, dir);
-            } else if (!existsDesignSchool) {
-                tryBuild(RobotType.DESIGN_SCHOOL, dir);
-            } else if (!existsFulfillmentCenter) {
-                tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-            } else {
-                tryBuild(RobotType.VAPORATOR, dir);
-            }
+//            if (!existsNetGun) {
+//                tryBuild(RobotType.NET_GUN, dir);
+//            } else if (!existsDesignSchool) {
+//                tryBuild(RobotType.DESIGN_SCHOOL, dir);
+//            } else if (!existsFulfillmentCenter) {
+//                tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+//            } else {
+//                tryBuild(RobotType.VAPORATOR, dir);
+//            }
+            tryBuild(RobotType.VAPORATOR, dir);
         }
     }
 
@@ -283,10 +285,7 @@ public class Miner extends Unit {
                 if (!dSchoolExists && !holdProduction) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                 }
-                // build d.school
-//                if (!dSchoolExists) {
-//                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
-//                }
+
                 Direction toBase = myLocation.directionTo(baseLocation);
                 if (rc.canDepositSoup(toBase))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(toBase, rc.getSoupCarrying());
@@ -327,22 +326,27 @@ public class Miner extends Unit {
 
     // Updates base location and builds refinery if base is too far
     public void refineryCheck() throws GameActionException {
+        if (holdProduction)
+            return;
+        int distToBase = myLocation.distanceSquaredTo(baseLocation);
         RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         for (RobotInfo robot : robots) {
             if (robot.getType() == RobotType.REFINERY || (robot.getType() == RobotType.HQ && rc.getRoundNum() < 100) ) {
-                if (myLocation.distanceSquaredTo(robot.getLocation()) < myLocation.distanceSquaredTo(baseLocation)) {
+                int distToNew = myLocation.distanceSquaredTo(robot.getLocation());
+                if (distToNew < distToBase || (distToNew == distToBase && robot.getType() == RobotType.REFINERY)) {
                     baseLocation = robot.getLocation();
+                    distToBase = distToNew;
                 }
             }
         }
-        if (myLocation.distanceSquaredTo(baseLocation) > 25)
+        if (distToBase > 25)
             rc.setIndicatorLine(myLocation, baseLocation, 255,0,0);
         else
             rc.setIndicatorLine(myLocation, baseLocation, 255,255,255);
         //TODO: Better measure of distance than straightline. Consider path length?
-        if (myLocation.distanceSquaredTo(baseLocation) > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100)) {
+        if ( (distToBase > 25 || (baseLocation == hqLocation && rc.getRoundNum() > 100))
+            && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 25 || turnsToBase > 10)) {
             //TODO: build a refinery smarter and in good direction.
-            //TODO: Handle case where you dont have enough resources and then are stuck? I think soln is better pathing so it can get back
             //build new refinery!
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
@@ -417,6 +421,7 @@ public class Miner extends Unit {
 //        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
 
         if (nearest != null) {
+            lastSoupLocation = nearest;
             return nearest;
         }
         return getNearestUnexploredTile();
