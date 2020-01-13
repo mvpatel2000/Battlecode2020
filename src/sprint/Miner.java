@@ -11,8 +11,11 @@ public class Miner extends Unit {
     long[] soupChecked; // align to top right
     List<Integer> soupPriorities = new ArrayList<Integer>();
     List<MapLocation> soupLocations = new ArrayList<MapLocation>();
+    int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
+    boolean readMessage;
 
     MapLocation destination;
+    MapLocation hqlocation;
     MapLocation baseLocation;
     int turnsToBase;
     int[] tilesVisited;
@@ -26,16 +29,13 @@ public class Miner extends Unit {
     boolean hasRun = false; 
     MapLocation dLoc;
 
-    //TODO: Need another int[] to read soup Priorities
-    //given by HQ. Check comment in updateActiveLocations.
-    int[] soupMiningTiles;
-    boolean readMessage;
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
 
         aggro = rc.getRoundNum() == 2;
-        aggroDone = false;  
+        aggroDone = false;
+        aggro = false; // TODO: DELETE
         if (aggro) {    
             target = new ArrayList<>(); 
             MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->  
@@ -56,6 +56,7 @@ public class Miner extends Unit {
             RobotInfo r = rc.senseRobotAtLocation(t);
             if (r != null && r.getType() == RobotType.HQ) {
                 baseLocation = t;
+                hqlocation = t;
                 break;
             }
         }
@@ -93,8 +94,6 @@ public class Miner extends Unit {
         checkBuildBuildings();
 
         harvest();
-        //TODO: Modify Harvest to build refineries if mining location > some dist from base
-        //TODO: Handle case where no stuff found. Switch to explore mode
     }
 
     private void handleAggro() throws GameActionException {
@@ -162,7 +161,7 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady())
+        if (!rc.isReady() || myLocation.distanceSquaredTo(hqlocation) < 35 || rc.getTeamSoup() < 1000)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(),allyTeam);
         boolean existsNetGun = false;
@@ -181,17 +180,15 @@ public class Miner extends Unit {
                     break;
             }
         }
-        if (rc.getTeamSoup() > 1000) {
-            for (Direction dir : directions) {
-                if (!existsNetGun) {
-                    tryBuild(RobotType.NET_GUN, dir);
-                } else if (!existsDesignSchool) {
-                    tryBuild(RobotType.DESIGN_SCHOOL, dir);
-                } else if (!existsFulfillmentCenter) {
-                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else {
-                    tryBuild(RobotType.VAPORATOR, dir);
-                }
+        for (Direction dir : directions) {
+            if (!existsNetGun) {
+                tryBuild(RobotType.NET_GUN, dir);
+            } else if (!existsDesignSchool) {
+                tryBuild(RobotType.DESIGN_SCHOOL, dir);
+            } else if (!existsFulfillmentCenter) {
+                tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+            } else {
+                tryBuild(RobotType.VAPORATOR, dir);
             }
         }
     }
