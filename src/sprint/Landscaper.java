@@ -145,15 +145,26 @@ public class Landscaper extends Unit {
                     tryDig(hqDir);
                 }
                 else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
-                    Direction digDir = hqDir.opposite();
-                    if (baseDist == 2) {
-                        digDir = hqDir.rotateRight().rotateRight();
+                    boolean foundDigSite = false;
+                    int hqElevation = rc.senseElevation(hqLocation);
+                    for (Direction d : directions) {
+                        if (!nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > ) {
+                            foundDigSite = true;
+                            System.out.println("Digging dirt from direction " + d.toString());
+                        }
                     }
-                    if (!rc.canDigDirt(digDir)) {
-                        digDir = digDir.rotateRight();
+                    // TODO: first priority should be to dig in an adjacent inner wall tile that is empty and has elevation > HQ_elev
+                    if (!foundDigSite) {
+                        Direction digDir = hqDir.opposite();
+                        if (baseDist == 2) {
+                            digDir = hqDir.rotateRight().rotateRight();
+                        }
+                        if (!rc.canDigDirt(digDir)) {
+                            digDir = digDir.rotateRight();
+                        }
+                        System.out.println("Digging dirt from direction " + digDir.toString());
+                        tryDig(digDir);
                     }
-                    System.out.println("Digging dirt from direction " + digDir.toString());
-                    tryDig(digDir);
                 }
                 else if (wallPhase == 0) { // inner wall not yet complete; look for enemy building, else deposit under yourself
                     boolean foundEnemyBuilding = false;
