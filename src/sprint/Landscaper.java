@@ -188,8 +188,19 @@ public class Landscaper extends Unit {
                     }
                 }
                 else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
-                    System.out.println("Dumping dirt under myself");
-                    tryDeposit(Direction.CENTER);
+                    boolean foundDumpSite = false;
+                    int hqElevation = rc.senseElevation(hqLocation);
+                    for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
+                        if (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < rc.senseElevation(hqLocation)) {
+                            foundDumpSite = true;
+                            System.out.println("Dumping to trench in direction " + myLocation.directionTo(hqLocation.add(d)));
+                            tryDeposit(myLocation.directionTo(hqLocation.add(d)));
+                        }
+                    }
+                    if (!foundDumpSite) {
+                        System.out.println("Dumping dirt under myself");
+                        tryDeposit(Direction.CENTER);
+                    }
                 }
                 else { // inner wall tight; distribute to the lowest point of the inner wall around it
                     Direction dump = Direction.CENTER;
