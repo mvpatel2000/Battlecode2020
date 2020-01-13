@@ -13,7 +13,7 @@ public abstract class Unit extends Robot {
     protected boolean hasHistory;
     protected int stuck;
     protected Direction facing;
-    protected Hand dir;
+    protected Direction following;
     protected int rand;
     protected int time;
 
@@ -25,7 +25,6 @@ public abstract class Unit extends Robot {
         stuck = 0;
         clearHistory();
         facing = null;
-        dir = null;
         rand = 0;
     }
 
@@ -38,7 +37,7 @@ public abstract class Unit extends Robot {
             history.addFirst(loc);
         }
         historySet.put(loc, HISTORY_SIZE);
-        dir = null;
+        following = null;
         facing = null;
         time = 0;
     }
@@ -140,63 +139,50 @@ public abstract class Unit extends Robot {
                 pbest = x;
             }
         }
-        int itr = 0;
-        if (Math.random() < 0.2 && dir == null) {
+        if (Math.random() < 0.2 && following == null) {
             return pathHelper(target, pbest);
         }
-        while ((dir != null && !canMove(facing)) || (dir == null && !canMove(best))) {
-            if (itr == 0)
-                time++;
-            if (time == WALL_FOLLOW_LENGTH)
-                break;
-            itr++;
-            if (dir == null) {
-                if (Math.random() < 0.5)
-                    rand = 1 - rand;
-                if (Math.random() < 0.3)
-                    best = adj(best, rand * 2 + 7);
-                facing = best;
-            }
-            if (rand == 1) {
-                Direction l = right(facing);
-                if (canMove(l) && dir != Hand.RIGHT) {
-                    dir = Hand.LEFT;
-                    go(l);
-                    return true;
-                }
-                Direction r = left(facing);
-                if (canMove(r) && dir != Hand.LEFT) {
-                    dir = Hand.RIGHT;
-                    go(r);
-                    return true;
-                }
-            }
-            if (rand == 0) {
-                Direction r = left(facing);
-                if (canMove(r) && dir != Hand.LEFT) {
-                    dir = Hand.RIGHT;
-                    go(r);
-                    return true;
-                }
-                Direction l = right(facing);
-                if (canMove(l) && dir != Hand.RIGHT) {
-                    dir = Hand.LEFT;
-                    go(l);
-                    return true;
-                }
-            }
-            if (itr == 8)
-                break;
-            facing = adj(facing, rand * 2 + 7);
+        if (following != null && !canMove(facing) && canMove(following) && time < 20) {
+            time++;
+            go(following);
         }
-        dir = null;
+        if (following != null && !canMove(facing) && (!canMove(following) || time >= 20)) {
+            time = 0;
+            following = null;
+            facing = null;
+            best = following;
+        }
+        if (following == null && !canMove(best)) {
+            if (Math.random() < 0.5) {
+                for (int i = 0; i < 8; i++) {
+                    Direction d = adj(best, i);
+                    if (canMove(d)) {
+                        facing = best;
+                        following = d;
+                        tryMove(d);
+                        return true;
+                    }
+                }
+                for (int i = 0; i < 8; i++) {
+                    Direction d = adj(best, 8 - i);
+                    if (canMove(d)) {
+                        facing = best;
+                        following = d;
+                        tryMove(d);
+                        return true;
+                    }
+                }
+            }
+        }
         time = 0;
         if (facing != null && canMove(facing)) {
             go(facing);
+            following = null;
             facing = null;
             return true;
         }
         facing = null;
+        following = null;
         return pathHelper(target, best);
     }
 
