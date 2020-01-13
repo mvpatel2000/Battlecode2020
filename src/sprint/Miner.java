@@ -28,6 +28,7 @@ public class Miner extends Unit {
     boolean aggroDone;
     boolean hasRun = false;
     MapLocation dLoc;
+    boolean hasSentHalt = false;
 
     //TODO: Need another int[] to read soup Priorities
     //given by HQ. Check comment in updateActiveLocations.
@@ -125,14 +126,14 @@ public class Miner extends Unit {
                     return;
                 }
             }
-            return;
         }
         if (aggroDone && !target.isEmpty() && Arrays.stream(rc.senseNearbyRobots()).anyMatch(x ->
                 !x.getTeam().equals(rc.getTeam()) &&
                         (x.getType().equals(RobotType.DELIVERY_DRONE)
                                 || x.getType().equals(RobotType.FULFILLMENT_CENTER)))
                 && Arrays.stream(rc.senseNearbyRobots()).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
-            if(rc.getTeamSoup() < 250) {
+            if(rc.getTeamSoup() < 250 && !hasSentHalt) {
+                hasSentHalt = true;
                 HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                 h.writeEnemyHQTile(getTileNumber(target.get(0)));
                 sendMessage(h.getMessage(), 2);
@@ -217,9 +218,9 @@ public class Miner extends Unit {
                 Direction hqDir = myLocation.directionTo(destination);
 
                 // build fulfillment center
-//                if (!fulfillmentCenterExists) {
-//                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-//                }
+                //if (!fulfillmentCenterExists) {
+                //    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+                //}
                 // build d.school
                 if (!dSchoolExists && !holdProduction) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
