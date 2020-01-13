@@ -257,6 +257,8 @@ public class Miner extends Unit {
 //            } else {
 //                tryBuild(RobotType.VAPORATOR, dir);
 //            }
+            if (!existsNetGun && rc.getRoundNum() > 600)
+                rc.buildRobot(RobotType.NET_GUN, dir);
             tryBuild(RobotType.VAPORATOR, dir);
         }
     }
