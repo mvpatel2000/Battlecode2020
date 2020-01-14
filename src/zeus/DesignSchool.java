@@ -82,6 +82,7 @@ public class DesignSchool extends Building {
 
     public void aggro() throws GameActionException {
         if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
+            return;
         if (wallProxy && !holdProduction) {
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
