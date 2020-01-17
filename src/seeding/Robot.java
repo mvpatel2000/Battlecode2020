@@ -1,4 +1,4 @@
-package hades_dev;
+package seeding;
 
 import battlecode.common.*;
 
@@ -252,7 +252,7 @@ public abstract class Robot {
     }
 
     boolean sendMessage(int[] message, int bid) throws GameActionException {
-        if(message.length>GameConstants.MAX_BLOCKCHAIN_TRANSACTION_LENGTH) {
+        if(message.length>GameConstants.NUMBER_OF_TRANSACTIONS_PER_BLOCK) {
             return false;
         }
         if (rc.canSubmitTransaction(message, bid)) {
