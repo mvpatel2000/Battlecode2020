@@ -59,26 +59,20 @@ public class Landscaper extends Unit {
         hqLocation = null;
         holdPositionLoc = null;
         wallPhase = 0;
-        int hqID = rc.getTeam().equals(Team.valueOf("A")) ? 0 : 1;
-        defensive = rc.canSenseRobot(hqID);
+        hqLocation = checkForLocationMessage();
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
-            RobotInfo hqInfo = rc.senseRobot(hqID);
-            hqLocation = hqInfo.location;
-            System.out.println("I am a defensive landscaper. Found our HQ:");
-            System.out.println(hqInfo);
-
+            System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
-            System.out.println("My hold position location: ");
-            System.out.println(holdPositionLoc);
+            System.out.println("My hold position location: " + holdPositionLoc.toString());
         }
         else {
-            System.out.println("I can't see my own HQ");
-            int enemyHQID = 1 - hqID;
-            if (rc.canSenseRobot(enemyHQID)) {
+            MapLocation enemyHQCandidateLoc = new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y);
+            System.out.println("I am far from my HQ");
+            if (rc.canSenseLocation(enemyHQCandidateLoc)) {
                 System.out.println("I am an aggressive landscaper");
                 aggressive = true;
-                RobotInfo enemyHQInfo = rc.senseRobot(enemyHQID);
-                enemyHQLocation = enemyHQInfo.location;
+                enemyHQLocation = enemyHQCandidateLoc;
                 if (enemyHQLocation.isAdjacentTo(myLocation)) {
                     System.out.println("I am in the enemy wall :o");
                     wallProxy = true;
@@ -224,7 +218,7 @@ public class Landscaper extends Unit {
                 else { // inner wall tight; distribute to the lowest point of the inner wall around it
                     Direction dump = Direction.CENTER;
                     int height = rc.senseElevation(myLocation.add(dump));
-                    Direction candidateDumpLoc = myLocation.add(hqDir.rotateLeft());
+                    MapLocation candidateDumpLoc = myLocation.add(hqDir.rotateLeft());
                     if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate left
                         dump = hqDir.rotateLeft();
                         height = rc.senseElevation(candidateDumpLoc);
