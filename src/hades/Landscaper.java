@@ -17,11 +17,61 @@ public class Landscaper extends Unit {
     int wallPhase;
     MapLocation holdPositionLoc = null; // this is important; used in updateNearbyBots() to prevent circular reasoning
     boolean innerWaller = true;
-    Direction[][] outerRing = {{Direction.NORTHWEST, Direction.NORTHWEST}, {Direction.NORTH, Direction.NORTHWEST}, {Direction.NORTH, Direction.NORTH}, {Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTHEAST, Direction.NORTHEAST}, {Direction.EAST, Direction.NORTHEAST}, {Direction.EAST, Direction.EAST}, {Direction.EAST, Direction.SOUTHEAST}, {Direction.SOUTHEAST, Direction.SOUTHEAST}, {Direction.SOUTH, Direction.SOUTHEAST}, {Direction.SOUTH, Direction.SOUTH}, {Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTHWEST, Direction.SOUTHWEST}, {Direction.WEST, Direction.SOUTHWEST}, {Direction.WEST, Direction.WEST}, {Direction.WEST, Direction.NORTHWEST}};
-    // Note: Dig pattern assumes we don't have landscapers in the four cardinal directions in the outer ring.  Update if this changes.
-    Direction[][] outerRingDig = {{Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.NORTH, Direction.SOUTH}, {Direction.EAST, Direction.NORTHEAST, Direction.NORTH, Direction.NORTHWEST}, {Direction.CENTER}, {Direction.WEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.NORTH, Direction.EAST}, {Direction.SOUTH, Direction.SOUTHEAST, Direction.EAST, Direction.NORTHEAST}, {Direction.CENTER}, {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST}, {Direction.SOUTHEAST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.EAST, Direction.SOUTH}, {Direction.WEST, Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTHEAST}, {Direction.CENTER}, {Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.NORTHWEST, Direction.WEST, Direction.SOUTH}, {Direction.NORTH, Direction.NORTHWEST, Direction.WEST, Direction.SOUTHWEST}, {Direction.CENTER}, {Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST}};
-    // Direction[] outerRingDeposit = {Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTHEAST, Direction.NORTHEAST, Direction.EAST, Direction.EAST, Direction.SOUTHEAST};
-    Direction[][] outerRingDeposit = {{Direction.SOUTHEAST}, {Direction.SOUTHEAST, Direction.SOUTH}, {Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTHWEST}, {Direction.SOUTHWEST, Direction.WEST}, {Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST}, {Direction.WEST, Direction.NORTHWEST}, {Direction.NORTHWEST}, {Direction.NORTHWEST, Direction.NORTH}, {Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTHEAST}, {Direction.NORTHEAST, Direction.EAST}, {Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST}, {Direction.EAST, Direction.SOUTHEAST}};
+    Direction[] innerWallFillOrder;
+    Direction[][] outerRing = {
+        {Direction.NORTHWEST, Direction.NORTHWEST},
+        {Direction.NORTH, Direction.NORTHWEST},
+        {Direction.NORTH, Direction.NORTH},
+        {Direction.NORTH, Direction.NORTHEAST},
+        {Direction.NORTHEAST, Direction.NORTHEAST},
+        {Direction.EAST, Direction.NORTHEAST},
+        {Direction.EAST, Direction.EAST},
+        {Direction.EAST, Direction.SOUTHEAST},
+        {Direction.SOUTHEAST, Direction.SOUTHEAST},
+        {Direction.SOUTH, Direction.SOUTHEAST},
+        {Direction.SOUTH, Direction.SOUTH},
+        {Direction.SOUTH, Direction.SOUTHWEST},
+        {Direction.SOUTHWEST, Direction.SOUTHWEST},
+        {Direction.WEST, Direction.SOUTHWEST},
+        {Direction.WEST, Direction.WEST},
+        {Direction.WEST, Direction.NORTHWEST}
+    };
+    Direction[][] outerRingDig = {
+        {Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.NORTH, Direction.SOUTH},
+        {Direction.EAST, Direction.NORTHWEST, Direction.NORTHEAST, Direction.NORTH},
+        {Direction.CENTER},
+        {Direction.WEST, Direction.NORTHEAST, Direction.NORTHWEST, Direction.NORTH},
+        {Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.NORTH, Direction.EAST},
+        {Direction.SOUTH, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.EAST},
+        {Direction.CENTER},
+        {Direction.NORTH, Direction.SOUTHEAST, Direction.NORTHEAST, Direction.EAST},
+        {Direction.SOUTHEAST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.EAST, Direction.SOUTH},
+        {Direction.WEST, Direction.SOUTHEAST, Direction.SOUTHWEST, Direction.SOUTH},
+        {Direction.CENTER},
+        {Direction.EAST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.SOUTH},
+        {Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.NORTHWEST, Direction.WEST, Direction.SOUTH},
+        {Direction.NORTH, Direction.SOUTHWEST, Direction.NORTHWEST, Direction.WEST},
+        {Direction.CENTER},
+        {Direction.SOUTH, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.WEST}
+    };
+    Direction[][] outerRingDeposit = {
+        {Direction.SOUTHEAST},
+        {Direction.SOUTHEAST, Direction.SOUTH},
+        {Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST},
+        {Direction.SOUTH, Direction.SOUTHWEST},
+        {Direction.SOUTHWEST},
+        {Direction.SOUTHWEST, Direction.WEST},
+        {Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST},
+        {Direction.WEST, Direction.NORTHWEST},
+        {Direction.NORTHWEST},
+        {Direction.NORTHWEST, Direction.NORTH},
+        {Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST},
+        {Direction.NORTH, Direction.NORTHEAST},
+        {Direction.NORTHEAST},
+        {Direction.NORTHEAST, Direction.EAST},
+        {Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST},
+        {Direction.EAST, Direction.SOUTHEAST}
+    };
     int outerRingIndex = 0;
     int forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
     boolean currentlyInInnerWall = false;
@@ -62,6 +112,7 @@ public class Landscaper extends Unit {
         hqLocation = checkForLocationMessage();
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
+            innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
             System.out.println("My hold position location: " + holdPositionLoc.toString());
@@ -91,7 +142,7 @@ public class Landscaper extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        
+
         updateNearbyBots();
 
         if (defensive) {
@@ -263,7 +314,7 @@ public class Landscaper extends Unit {
                         }
                     }
                 }
-                else if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION && rc.senseElevation(myLocation) > -10) { // deposit under myself if i'm not tall enough yet and i am not in a dig site
+                else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 2) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
                     System.out.println("Dumping dirt under myself");
                     tryDeposit(Direction.CENTER);
                 }
@@ -276,14 +327,8 @@ public class Landscaper extends Unit {
                             minElev = rc.senseElevation(myLocation.add(d));
                         }
                     }
-                    if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION && minElev > rc.senseElevation(myLocation)) { // deposit under myself if i'm not tall enough yet
-                        System.out.println("Dumping dirt under myself");
-                        tryDeposit(Direction.CENTER);
-                    }
-                    else {
-                        System.out.println("Dumping dirt in direction " + dumpDir.toString());
-                        tryDeposit(dumpDir);
-                    }
+                    System.out.println("Dumping dirt in direction " + dumpDir.toString());
+                    tryDeposit(dumpDir);
                 }
             }
         }
@@ -371,32 +416,54 @@ public class Landscaper extends Unit {
         System.out.println("Wall phase: " + Integer.toString(wallPhase));
     }
 
+    Direction[] computeInnerWallFillOrder(MapLocation hqLoc, MapLocation dSchoolLoc) {
+        Direction[] lDir = new Direction[8];
+        Direction hqToD = hqLoc.directionTo(dSchoolLoc);
+        lDir[7] = hqToD; //always build away from d.school first
+        //case 1: Underneath
+        if(directionToInt(hqToD)%2==0) {
+            lDir[2] = lDir[7].rotateRight();
+            lDir[5] = lDir[2].rotateRight();
+            lDir[0] = lDir[5].rotateRight();
+            lDir[4] = lDir[0].rotateRight();
+            lDir[3] = lDir[4].rotateRight();
+            lDir[1] = lDir[3].rotateRight();
+            lDir[6] = lDir[1].rotateRight();
+        } else {
+            //case 2: diagonal
+            lDir[1] = lDir[7].rotateRight();
+            lDir[3] = lDir[1].rotateRight();
+            lDir[4] = lDir[3].rotateRight();
+            lDir[0] = lDir[4].rotateRight();
+            lDir[5] = lDir[0].rotateRight();
+            lDir[2] = lDir[5].rotateRight();
+            lDir[6] = lDir[1].rotateRight();
+        }
+        return lDir;
+    }
+
     void updateHoldPositionLoc() throws GameActionException {
         if (wallPhase < 2) {
-            holdPositionLoc = hqLocation.add(hqLocation.directionTo(myLocation));
-            int maxDist = holdPositionLoc.distanceSquaredTo(baseLocation);
+            holdPositionLoc = null;
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
-            for (Direction dir : directions) {
+            for (Direction dir : innerWallFillOrder) {
+                System.out.println(dir);
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
                 }
+                if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
+                    holdPositionLoc = t;
+                }
                 if (t.equals(myLocation)) {
                     currentlyInInnerWall = true;
                 }
-                if (!nearbyBotsMap.containsKey(t)) { // find the farthest hold position from d.school
-                    int d = t.distanceSquaredTo(baseLocation);
-                    if (d > maxDist) {
-                        maxDist = d;
-                        holdPositionLoc = t;
-                    }
-                }
-                else if (nearbyBotsMap.get(t).team.equals(enemyTeam)) {
+                if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(enemyTeam)) {
                     enemyInWall = true;
                 }
             }
-            if (enemyInWall && currentlyInInnerWall) { // emergency case: if enemy is spotted in the wall and i'm already in the wall, just hold there
+            if (enemyInWall && currentlyInInnerWall) { // emergency override: if enemy is spotted in the wall and i'm already in the wall, just hold there
                 holdPositionLoc = myLocation;
             }
         }

@@ -10,8 +10,8 @@ public abstract class Robot {
     RobotController rc;
     final int MAX_SQUARED_DISTANCE = Integer.MAX_VALUE;
 
-    final int OUTER_RING_TARGET_ELEVATION = 50; // TODO: tweak constant
-    final int INNER_WALL_FORCE_TAKEOFF_DEFAULT = 440;
+    // final int OUTER_RING_TARGET_ELEVATION = 50; // deprecated
+    final int INNER_WALL_FORCE_TAKEOFF_DEFAULT = 460;
     final int INNER_WALL_FORCE_TAKEOFF_CONTESTED = 360;
 
     /* constant for each game */
@@ -194,7 +194,6 @@ public abstract class Robot {
         }
         return null;
     }
-
 
      /**
      * Grid used for communication

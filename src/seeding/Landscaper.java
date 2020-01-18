@@ -448,7 +448,6 @@ public class Landscaper extends Unit {
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
-                System.out.println(dir);
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
