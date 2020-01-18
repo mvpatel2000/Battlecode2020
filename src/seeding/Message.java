@@ -120,8 +120,8 @@ public class Message {
         if (numBits+writtenTo > msgLen-1) {
             return false;
         } else {
-            int arrIndexStart = intIndex(writtenTo);
-            int arrIndexEnd = intIndex(numBits+writtenTo-1);
+            int arrIndexStart = (writtenTo)>>>5;
+            int arrIndexEnd = (numBits+writtenTo-1)>>>5;
             int integerBitBegin = whichBit(arrIndexStart, writtenTo);
             int integerBitEnd = whichBit(arrIndexEnd, numBits+writtenTo-1);
             //if write is contained in single integer
@@ -157,8 +157,8 @@ public class Message {
      //_ _ _ 0 1 0 _ , so reading 010, starting from the 0 would be readfromArray(3, 3)
      //beginBit can be anywhere in [0, 32*7-1].
     int readFromArray(int beginBit, int numBits) {
-        int arrIndexStart = intIndex(beginBit);
-        int arrIndexEnd = intIndex(numBits+beginBit-1);
+        int arrIndexStart = beginBit>>>5;
+        int arrIndexEnd = (numBits+beginBit-1)>>>5;
         int integerBitBegin = whichBit(arrIndexStart, beginBit);
         int integerBitEnd = whichBit(arrIndexEnd, numBits+beginBit-1);
         int output = 0;
@@ -206,10 +206,6 @@ public class Message {
              return 31;  //last bit of the number
          }
          return bitloc%32;
-     }
-
-     public static int intIndex(int bitlocation) {
-         return (bitlocation)/32;
      }
 
 

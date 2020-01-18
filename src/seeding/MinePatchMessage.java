@@ -25,9 +25,9 @@ public class MinePatchMessage extends Message {
         this.schema = mpmSchema;
         MAX_PATCHES = (msgLen-headerLen-schemaLen)/totalBitsPerElement;
         numPatchesWritten = MAX_PATCHES;
-        patches = new int[MAX_PATCHES];
-        weights = new int[MAX_PATCHES];
-        readPatches();
+        //patches = new int[MAX_PATCHES];
+        //weights = new int[MAX_PATCHES];
+        //readPatches();
     }
 
     void readPatches() {
@@ -36,6 +36,15 @@ public class MinePatchMessage extends Message {
             weights[i] = readFromArray(i*totalBitsPerElement + bitsPerPatch + headerLen + schemaLen, bitsPerWeight);
         }
     }
+
+    int readPatch(int index) {
+        return readFromArray(index*totalBitsPerElement + headerLen + schemaLen, bitsPerPatch);
+    }
+
+    int readWeight(int index) {
+        return readFromArray(index*totalBitsPerElement + bitsPerPatch + headerLen + schemaLen, bitsPerWeight);
+    }
+
 
     boolean writePatch(int tile, int weight) {
         if(numPatchesWritten<MAX_PATCHES) {

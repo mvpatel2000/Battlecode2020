@@ -100,7 +100,7 @@ public class Miner extends Unit {
         tilesVisited[getTileNumber(myLocation)] = 1;
 
         readMessage = false;
-        if (rc.getRoundNum() % messageFrequency == messageModulus+2) {
+        if (rc.getRoundNum() % messageFrequency == 4) {
             updateActiveLocations();
             readMessage = true;
         }
@@ -470,17 +470,24 @@ public class Miner extends Unit {
                 if (getSchema(msg[0])==2 && !foundHQMessage) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
-                    for (int j = 0; j < p.numPatchesWritten; j++) {
-                        if (soupMiningTiles[p.patches[j]] == 0) {
+                    int oldPatch = -1;
+                    for (int j = 0; j < p.MAX_PATCHES; j++) {
+                        int thisPatch = p.readPatch(j);
+                        int thisWeight = p.readWeight(j);
+                        if(thisPatch==oldPatch) {
+                            break;
+                        }
+                        if (soupMiningTiles[thisPatch] == 0) {
                             //For weighting, set another array so that
-                            soupMiningTiles[p.patches[j]] = 1;
-                            MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
+                            soupMiningTiles[thisPatch] = 1;
+                            MapLocation cLoc = getCenterFromTileNumber(thisPatch);
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
                             //rc.setIndicatorDot(cLoc, 235, 128, 114);
                             soupLocations.add(cLoc);
-                            soupPriorities.add(p.weights[j]);
+                            soupPriorities.add(thisWeight);
                         }
+                        oldPatch = thisPatch;
                     }
                     foundHQMessage=true;
                     found += 1;
@@ -494,7 +501,7 @@ public class Miner extends Unit {
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
                         enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
-                        rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                        //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
                     foundProdMessage=true;
                     found += 2;
@@ -508,6 +515,38 @@ public class Miner extends Unit {
     }
 
     //Returns true if it finds all messages it's looking for
+    //Only checks every 5 turns. Less robust but less bytecode than
+    //previous implementation (commented out below).
+    public boolean updateActiveLocations() throws GameActionException {
+        //System.out.println("start reading");
+        int rn = rc.getRoundNum();
+        int prev = rn - messageFrequency;
+        boolean foundhq = false;
+        boolean foundprod = false;
+        for(int i=prev; i<rn; i++) {
+            if(i>0) {
+                int numfound = findMessageFromAllies(i, foundhq, foundprod);
+                if(numfound==3) {
+                    foundhq = true;
+                    foundprod = true;
+                } else if(numfound==2) {
+                    foundprod = true;
+                } else if(numfound==1) {
+                    foundhq = true;
+                }
+                if(foundhq && foundprod) {
+                    return true;
+                }
+            }
+        }
+        if(!foundhq) {
+            System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
+        }
+        return false;
+    }
+
+    //Returns true if it finds all messages it's looking for
+    /**
     public boolean updateActiveLocations() throws GameActionException {
         //System.out.println("start reading");
         int rn = rc.getRoundNum();
@@ -552,7 +591,8 @@ public class Miner extends Unit {
             System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
         }
         return false;
-    }
+    }*/
+
 
     public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
         int tnum = getTileNumber(destination);
