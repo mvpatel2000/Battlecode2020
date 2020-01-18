@@ -91,7 +91,7 @@ public class Landscaper extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        
+
         updateNearbyBots();
 
         if (defensive) {
@@ -369,6 +369,32 @@ public class Landscaper extends Unit {
             }
         }
         System.out.println("Wall phase: " + Integer.toString(wallPhase));
+    }
+
+    Direction[] landscaperDirections(MapLocation hqLoc, MapLocation dSchoolLoc) {
+        Direction[] lDir = new Direction[8];
+        Direction hqToD = hqLoc.directionTo(dSchoolLoc);
+        lDir[7] = hqToD; //always build away from d.school first
+        //case 1: Underneath
+        if(directionToInt(hqToD)%2==0) {
+            lDir[2] = lDir[7].rotateRight();
+            lDir[5] = lDir[2].rotateRight();
+            lDir[0] = lDir[5].rotateRight();
+            lDir[4] = lDir[0].rotateRight();
+            lDir[3] = lDir[4].rotateRight();
+            lDir[1] = lDir[3].rotateRight();
+            lDir[6] = lDir[1].rotateRight();
+        } else {
+            //case 2: diagonal
+            lDir[1] = lDir[7].rotateRight();
+            lDir[3] = lDir[1].rotateRight();
+            lDir[4] = lDir[3].rotateRight();
+            lDir[0] = lDir[4].rotateRight();
+            lDir[5] = lDir[0].rotateRight();
+            lDir[2] = lDir[5].rotateRight();
+            lDir[6] = lDir[1].rotateRight();
+        }
+        return lDir;
     }
 
     void updateHoldPositionLoc() throws GameActionException {
