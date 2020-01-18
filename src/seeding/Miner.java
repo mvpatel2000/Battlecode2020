@@ -276,8 +276,10 @@ public class Miner extends Unit {
     public void harvest() throws GameActionException {
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
-        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+//        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
+//        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+        System.out.println("Soup: " + rc.getSoupCarrying());
+        rc.setIndicatorLine(myLocation, destination, 0,150,255);
 
         if (dSchoolExists) {
             refineryCheck();
@@ -288,6 +290,7 @@ public class Miner extends Unit {
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
         System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         if (outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
+            //TODO: Add in fulfillment center
             fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
         }
 
@@ -405,7 +408,7 @@ public class Miner extends Unit {
             int soupDistance = myLocation.distanceSquaredTo(soupLocation);
             if (soupDistance < distanceToNearest) {
                 // Note: Uses soupDistance comparison instead of rc.canSenseLocation since location guarenteed to be on map
-                if (soupDistance < scanRadius && (rc.senseSoup(soupLocation) == 0 || rc.senseFlooding(soupLocation))) {
+                if (soupDistance < scanRadius && (rc.senseSoup(soupLocation) == 0 || isSurroundedByWater(soupLocation)  )) {
                     if (soupPriority == 63) { // This is an HQ location. I should get close, then delete if no soup
                         if (soupDistance < 10) { // Ad hoc threshold. Make sure to scan the entire tile.
                             soupIterator.remove();
@@ -432,6 +435,14 @@ public class Miner extends Unit {
             return nearest;
         }
         return getNearestUnexploredTile();
+    }
+
+    public boolean isSurroundedByWater(MapLocation loc) throws GameActionException {
+        for (Direction dir : directions) {
+            if (rc.canSenseLocation(loc.add(dir)) && !rc.senseFlooding(loc.add(dir)))
+                return false;
+        }
+        return true;
     }
 
     //TODO: Optimize this. Scan outward with switch statements? Replace int[] for tiles with bits?
