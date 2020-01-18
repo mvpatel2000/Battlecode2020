@@ -1,4 +1,4 @@
-package seeding;
+package hades;
 
 import battlecode.common.*;
 

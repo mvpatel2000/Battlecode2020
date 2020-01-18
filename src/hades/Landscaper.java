@@ -1,4 +1,4 @@
-package seeding;
+package hades;
 
 import java.util.*;
 import battlecode.common.*;
@@ -201,9 +201,7 @@ public class Landscaper extends Unit {
                             digDir = digDir.rotateRight();
                         }
                         System.out.println("Digging from designated dig-site " + digDir.toString());
-                        if (!tryDig(digDir)) {
-                            System.out.println("Can't dig...");
-                        }
+                        tryDig(digDir);
                     }
                 }
                 else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
@@ -293,10 +291,10 @@ public class Landscaper extends Unit {
         if (rc.isReady() && rc.canDepositDirt(dir)) {
             rc.depositDirt(dir);
             if (dir.equals(Direction.CENTER)) {
-                rc.setIndicatorDot(myLocation, 150, 160, 110);
+                //rc.setIndicatorDot(myLocation, 150, 160, 110);
             }
             else {
-                rc.setIndicatorLine(myLocation, myLocation.add(dir), 150, 160, 110);
+                //rc.setIndicatorLine(myLocation, myLocation.add(dir), 150, 160, 110);
             }
             return true;
         } else {
@@ -308,10 +306,10 @@ public class Landscaper extends Unit {
         if (rc.isReady() && rc.canDigDirt(dir)) {
             rc.digDirt(dir);
             if (dir.equals(Direction.CENTER)) {
-                rc.setIndicatorDot(myLocation, 250, 250, 250);
+                //rc.setIndicatorDot(myLocation, 250, 250, 250);
             }
             else {
-                rc.setIndicatorLine(myLocation, myLocation.add(dir), 250, 250, 250);
+                //rc.setIndicatorLine(myLocation, myLocation.add(dir), 250, 250, 250);
             }
             return true;
         } else {

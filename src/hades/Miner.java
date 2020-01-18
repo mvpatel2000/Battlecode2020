@@ -1,4 +1,4 @@
-package seeding;
+package hades;
 
 import battlecode.common.*;
 
@@ -100,7 +100,7 @@ public class Miner extends Unit {
         tilesVisited[getTileNumber(myLocation)] = 1;
 
         readMessage = false;
-        if (rc.getRoundNum() % messageFrequency == 4) {
+        if (rc.getRoundNum() % messageFrequency == messageModulus+2) {
             updateActiveLocations();
             readMessage = true;
         }
@@ -230,7 +230,7 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 500 || rc.getRoundNum() < 250)
+        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 1000 || rc.getRoundNum() > 530)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(),allyTeam);
         boolean existsNetGun = false;
@@ -259,9 +259,8 @@ public class Miner extends Unit {
 //            } else {
 //                tryBuild(RobotType.VAPORATOR, dir);
 //            }
-            if (!existsNetGun && rc.getRoundNum() > 500) {
+            if (!existsNetGun && rc.getRoundNum() > 600)
                 rc.buildRobot(RobotType.NET_GUN, dir);
-            }
             tryBuild(RobotType.VAPORATOR, dir);
         }
     }
@@ -346,10 +345,10 @@ public class Miner extends Unit {
             }
         }
         if (distToBase > 25) {
-            rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
+            //rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
         }
         else {
-            rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
+            //rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
         }
         if ( (distToBase > 25 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
             && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 25 || turnsToBase > 10)) {
@@ -443,7 +442,7 @@ public class Miner extends Unit {
             if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0 ) {
                 MapLocation newTileLocation = getCenterFromTileNumber(newTile);
                 if (myLocation.distanceSquaredTo(newTileLocation) >= scanRadius || !rc.senseFlooding(newTileLocation)) {
-                    //rc.setIndicatorDot(newTileLocation, 255, 0,0);
+                    ////rc.setIndicatorDot(newTileLocation, 255, 0,0);
                     return newTileLocation;
                 }
             }
@@ -471,24 +470,17 @@ public class Miner extends Unit {
                 if (getSchema(msg[0])==2 && !foundHQMessage) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
-                    int oldPatch = -1;
-                    for (int j = 0; j < p.MAX_PATCHES; j++) {
-                        int thisPatch = p.readPatch(j);
-                        int thisWeight = p.readWeight(j);
-                        if(thisPatch==oldPatch) {
-                            break;
-                        }
-                        if (soupMiningTiles[thisPatch] == 0) {
+                    for (int j = 0; j < p.numPatchesWritten; j++) {
+                        if (soupMiningTiles[p.patches[j]] == 0) {
                             //For weighting, set another array so that
-                            soupMiningTiles[thisPatch] = 1;
-                            MapLocation cLoc = getCenterFromTileNumber(thisPatch);
+                            soupMiningTiles[p.patches[j]] = 1;
+                            MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
-                            //rc.setIndicatorDot(cLoc, 235, 128, 114);
+                            ////rc.setIndicatorDot(cLoc, 235, 128, 114);
                             soupLocations.add(cLoc);
-                            soupPriorities.add(thisWeight);
+                            soupPriorities.add(p.weights[j]);
                         }
-                        oldPatch = thisPatch;
                     }
                     foundHQMessage=true;
                     found += 1;
@@ -516,38 +508,6 @@ public class Miner extends Unit {
     }
 
     //Returns true if it finds all messages it's looking for
-    //Only checks every 5 turns. Less robust but less bytecode than
-    //previous implementation (commented out below).
-    public boolean updateActiveLocations() throws GameActionException {
-        //System.out.println("start reading");
-        int rn = rc.getRoundNum();
-        int prev = rn - messageFrequency;
-        boolean foundhq = false;
-        boolean foundprod = false;
-        for(int i=prev; i<rn; i++) {
-            if(i>0) {
-                int numfound = findMessageFromAllies(i, foundhq, foundprod);
-                if(numfound==3) {
-                    foundhq = true;
-                    foundprod = true;
-                } else if(numfound==2) {
-                    foundprod = true;
-                } else if(numfound==1) {
-                    foundhq = true;
-                }
-                if(foundhq && foundprod) {
-                    return true;
-                }
-            }
-        }
-        if(!foundhq) {
-            System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
-        }
-        return false;
-    }
-
-    //Returns true if it finds all messages it's looking for
-    /**
     public boolean updateActiveLocations() throws GameActionException {
         //System.out.println("start reading");
         int rn = rc.getRoundNum();
@@ -592,8 +552,7 @@ public class Miner extends Unit {
             System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
         }
         return false;
-    }*/
-
+    }
 
     public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
         int tnum = getTileNumber(destination);
@@ -619,10 +578,10 @@ public class Miner extends Unit {
         int tnum = getTileNumber(destination);
 //        if (soupAmount>0) {
 //            System.out.println("Telling HQ about Soup at tile: " + Integer.toString(tnum));
-//            rc.setIndicatorDot(getCenterFromTileNumber(tnum), 255, 255, 0);
+//            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 255, 255, 0);
 //        } else {
 //            System.out.println("Telling HQ about NO SOUP at tile: " + Integer.toString(tnum));
-//            rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
+//            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
 //        }
         SoupMessage s = new SoupMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
         s.writeTile(tnum);
