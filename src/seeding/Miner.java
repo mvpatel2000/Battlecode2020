@@ -230,7 +230,7 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 1000 || rc.getRoundNum() > 530)
+        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 500 || rc.getRoundNum() < 250)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(),allyTeam);
         boolean existsNetGun = false;
@@ -259,8 +259,9 @@ public class Miner extends Unit {
 //            } else {
 //                tryBuild(RobotType.VAPORATOR, dir);
 //            }
-            if (!existsNetGun && rc.getRoundNum() > 600)
+            if (!existsNetGun && rc.getRoundNum() > 500) {
                 rc.buildRobot(RobotType.NET_GUN, dir);
+            }
             tryBuild(RobotType.VAPORATOR, dir);
         }
     }
