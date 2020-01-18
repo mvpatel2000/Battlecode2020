@@ -19,13 +19,10 @@ public class Landscaper extends Unit {
     boolean innerWaller = true;
     Direction[][] outerRing = {{Direction.NORTHWEST, Direction.NORTHWEST}, {Direction.NORTH, Direction.NORTHWEST}, {Direction.NORTH, Direction.NORTH}, {Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTHEAST, Direction.NORTHEAST}, {Direction.EAST, Direction.NORTHEAST}, {Direction.EAST, Direction.EAST}, {Direction.EAST, Direction.SOUTHEAST}, {Direction.SOUTHEAST, Direction.SOUTHEAST}, {Direction.SOUTH, Direction.SOUTHEAST}, {Direction.SOUTH, Direction.SOUTH}, {Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTHWEST, Direction.SOUTHWEST}, {Direction.WEST, Direction.SOUTHWEST}, {Direction.WEST, Direction.WEST}, {Direction.WEST, Direction.NORTHWEST}};
     // Note: Dig pattern assumes we don't have landscapers in the four cardinal directions in the outer ring.  Update if this changes.
-    Direction[] outerRingDig = {Direction.NORTHWEST, Direction.EAST, Direction.CENTER, Direction.WEST, Direction.NORTHEAST, Direction.SOUTH, Direction.CENTER, Direction.NORTH, Direction.SOUTHEAST, Direction.WEST, Direction.CENTER, Direction.EAST, Direction.SOUTHWEST, Direction.NORTH, Direction.CENTER, Direction.SOUTH};
+    Direction[][] outerRingDig = {{Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.NORTH, Direction.SOUTH}, {Direction.EAST, Direction.NORTHEAST, Direction.NORTH, Direction.NORTHWEST}, {Direction.CENTER}, {Direction.WEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.NORTH, Direction.EAST}, {Direction.SOUTH, Direction.SOUTHEAST, Direction.EAST, Direction.NORTHEAST}, {Direction.CENTER}, {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST}, {Direction.SOUTHEAST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.EAST, Direction.SOUTH}, {Direction.WEST, Direction.SOUTHWEST, Direction.SOUTH, Direction.SOUTHEAST}, {Direction.CENTER}, {Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.NORTHWEST, Direction.WEST, Direction.SOUTH}, {Direction.NORTH, Direction.NORTHWEST, Direction.WEST, Direction.SOUTHWEST}, {Direction.CENTER}, {Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST}};
     // Direction[] outerRingDeposit = {Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.SOUTHWEST, Direction.WEST, Direction.WEST, Direction.NORTHWEST, Direction.NORTHWEST, Direction.NORTH, Direction.NORTH, Direction.NORTHEAST, Direction.NORTHEAST, Direction.EAST, Direction.EAST, Direction.SOUTHEAST};
     Direction[][] outerRingDeposit = {{Direction.SOUTHEAST}, {Direction.SOUTHEAST, Direction.SOUTH}, {Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTH, Direction.SOUTHWEST}, {Direction.SOUTHWEST}, {Direction.SOUTHWEST, Direction.WEST}, {Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST}, {Direction.WEST, Direction.NORTHWEST}, {Direction.NORTHWEST}, {Direction.NORTHWEST, Direction.NORTH}, {Direction.NORTHWEST, Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTH, Direction.NORTHEAST}, {Direction.NORTHEAST}, {Direction.NORTHEAST, Direction.EAST}, {Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST}, {Direction.EAST, Direction.SOUTHEAST}};
     int outerRingIndex = 0;
-    int OUTER_RING_TARGET_ELEVATION = 50; // TODO: tweak constant
-    int INNER_WALL_FORCE_TAKEOFF_DEFAULT = 440;
-    int INNER_WALL_FORCE_TAKEOFF_CONTESTED = 360;
     int forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
     boolean currentlyInInnerWall = false;
 
@@ -185,6 +182,9 @@ public class Landscaper extends Unit {
                     boolean foundDigSite = false;
                     int hqElevation = rc.senseElevation(hqLocation);
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
+                        if (!rc.onTheMap(hqLocation.add(d))) {
+                            continue;
+                        }
                         if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
                             foundDigSite = true;
                             System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
@@ -207,6 +207,9 @@ public class Landscaper extends Unit {
                     boolean foundDumpSite = false;
                     int hqElevation = rc.senseElevation(hqLocation);
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
+                        if (!rc.onTheMap(hqLocation.add(d))) {
+                            continue;
+                        }
                         if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < rc.senseElevation(hqLocation)) {
                             foundDumpSite = true;
                             System.out.println("Dumping to trench in direction " + myLocation.directionTo(hqLocation.add(d)));
@@ -221,22 +224,26 @@ public class Landscaper extends Unit {
                 else { // inner wall tight; distribute to the lowest point of the inner wall around it
                     Direction dump = Direction.CENTER;
                     int height = rc.senseElevation(myLocation.add(dump));
-                    if(rc.senseElevation(myLocation.add(hqDir.rotateLeft())) < height) { // check rotate left
+                    Direction candidateDumpLoc = myLocation.add(hqDir.rotateLeft());
+                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate left
                         dump = hqDir.rotateLeft();
-                        height = rc.senseElevation(myLocation.add(hqDir.rotateLeft()));
+                        height = rc.senseElevation(candidateDumpLoc);
                     }
-                    if(rc.senseElevation(myLocation.add(hqDir.rotateRight())) < height) { // check rotate right
+                    candidateDumpLoc = myLocation.add(hqDir.rotateRight());
+                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate right
                         dump = hqDir.rotateRight();
-                        height = rc.senseElevation(myLocation.add(hqDir.rotateRight()));
+                        height = rc.senseElevation(candidateDumpLoc);
                     }
                     if (hqDist == 1) {
-                        if(rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft())) < height) {
-                            dump = hqDir.rotateLeft().rotateLeft();
-                            height = rc.senseElevation(myLocation.add(hqDir.rotateLeft().rotateLeft()));
+                        candidateDumpLoc = myLocation.add(hqDir.rotateLeft().rotateLeft());
+                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate left
+                            dump = hqDir.rotateLeft();
+                            height = rc.senseElevation(candidateDumpLoc);
                         }
-                        if(rc.senseElevation(myLocation.add(hqDir.rotateRight().rotateRight())) < height) {
-                            dump = hqDir.rotateRight().rotateRight();
-                            height = rc.senseElevation(myLocation.add(hqDir.rotateRight().rotateRight()));
+                        candidateDumpLoc = myLocation.add(hqDir.rotateRight().rotateRight());
+                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate right
+                            dump = hqDir.rotateRight();
+                            height = rc.senseElevation(candidateDumpLoc);
                         }
                     }
                     System.out.println("Dumping dirt in direction " + dump.toString());
@@ -246,10 +253,14 @@ public class Landscaper extends Unit {
             else if (wallPhase == 2) { // i am an outer landscaper
                 if (rc.getDirtCarrying() == 0) { // dig dirt.  Note that outer landscapers keep their dirt at 0 or 1 while inner landscapers keep their dirt maximized.
                     // TODO: handle the case where we can't dig where we want to because of buildings, e.g. enemy net guns.
-                    System.out.println("Digging dirt from direction " + outerRingDig[outerRingIndex]);
-                    tryDig(outerRingDig[outerRingIndex]);
+                    for (Direction d : outerRingDig[outerRingIndex]) {
+                        System.out.println("Attempting to dig from direction " + d);
+                        if (tryDig(d)) {
+                            break;
+                        }
+                    }
                 }
-                else if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION) { // deposit under myself if i'm not tall enough yet
+                else if (rc.senseElevation(myLocation) < OUTER_RING_TARGET_ELEVATION && rc.senseElevation(myLocation) > -10) { // deposit under myself if i'm not tall enough yet and i am not in a dig site
                     System.out.println("Dumping dirt under myself");
                     tryDeposit(Direction.CENTER);
                 }
@@ -365,6 +376,9 @@ public class Landscaper extends Unit {
             currentlyInInnerWall = false;
             for (Direction dir : directions) {
                 MapLocation t = hqLocation.add(dir);
+                if (!rc.onTheMap(t)) {
+                    continue;
+                }
                 if (t.equals(myLocation)) {
                     currentlyInInnerWall = true;
                 }
@@ -406,8 +420,8 @@ public class Landscaper extends Unit {
             // }
             if (!amInOuterRing) {
                 holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
-                while (nearbyBotsMap.containsKey(holdPositionLoc) || (rc.canSenseLocation(holdPositionLoc) && (rc.senseElevation(holdPositionLoc) < -5 || rc.senseElevation(holdPositionLoc) > 10))) {
-                    // if the holdposition is occupied or is a pit/hill that we can't path to, then try the next holdposition in the ring
+                while (!rc.onTheMap(holdPositionLoc) || nearbyBotsMap.containsKey(holdPositionLoc) || (rc.canSenseLocation(holdPositionLoc) && (rc.senseElevation(holdPositionLoc) < -5 || rc.senseElevation(holdPositionLoc) > 10))) {
+                    // if the holdposition is off the map or occupied or is a pit/hill that we likely can't path to, then try the next holdposition in the ring
                     outerRingIndex = (outerRingIndex + 1) % 16;
                     holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
                 }
