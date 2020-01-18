@@ -67,15 +67,21 @@ public class Landscaper extends Unit {
             System.out.println("My hold position location: " + holdPositionLoc.toString());
         }
         else {
-            MapLocation enemyHQCandidateLoc = new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y);
             System.out.println("I am far from my HQ");
-            if (rc.canSenseLocation(enemyHQCandidateLoc)) {
-                System.out.println("I am an aggressive landscaper");
-                aggressive = true;
-                enemyHQLocation = enemyHQCandidateLoc;
-                if (enemyHQLocation.isAdjacentTo(myLocation)) {
-                    System.out.println("I am in the enemy wall :o");
-                    wallProxy = true;
+            MapLocation[] enemyHQCandidateLocs = {
+                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y),
+                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, rc.getMapHeight() - hqLocation.y - 1),
+                new MapLocation(hqLocation.x, rc.getMapHeight() - hqLocation.y - 1)
+            };
+            for (MapLocation enemyHQCandidateLoc : enemyHQCandidateLocs) {
+                if (rc.canSenseLocation(enemyHQCandidateLoc)) {
+                    System.out.println("I am an aggressive landscaper");
+                    aggressive = true;
+                    enemyHQLocation = enemyHQCandidateLoc;
+                    if (enemyHQLocation.isAdjacentTo(myLocation)) {
+                        System.out.println("I am in the enemy wall :o");
+                        wallProxy = true;
+                    }
                 }
             }
         }
