@@ -147,6 +147,10 @@ public abstract class Unit extends Robot {
                 pbest = x;
             }
         }
+        if (me.distanceSquaredTo(target) < 3 && canMove(best)) {
+            go(best);
+            return true;
+        }
         if (random && Math.random() < 0.2 && following == null) {
             return pathHelper(target, pbest);
         }
