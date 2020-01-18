@@ -548,55 +548,7 @@ public class Miner extends Unit {
     }
 
     //Returns true if it finds all messages it's looking for
-
-    /**
-     * public boolean updateActiveLocations() throws GameActionException {
-     * //System.out.println("start reading");
-     * int rn = rc.getRoundNum();
-     * int del = (rn-1)%messageFrequency;
-     * int prev1 = rn-1-(Math.floorMod(del-messageModulus, messageFrequency));
-     * int prev2 = prev1 - messageFrequency;
-     * boolean foundhq = false;
-     * boolean foundprod = false;
-     * for(int i=prev1; i<rn; i++) {
-     * if(i>0) {
-     * int numfound = findMessageFromAllies(i, foundhq, foundprod);
-     * if(numfound==3) {
-     * foundhq = true;
-     * foundprod = true;
-     * } else if(numfound==2) {
-     * foundprod = true;
-     * } else if(numfound==1) {
-     * foundhq = true;
-     * }
-     * if(foundhq && foundprod) {
-     * return true;
-     * }
-     * }
-     * }
-     * for (int i=prev2; i<prev1; i++) {
-     * if(i>0) {
-     * int numfound = findMessageFromAllies(i, foundhq, foundprod);
-     * if(numfound==3) {
-     * foundhq = true;
-     * foundprod = true;
-     * } else if(numfound==2) {
-     * foundprod = true;
-     * } else if(numfound==1) {
-     * foundhq = true;
-     * }
-     * if(foundhq && foundprod) {
-     * return true;
-     * }
-     * }
-     * }
-     * if(!foundhq) {
-     * System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
-     * }
-     * return false;
-     * }
-     */
-
+    
     public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
         int tnum = getTileNumber(destination);
         if (soupMiningTiles[tnum] == 0 || noSoup) {
