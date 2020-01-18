@@ -31,9 +31,6 @@ public class Miner extends Unit {
     MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
 
-    //TODO: Need another int[] to read soup Priorities
-    //given by HQ. Check comment in updateActiveLocations.
-
     //For halting production and resuming it.
     boolean holdProduction = false;
     int turnAtProductionHalt = -1;
@@ -82,7 +79,7 @@ public class Miner extends Unit {
         turnsToBase = -1;
         destination = updateNearestSoupLocation();
         updateActiveLocations();
-        Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
+        Clock.yield();
     }
 
     @Override
@@ -316,7 +313,7 @@ public class Miner extends Unit {
                     sendSoupMessageIfShould(destination, true);
                     destination = updateNearestSoupLocation();
                 } else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
-                    refineryCheck(); //TODO: Fix this method and make it better
+                    refineryCheck();
                     destination = baseLocation;
                     turnsToBase++;
                     clearHistory();
@@ -337,6 +334,7 @@ public class Miner extends Unit {
     }
 
     // Updates base location and builds refinery if base is too far
+    //TODO: Make this actually work and do better
     public void refineryCheck() throws GameActionException {
         if (holdProduction)
             return;
@@ -372,6 +370,7 @@ public class Miner extends Unit {
     }
 
     // Returns location of nearest soup
+    //TODO: Replace with linked list. Make this F A S T
     public MapLocation updateNearestSoupLocation() throws GameActionException {
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
@@ -436,6 +435,7 @@ public class Miner extends Unit {
     }
 
     //TODO: Optimize this. Scan outward with switch statements? Replace int[] for tiles with bits?
+    //TODO: Explore in better way, mark off tiles when you see them, not visit!
     public MapLocation getNearestUnexploredTile() throws GameActionException {
         int currentTile = getTileNumber(myLocation);
         int scanRadius = rc.getCurrentSensorRadiusSquared();
@@ -548,7 +548,7 @@ public class Miner extends Unit {
     }
 
     //Returns true if it finds all messages it's looking for
-    
+
     public void sendSoupMessageIfShould(MapLocation destination, boolean noSoup) throws GameActionException {
         int tnum = getTileNumber(destination);
         if (soupMiningTiles[tnum] == 0 || noSoup) {
