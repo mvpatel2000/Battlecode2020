@@ -238,12 +238,12 @@ public class Landscaper extends Unit {
                     if (hqDist == 1) {
                         candidateDumpLoc = myLocation.add(hqDir.rotateLeft().rotateLeft());
                         if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate left
-                            dump = hqDir.rotateLeft();
+                            dump = hqDir.rotateLeft().rotateLeft();
                             height = rc.senseElevation(candidateDumpLoc);
                         }
                         candidateDumpLoc = myLocation.add(hqDir.rotateRight().rotateRight());
                         if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate right
-                            dump = hqDir.rotateRight();
+                            dump = hqDir.rotateRight().rotateRight();
                             height = rc.senseElevation(candidateDumpLoc);
                         }
                     }
