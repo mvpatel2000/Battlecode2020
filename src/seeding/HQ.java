@@ -42,11 +42,13 @@ public class HQ extends Building {
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
         soupsPerTile.add(new int[]{getTileNumber(new MapLocation(myLocation.x, MAP_HEIGHT - myLocation.y - 1)), -1});
+
         /*
         for(int i=0; i<numRows*numCols; i++) {
             MapLocation cen = getCenterFromTileNumber(i);
             rc.setIndicatorDot(cen, 255, i*3, i*3);
         }*/
+        
     }
 
     /*
