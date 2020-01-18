@@ -190,15 +190,14 @@ public class HQ extends Building {
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
         int lookingForMessages = 2;
         for (int i=0; i<msgs.length; i++) {
-            int[] msg = msgs[i].getMessage();
-            Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+            int f = msgs[i].getMessage()[0];
             //sent from our team
-            if(m.origin) {
+            if(allyMessage(f)) {
                 //soup message
-                if(m.schema == 1) {
-                    SoupMessage s = new SoupMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                if(getSchema(f)==1) {
+                    SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
-                        //delete from arraylist of soups
+                        //delete from arraylist of so`ups
                         for(int j=0; j<soupsPerTile.size(); j++) {
                             if(soupsPerTile.get(j)[0]==s.tile) {
                                 soupsPerTile.remove(j);
@@ -211,8 +210,8 @@ public class HQ extends Building {
                     }
                     lookingForMessages-=1;
                 }
-                if(m.schema == 3) {
-                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                if(getSchema(f)==3) {
+                    HoldProductionMessage h = new HoldProductionMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();

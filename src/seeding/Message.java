@@ -11,9 +11,11 @@ public class Message {
     final int MAP_HEIGHT;
     final int MAP_WIDTH;
     final int team;
-    final int arbitraryConstant = 89560;
+    final int arbitraryConstant = 23523;
 
     int headerLen = 16;
+    final int header;
+
     int schema = 0; //default message type
     int schemaLen = 3;
 
@@ -28,10 +30,13 @@ public class Message {
         MAP_WIDTH = myMapWidth;
         team = myTeam;
         origin = true;
+        header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
         generateHeader();
     }
 
     //Use this constructor for messages recieved
+    //Assuming the only messages using this constructor are ally messages
+    //Check origin of incoming messages using method in Robot.java
     public Message(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         if(recieved.length==7) {
             actualMessage = recieved;
@@ -49,8 +54,10 @@ public class Message {
         MAP_HEIGHT = myMapHeight;
         MAP_WIDTH = myMapWidth;
         team = myTeam;
-        origin = getOrigin();
-        schema = getSchema();
+        origin = true;
+        header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
+        //origin = getOrigin();
+        //schema = getSchema();
     }
 
 
@@ -61,7 +68,7 @@ public class Message {
      //Returns true if header matches our team's header
      //Always check before using message content.
      boolean getOrigin() {
-         return readFromArray(0, 16) == arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
+         return readFromArray(0, 16) == header;
      }
 
      //Type of message
@@ -86,7 +93,6 @@ public class Message {
     }
 
     boolean generateHeader() {
-        int header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
         return writeToArray(header, 16);
     }
 

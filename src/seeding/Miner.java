@@ -466,10 +466,8 @@ public class Miner extends Unit {
         //System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            //System.out.println(msg[0]);
-            Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-            if (m.origin) {
-                if (m.schema == 2 && !foundHQMessage) {
+            if (allyMessage(msg[0])) {
+                if (getSchema(msg[0])==2 && !foundHQMessage) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
                     for (int j = 0; j < p.numPatchesWritten; j++) {
@@ -479,7 +477,7 @@ public class Miner extends Unit {
                             MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
-                            //rc.setIndicatorDot(cLoc, 125, 105, 83);
+                            //rc.setIndicatorDot(cLoc, 235, 128, 114);
                             soupLocations.add(cLoc);
                             soupPriorities.add(p.weights[j]);
                         }
@@ -487,7 +485,7 @@ public class Miner extends Unit {
                     foundHQMessage=true;
                     found += 1;
                 }
-                if(m.schema == 3 && !foundProdMessage) {
+                if(getSchema(msg[0])==3 && !foundProdMessage) {
                     //don't actually do anything if you are the miner that sent the halt
                     //you shouldn't halt production, we need you to build the net gun.
                     if(!hasSentHalt) {
