@@ -2,7 +2,6 @@ package sprint;
 
 public class LocationMessage extends Message {
 
-    Message m;
     final int locMessage = 4;   //HoldProductionMessages are message type 3
     int xLoc;
     int yLoc;
@@ -19,6 +18,7 @@ public class LocationMessage extends Message {
     //use .tile and .soupThere to get information
     public LocationMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         super(recieved, myMapHeight, myMapWidth, myTeam);
+        this.schema=locMessage;
         xLoc = -1;
         yLoc = -1;
         readLocation();

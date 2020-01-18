@@ -270,7 +270,7 @@ public class Miner extends Unit {
 
        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
-        
+
         if (dSchoolExists) {
             refineryCheck();
         }
@@ -477,9 +477,9 @@ public class Miner extends Unit {
                             //For weighting, set another array so that
                             soupMiningTiles[p.patches[j]] = 1;
                             MapLocation cLoc = getCenterFromTileNumber(p.patches[j]);
-                            // System.out.print("HQ told me about this new soup tile: ");
-                            // System.out.println(p.patches[j]);
-                            // rc.setIndicatorDot(cLoc, 255, 255, 255);
+                            //System.out.print("HQ told me about this new soup tile: ");
+                            //System.out.println(p.patches[j]);
+                            //rc.setIndicatorDot(cLoc, 125, 105, 83);
                             soupLocations.add(cLoc);
                             soupPriorities.add(p.weights[j]);
                         }

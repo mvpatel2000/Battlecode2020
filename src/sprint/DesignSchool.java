@@ -156,9 +156,8 @@ public class DesignSchool extends Building {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-            if (m.origin) {
-                if(m.schema == 3) {
+            if (allyMessage(msg[0])) {
+                if(getSchema(msg[0])==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
