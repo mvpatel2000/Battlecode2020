@@ -143,6 +143,7 @@ public class Miner extends Unit {
     }
 
     private void handleAggro() throws GameActionException {
+        
         RobotInfo[] nearby = rc.senseNearbyRobots();
         if (dLoc != null) {
             RobotInfo[] dinfo = rc.senseNearbyRobots(dLoc, 0, null);

@@ -115,7 +115,7 @@ public class Landscaper extends Unit {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
-            System.out.println("My hold position location: " + holdPositionLoc.toString());
+            //System.out.println("My hold position location: " + holdPositionLoc.toString());
         }
         else {
             System.out.println("I am far from my HQ");
