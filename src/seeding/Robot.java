@@ -318,15 +318,18 @@ public abstract class Robot {
         return (firstInt<<headerLen)>>>(32-schemaLen);
     }
 
-    void tryBlockchain() throws GameActionException {
-        if (4 < 3) {
-            int[] message = new int[10];
-            for (int i = 0; i < 10; i++) {
-                message[i] = 123;
-            }
-            if (rc.canSubmitTransaction(message, 10))
-                rc.submitTransaction(message, 10);
-        }
-        // System.out.println(rc.getRoundMessages(turnCount-1));
+    boolean isAccessible(MapLocation target) throws GameActionException {
+         int lastElevation = rc.senseElevation(myLocation);
+         MapLocation ptr = myLocation;
+         while (ptr.distanceSquaredTo(target) > 2) { // adjacent to tile
+             if (!rc.canSenseLocation(ptr) || rc.senseFlooding(ptr))
+                 return false;
+             int elevation = rc.senseElevation(ptr);
+             if (Math.abs(elevation - lastElevation) > 3)
+                 return false;
+             lastElevation = elevation;
+             ptr = ptr.add(ptr.directionTo(target));
+         }
+         return true;
     }
 }
