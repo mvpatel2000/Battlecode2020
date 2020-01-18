@@ -30,6 +30,7 @@ public class Landscaper extends Unit {
     boolean currentlyInInnerWall = false;
 
     // class variables used by aggressive landscapers:
+    boolean aggressive = false;
     boolean wallProxy = false;
     MapLocation enemyHQLocation = null;
 
@@ -38,6 +39,10 @@ public class Landscaper extends Unit {
         super(rc);
         System.out.println(myLocation);
 
+        construct();
+    }
+
+    private void construct() throws GameActionException {
         nearbyBotsMap = new HashMap<>();
         updateNearbyBots();
 
@@ -70,9 +75,11 @@ public class Landscaper extends Unit {
             System.out.println(holdPositionLoc);
         }
         else {
-            System.out.println("I am an offensive landscaper");
+            System.out.println("I can't see my own HQ");
             int enemyHQID = 1 - hqID;
             if (rc.canSenseRobot(enemyHQID)) {
+                System.out.println("I am an aggressive landscaper");
+                aggressive = true;
                 RobotInfo enemyHQInfo = rc.senseRobot(enemyHQID);
                 enemyHQLocation = enemyHQInfo.location;
                 if (enemyHQLocation.isAdjacentTo(myLocation)) {
@@ -92,8 +99,11 @@ public class Landscaper extends Unit {
         if (defensive) {
             defense();
         }
-        else {
+        else if (aggressive) {
             aggro();
+        }
+        else {
+            construct();
         }
     }
 
