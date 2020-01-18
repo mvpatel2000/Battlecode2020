@@ -26,6 +26,11 @@ public abstract class Robot {
     final int MAP_HEIGHT;
     final int messageModulus=2;
     final int messageFrequency=5;
+    //for reading message headers
+    final int arbitraryConstant=23523; //make sure this is the same constant in Message.java
+    final int header;
+    final int headerLen = 16;
+    final int schemaLen = 3;
     //discretized grid for communicating map information
     final int squareWidth = 4;    //number of cells wide per tile
     final int squareHeight = 4;   //number of cells tall per tile
@@ -46,6 +51,7 @@ public abstract class Robot {
         MAP_HEIGHT = rc.getMapHeight();
         numRows = (MAP_HEIGHT+squareHeight-1)/squareHeight;
         numCols = (MAP_WIDTH+squareWidth-1)/squareWidth;
+        header = arbitraryConstant*(teamNum+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
     }
 
     public Direction toward(MapLocation me, MapLocation dest) {
@@ -177,10 +183,8 @@ public abstract class Robot {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
-                    Message m = new Message(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    if (m.origin) {
-                        if(m.schema == 4) {
-                            //location message
+                    if (allyMessage(msg[0])) {
+                        if(getSchema(msg[0])==4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                             return new MapLocation(l.xLoc, l.yLoc);
                         }
@@ -190,6 +194,7 @@ public abstract class Robot {
         }
         return null;
     }
+
 
      /**
      * Grid used for communication
@@ -297,6 +302,23 @@ public abstract class Robot {
             }
         }
         return false;
+    }
+
+    boolean allyMessage(int firstInt) throws GameActionException {
+        System.out.println("Reading headers...");
+        System.out.println(header);
+        System.out.println(firstInt>>(32-headerLen));
+        if(firstInt>>>(32-headerLen)==header) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    int getSchema(int firstInt) throws GameActionException {
+        System.out.println("Reading schemas...");
+        System.out.println((firstInt<<headerLen)>>>(32-schemaLen));
+        return (firstInt<<headerLen)>>>(32-schemaLen);
     }
 
     void tryBlockchain() throws GameActionException {

@@ -5,7 +5,6 @@ import java.util.Comparator;
 
 public class SoupMessage extends Message {
 
-    Message m;
     final int soupSchema = 1;   //SoupMessages are message type 1
     int tile;
     int soupThere;
@@ -23,6 +22,7 @@ public class SoupMessage extends Message {
     //use .tile and .soupThere to get information
     public SoupMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         super(recieved, myMapHeight, myMapWidth, myTeam);
+        this.schema = soupSchema;
         tile = -1;
         soupThere = -1;
         readTile();

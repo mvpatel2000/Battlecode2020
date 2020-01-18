@@ -2,7 +2,6 @@ package seeding;
 
 public class MinePatchMessage extends Message {
 
-    Message m;
     final int mpmSchema = 2; //MinePatchMessages are message type 2
     final int MAX_PATCHES;
     int numPatchesWritten;
@@ -23,6 +22,7 @@ public class MinePatchMessage extends Message {
 
     public MinePatchMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         super(recieved, myMapHeight, myMapWidth, myTeam);
+        this.schema = mpmSchema;
         MAX_PATCHES = (msgLen-headerLen-schemaLen)/totalBitsPerElement;
         numPatchesWritten = MAX_PATCHES;
         patches = new int[MAX_PATCHES];
