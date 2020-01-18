@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 public class DesignSchool extends Building {
 
+    // defense variables
     MapLocation hqLocation = null;
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
@@ -21,32 +22,44 @@ public class DesignSchool extends Building {
     int previousSoup = 200;
     MapLocation enemyHQLocApprox = null;
 
+    // aggression variables
+    boolean aggressive = false;
     boolean wallProxy = false;
     MapLocation enemyHQLocation = null;
 
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
-        int hqID = rc.getTeam().equals(Team.valueOf("A")) ? 0 : 1;
-        defensive = rc.canSenseRobot(hqID);
+        
+        construct();
+    }
+
+    private void construct() throws GameActionException {
+        hqLocation = checkForLocationMessage();
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= 25; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
-            RobotInfo hqInfo = rc.senseRobot(hqID);
-            hqLocation = hqInfo.location;
-            System.out.println("I am a defensive d.school. Found our HQ:");
-            System.out.println(hqInfo);
+            System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
 
             // Determine if I am the primary defensive d.school or if I am an extra.
             primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
         }
         else {
-            System.out.println("I am an offensive d.school.");
-            int enemyHQID = 1 - hqID;
-            if (rc.canSenseRobot(enemyHQID)) {
-                RobotInfo enemyHQInfo = rc.senseRobot(enemyHQID);
-                enemyHQLocation = enemyHQInfo.location;
-                if (enemyHQLocation.isAdjacentTo(myLocation)) {
-                    System.out.println("I am a wall proxy");
-                    wallProxy = true;
+            System.out.println("I am far from my HQ.");
+            MapLocation[] enemyHQCandidateLocs = {
+                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y),
+                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, rc.getMapHeight() - hqLocation.y - 1),
+                new MapLocation(hqLocation.x, rc.getMapHeight() - hqLocation.y - 1)
+            };
+            for (MapLocation enemyHQCandidateLoc : enemyHQCandidateLocs) {
+                if (rc.canSenseLocation(enemyHQCandidateLoc)) {
+                    System.out.println("I am an offensive d.school.");
+                    aggressive = true;
+                    enemyHQLocation = enemyHQCandidateLoc;
+                    if (enemyHQLocation.isAdjacentTo(myLocation)) {
+                        System.out.println("I am a wall proxy");
+                        wallProxy = true;
+                    }
+                    break;
                 }
             }
         }
@@ -61,7 +74,7 @@ public class DesignSchool extends Building {
         if (defensive) {
             defense();
         }
-        else {
+        else if (aggressive) {
             aggro();
         }
 

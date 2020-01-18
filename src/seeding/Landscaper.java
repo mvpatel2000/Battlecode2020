@@ -82,6 +82,7 @@ public class Landscaper extends Unit {
                         System.out.println("I am in the enemy wall :o");
                         wallProxy = true;
                     }
+                    break;
                 }
             }
         }
