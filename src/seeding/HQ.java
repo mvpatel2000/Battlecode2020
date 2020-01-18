@@ -48,7 +48,7 @@ public class HQ extends Building {
             MapLocation cen = getCenterFromTileNumber(i);
             rc.setIndicatorDot(cen, 255, i*3, i*3);
         }*/
-        
+
     }
 
     /*
@@ -70,9 +70,21 @@ public class HQ extends Building {
                 }
             }
             for (Direction dir : directions) {
+                /*
                 if ((minerCount < 4 || (soupSum > 0 && rc.getRoundNum() >= 200 && minerCount < 10 && minerCooldown < 0)) && tryBuild(RobotType.MINER, dir)) {
                     minerCount++;
                     minerCooldown = 5;
+                }*/
+                if(minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
+                    minerCount++;
+                    minerCooldown = 5;
+                } else if (soupSum/minerCount>Math.sqrt(rc.getRoundNum())/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) {
+                    System.out.println("I'd like to produce miners, I'm better than the heuristic");
+                    System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
+                    System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
+                    if(tryBuild(RobotType.MINER, dir)) {
+                        minerCount++;
+                    }
                 }
             }
         }
@@ -129,7 +141,7 @@ public class HQ extends Building {
 
                 if(i==soupsPerTile.size()-1) {
                     lastPatchNum = x[0];
-                    lastWeight = 1; // set to final weight
+                    lastWeight = soupToPower(x[1]); // set to final weight
                 }
 
                 i++;
@@ -137,7 +149,7 @@ public class HQ extends Building {
             for(int j=soupsPerTile.size(); j<m.MAX_PATCHES; j++) {
                 m.writePatch(lastPatchNum, lastWeight);
             }
-            //TODO figure out better bidding scheme
+            //TODO: figure out better bidding scheme
             sendMessage(m.getMessage(), 1);
         }
     }
