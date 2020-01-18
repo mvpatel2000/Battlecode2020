@@ -11,7 +11,7 @@ public abstract class Robot {
     final int MAX_SQUARED_DISTANCE = Integer.MAX_VALUE;
 
     // final int OUTER_RING_TARGET_ELEVATION = 50; // deprecated
-    final int INNER_WALL_FORCE_TAKEOFF_DEFAULT = 440;
+    final int INNER_WALL_FORCE_TAKEOFF_DEFAULT = 460;
     final int INNER_WALL_FORCE_TAKEOFF_CONTESTED = 360;
 
     /* constant for each game */
