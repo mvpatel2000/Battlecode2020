@@ -32,8 +32,8 @@ public abstract class Robot {
     final int headerLen = 16;
     final int schemaLen = 3;
     //discretized grid for communicating map information
-    final int squareWidth = 4;    //number of cells wide per tile
-    final int squareHeight = 4;   //number of cells tall per tile
+    final int squareWidth = 3;    //number of cells wide per tile
+    final int squareHeight = 3;   //number of cells tall per tile
     final int numRows;
     final int numCols;
 
@@ -241,9 +241,7 @@ public abstract class Robot {
 
      //TODO: Better, easily invertible function
     int soupToPower(int soupAmount) {
-         if (soupAmount == -1)
-             return 63;
-         return Math.min((soupAmount+99)/100, 62); // 63 is used for HQ search
+         return Math.min((soupAmount+199)/200, 31);
     }
 
     int getTileNumber(MapLocation loc) throws GameActionException {

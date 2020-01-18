@@ -7,8 +7,8 @@ public class MinePatchMessage extends Message {
     int numPatchesWritten;
     int[] patches;
     int[] weights;
-    int bitsPerPatch = 8;
-    int bitsPerWeight = 6;
+    int bitsPerPatch = 9;
+    int bitsPerWeight = 5;
     int totalBitsPerElement = bitsPerPatch+bitsPerWeight;
 
     public MinePatchMessage(int myMapHeight, int myMapWidth, int myTeam) {
