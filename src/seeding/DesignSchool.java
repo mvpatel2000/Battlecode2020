@@ -124,7 +124,7 @@ public class DesignSchool extends Building {
                     }
                 }
             }
-            else if(numLandscapersMade >= 8 && numLandscapersMade < 19) { // WALL PHASE 2
+            else if(numLandscapersMade >= 8 && numLandscapersMade <= 19) { // WALL PHASE 2
                 if (startOuterWallAt == 0) {
                     startOuterWallAt = rc.getRoundNum();
                 }
@@ -141,7 +141,7 @@ public class DesignSchool extends Building {
                     }
                 }
             }
-            else if(numLandscapersMade == 19) {
+            else if(numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
                 if (tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(hqLocation).rotateLeft().rotateLeft())) {
                     numLandscapersMade++;
                 }

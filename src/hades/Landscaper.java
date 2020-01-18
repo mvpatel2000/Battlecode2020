@@ -201,7 +201,9 @@ public class Landscaper extends Unit {
                             digDir = digDir.rotateRight();
                         }
                         System.out.println("Digging from designated dig-site " + digDir.toString());
-                        tryDig(digDir);
+                        if (!tryDig(digDir)) {
+                            System.out.println("Can't dig...");
+                        }
                     }
                 }
                 else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
