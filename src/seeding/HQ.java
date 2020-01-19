@@ -219,6 +219,7 @@ public class HQ extends Building {
     }
 
     void readMessages() throws GameActionException {
+        System.out.println("reading messages...");
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
         int lookingForMessages = 2;
         for (int i=0; i<msgs.length; i++) {
@@ -227,9 +228,10 @@ public class HQ extends Building {
             if(allyMessage(f)) {
                 //soup message
                 if(getSchema(f)==1) {
+                    System.out.println("found soup message...");
                     SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
-                        //delete from arraylist of so`ups
+                        //delete from arraylist of soups
                         for(int j=0; j<accessibleSoupsPerTile.size(); j++) {
                             if(accessibleSoupsPerTile.get(j)[0]==s.tile) {
                                 accessibleSoupsPerTile.remove(j);
