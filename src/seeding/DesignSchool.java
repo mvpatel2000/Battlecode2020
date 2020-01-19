@@ -12,8 +12,7 @@ public class DesignSchool extends Building {
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
-    int DEFAULT_CLOSE_INNER_WALL_AT = 400;
-    int closeInnerWallAt = DEFAULT_CLOSE_INNER_WALL_AT; // TODO: tweak this
+    int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
 
     //For halting production and resuming it.
@@ -107,12 +106,9 @@ public class DesignSchool extends Building {
         }
     }
 
-    public void defense() throws GameActionException {]
-        // if (refinery has been built) {
-        //     closeInnerWallAt = 0;
-        // }
+    public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
