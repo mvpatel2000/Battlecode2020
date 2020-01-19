@@ -87,7 +87,7 @@ public class DeliveryDrone extends Unit {
         tilesVisited[getTileNumber(myLocation)] = 1;
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
-//        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
+//        //System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
         if (carryingEnemy) { // go to water and drop
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
@@ -110,7 +110,7 @@ public class DeliveryDrone extends Unit {
                 path(nearestWaterLocation);
             }
             else {
-//                System.out.println(myLocation + " " + nearestWaterLocation);
+//                //System.out.println(myLocation + " " + nearestWaterLocation);
                 path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -177,7 +177,7 @@ public class DeliveryDrone extends Unit {
 
     @Override
     public boolean path(MapLocation target) throws GameActionException {
-//        System.out.println("Pathing to: " + target);
+//        //System.out.println("Pathing to: " + target);
         MapLocation me = history.peekFirst();
         if (me.equals(target)) {
             return false;
@@ -206,7 +206,7 @@ public class DeliveryDrone extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-        // System.out.println("start map scan "+Clock.getBytecodeNum());
+        // //System.out.println("start map scan "+Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x-5,0); x <= Math.min(myLocation.x+5,MAP_WIDTH-1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
             for (int y : getLocationsToCheck((waterChecked[x] >> Math.max(myLocation.y-5,0)) & 1023)) {
@@ -226,9 +226,9 @@ public class DeliveryDrone extends Unit {
                 return newLoc;
             }
         }
-        // System.out.println("end map scan "+Clock.getBytecodeNum());
+        // //System.out.println("end map scan "+Clock.getBytecodeNum());
 
-        // System.out.println("start find nearest "+Clock.getBytecodeNum());
+        // //System.out.println("start find nearest "+Clock.getBytecodeNum());
         int ctr = 0;
         Iterator<MapLocation> soupIterator = waterLocations.iterator();
         while (soupIterator.hasNext()) {
@@ -245,7 +245,7 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
-        // System.out.println("end find nearest "+Clock.getBytecodeNum());
+        // //System.out.println("end find nearest "+Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;

@@ -19,8 +19,6 @@ if __name__ == '__main__':
 		with open(f, 'r') as file:
 			content = file.read()
 		out_content = re.sub('System.out.println', '//System.out.println', content)
-		out_content = re.sub('//System.out.println\("HOLDING', 'System.out.println\("HOLDING', content)
-		out_content = re.sub('//System.out.println\("UNHOLDING', 'System.out.println\("UNHOLDING', content)
 		out_content = re.sub('rc.setIndicator', '//rc.setIndicator', out_content)
 		out_content = re.sub('package [^\n]*;', 'package ' + out_dir_name + ';', out_content)
 		with open(out, 'w') as out_file:
