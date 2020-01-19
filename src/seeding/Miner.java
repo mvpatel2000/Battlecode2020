@@ -306,12 +306,15 @@ public class Miner extends Unit {
                 Direction toBase = myLocation.directionTo(baseLocation);
                 if (rc.canDepositSoup(toBase))                                 // deposit. Note: Second check is redundant?
                     rc.depositSoup(toBase, rc.getSoupCarrying());
-                if (rc.getSoupCarrying() == 0) {                              // reroute if not carrying soup
+                if (rc.getSoupCarrying() == 0) {                               // reroute if not carrying soup
                     destination = updateNearestSoupLocation();
                     turnsToBase = -1;
                     clearHistory();
                 }
-            } else {                                                            // mining
+            } else if (myLocation.distanceSquaredTo(hqLocation) < 3
+                       && !destination.equals(hqLocation)) {                   // don't mine next to HQ
+                fuzzyMoveToLoc(myLocation.add(myLocation.directionTo(hqLocation).opposite()));
+            } else {                                                           // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {
                     System.out.println("I am at destination. Soup: " + rc.senseSoup(destination));
@@ -348,7 +351,8 @@ public class Miner extends Unit {
         for (RobotInfo robot : robots) {
             if (robot.getType() == RobotType.REFINERY || (robot.getType() == RobotType.HQ && rc.getRoundNum() < 100)) {
                 int distToNew = myLocation.distanceSquaredTo(robot.getLocation());
-                if (distToNew < distToBase || (distToNew == distToBase && robot.getType() == RobotType.REFINERY)) {
+                if (distToNew < distToBase || (distToNew == distToBase && robot.getType() == RobotType.REFINERY)
+                    || baseLocation.equals(hqLocation)) {
                     if (baseLocation.equals(destination)) {
                         destination = robot.getLocation();
                     }
@@ -415,6 +419,9 @@ public class Miner extends Unit {
             MapLocation soupLocation = soupIterator.next();
             int soupPriority = priorityIterator.next();
             int soupDistance = myLocation.distanceSquaredTo(soupLocation);
+            if (soupLocation.equals(hqLocation) && myLocation.distanceSquaredTo(hqLocation) < 3) {
+                soupDistance = -1;
+            }
             if (soupDistance < distanceToNearest) {
                 // Note: Uses soupDistance comparison instead of rc.canSenseLocation since location guarenteed to be on map
                 if (soupDistance < scanRadius && (rc.senseSoup(soupLocation) == 0 || isSurroundedByWater(soupLocation)  )) {
@@ -438,6 +445,8 @@ public class Miner extends Unit {
             }
         }
 //        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+
+        System.out.println(nearest + " " + distanceToNearest);
 
         if (nearest != null) {
             lastSoupLocation = nearest;
