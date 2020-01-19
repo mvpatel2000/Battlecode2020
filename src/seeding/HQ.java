@@ -120,28 +120,31 @@ public class HQ extends Building {
         for(int key: tileToCount.keySet()) {
             int soupval = tileToCount.get(key);
             if(soupval>0) {
-                addToSoupList(key, soupval);
+                accessibleAddToSoupList(key, soupval);
             }
         }
     }
 
     // inserts into soup list in a sorted order, checks if tile is accessible
-    void addToSoupList(int tileNum, int soupThere) throws GameActionException {
+    void accessibleAddToSoupList(int tileNum, int soupThere) throws GameActionException {
         boolean added = false;
         if (isAccessible(getCenterFromTileNumber(tileNum))) {
             for (int j = 0; j < accessibleSoupsPerTile.size(); j++) {
                 //TODO: instead of inserting s.soupThere do the weighting calculation here and compare based on weighting?
                 if (tileNum == accessibleSoupsPerTile.get(j)[0]) {
                     added = true;
+                    System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                     break;
                 } else if (accessibleSoupsPerTile.get(j)[1] < soupThere) {
                     accessibleSoupsPerTile.add(j, new int[]{tileNum, soupThere});
                     added = true;
+                    System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                     break;
                 }
             }
             if (!added) {
                 accessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
+                System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
             }
         }
         else {
@@ -159,6 +162,29 @@ public class HQ extends Building {
             if (!added) {
                 inaccessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
             }
+        }
+    }
+
+
+    // inserts into soup list in a sorted order, checks if tile is accessible
+    void addToSoupList(int tileNum, int soupThere) throws GameActionException {
+        boolean added = false;
+        for (int j = 0; j < accessibleSoupsPerTile.size(); j++) {
+            //TODO: instead of inserting s.soupThere do the weighting calculation here and compare based on weighting?
+            if (tileNum == accessibleSoupsPerTile.get(j)[0]) {
+                added = true;
+                System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
+                break;
+            } else if (accessibleSoupsPerTile.get(j)[1] < soupThere) {
+                accessibleSoupsPerTile.add(j, new int[]{tileNum, soupThere});
+                added = true;
+                System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
+                break;
+            }
+        }
+        if (!added) {
+            accessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
+            System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
         }
     }
 
@@ -241,7 +267,7 @@ public class HQ extends Building {
                         }
                     } else {
                         //miner telling me there is soup at tile
-                        System.out.println("[i] MINER TELLING ME THERE IS " + Integer.toString(s.soupThere) + " SOUP AT TILE " + Integer.toString(s.tile));
+                        System.out.println("[i] MINER TELLING ME THERE IS " + Integer.toString(powerToSoup(s.soupThere)) + " POWERSOUP AT TILE " + Integer.toString(s.tile));
                         addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
                     lookingForMessages-=1;
