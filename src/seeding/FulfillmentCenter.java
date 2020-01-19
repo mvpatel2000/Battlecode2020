@@ -93,14 +93,14 @@ public class FulfillmentCenter extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -134,7 +134,7 @@ public class FulfillmentCenter extends Building {
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.println("HOLDING PRODUCTION!");
+                    System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
