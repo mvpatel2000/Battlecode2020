@@ -267,7 +267,8 @@ public class Miner extends Unit {
 //            if (!existsNetGun && rc.getRoundNum() > 500) {
 //                rc.buildRobot(RobotType.NET_GUN, dir);
 //            }
-            if (myLocation.add(dir).distanceSquaredTo(hqLocation) >= 25)
+            if (myLocation.add(dir).distanceSquaredTo(hqLocation) >= 25
+                    && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2)
                 tryBuild(RobotType.VAPORATOR, dir);
         }
     }
@@ -299,23 +300,25 @@ public class Miner extends Unit {
             }
         }
 
+        // build d.school if see enemy or if last departing miner didn't build for whatever reason
+        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)) {
+            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
+            if(dSchoolExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(2); //2 is d.school
+                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+            }
+        }
+
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
 
-                // build d.school
-                if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (rc.getRoundNum() > 200 || existsNearbyEnemy())) {
-                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
-                    if(dSchoolExists) {
-                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                        b.writeTypeBuilt(2); //2 is d.school
-                        sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                    }
-                }
-
                 Direction toBase = myLocation.directionTo(baseLocation);
-                if (rc.canDepositSoup(toBase))                                 // deposit. Note: Second check is redundant?
+                if (rc.canDepositSoup(toBase)) {                              // deposit. Note: Second check is redundant?
                     rc.depositSoup(toBase, rc.getSoupCarrying());
+                }
                 if (rc.getSoupCarrying() == 0) {                               // reroute if not carrying soup
+                    // build d.school near base when leaving base for far away soup or past round 250
                     destination = updateNearestSoupLocation();
                     turnsToBase = -1;
                     clearHistory();
@@ -342,6 +345,17 @@ public class Miner extends Unit {
                 }
             }
         } else {                                                                // in transit
+            // Just dropped off soup (adjacent to HQ) now leaving for far away / late soup
+            if (myLocation.isAdjacentTo(hqLocation) &&
+                    (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 200)
+                    && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction) {
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
+                if(dSchoolExists) {
+                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    b.writeTypeBuilt(2); //2 is d.school
+                    sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+                }
+            }
             if (turnsToBase >= 0)
                 turnsToBase++;
             path(destination);
@@ -350,6 +364,35 @@ public class Miner extends Unit {
             }
         }
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+    }
+
+    public Direction determineOptimalDSchoolDirection(Direction hqDir) throws GameActionException {
+        if (myLocation.distanceSquaredTo(hqLocation) < 9) { // close to HQ, build highest elevation in outer ring
+            Direction target = myLocation.directionTo(hqLocation).opposite();
+            MapLocation loc = myLocation.add(target);
+            for (Direction dir : directions) {
+                MapLocation newLoc = myLocation.add(dir);
+                if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
+                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc)
+                        && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2) {
+                    target = dir;
+                    loc = newLoc;
+                }
+            }
+            return target;
+        } else { // far away, just take highest elevation point
+            Direction target = myLocation.directionTo(hqLocation).rotateRight();
+            MapLocation loc = myLocation.add(target);
+            for (Direction dir : directions) {
+                MapLocation newLoc = myLocation.add(dir);
+                if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
+                        && rc.senseElevation(newLoc) >= rc.senseElevation(loc)) {
+                    target = dir;
+                    loc = newLoc;
+                }
+            }
+            return target;
+        }
     }
 
     // Updates base location and builds refinery if base is too far
