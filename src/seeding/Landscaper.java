@@ -7,7 +7,7 @@ import battlecode.common.*;
 
 public class Landscaper extends Unit {
 
-    boolean defensive;
+    boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
     RobotInfo[] nearbyBots;
     MapLocation baseLocation;
@@ -116,6 +116,7 @@ public class Landscaper extends Unit {
         wallPhase = 0;
         hqLocation = checkForLocationMessage();
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
+        // TODO: check if i am a terraformer
         if (defensive) {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
@@ -160,9 +161,16 @@ public class Landscaper extends Unit {
         else if (aggressive) {
             aggro();
         }
+        else if (terraformer) {
+            terraform();
+        }
         else {
             construct();
         }
+    }
+
+    public void terraform() throws GameActionException {
+        System.out.println("i am terraform");
     }
 
     public void aggro() throws GameActionException {

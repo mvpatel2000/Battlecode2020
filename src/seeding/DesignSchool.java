@@ -14,6 +14,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
+    int terraformersBuilt = 1;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -108,6 +109,19 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
+            if (numLandscapersMade == 5 && terraformersBuilt == 0) { // build terraformer
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
+                for (int i = 8; i > 0; i--) {
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
+                        System.out.println("Built landscaper in direction " + spawnDir);
+                        terraformersBuilt++;
+                        // TODO: send terraformer message
+                    }
+                    else {
+                        spawnDir = spawnDir.rotateLeft();
+                    }
+                }
+            }
             if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
