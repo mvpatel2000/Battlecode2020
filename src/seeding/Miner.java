@@ -267,7 +267,8 @@ public class Miner extends Unit {
 //            if (!existsNetGun && rc.getRoundNum() > 500) {
 //                rc.buildRobot(RobotType.NET_GUN, dir);
 //            }
-            if (myLocation.add(dir).distanceSquaredTo(hqLocation) >= 25)
+            if (myLocation.add(dir).distanceSquaredTo(hqLocation) >= 25
+                    && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2)
                 tryBuild(RobotType.VAPORATOR, dir);
         }
     }
@@ -299,18 +300,24 @@ public class Miner extends Unit {
             }
         }
 
+        // build d.school
+        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (rc.getRoundNum() > 200 || existsNearbyEnemy())) {
+            if (myLocation.isAdjacentTo(hqLocation)) {
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+            } else if (myLocation.distanceSquaredTo(hqLocation) < 9) {
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.rotateRight());
+            } else {
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir);
+            }
+            if(dSchoolExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(2); //2 is d.school
+                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+            }
+        }
+
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
-
-                // build d.school
-                if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (rc.getRoundNum() > 200 || existsNearbyEnemy())) {
-                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
-                    if(dSchoolExists) {
-                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                        b.writeTypeBuilt(2); //2 is d.school
-                        sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                    }
-                }
 
                 Direction toBase = myLocation.directionTo(baseLocation);
                 if (rc.canDepositSoup(toBase))                                 // deposit. Note: Second check is redundant?
