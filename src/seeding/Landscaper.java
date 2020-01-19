@@ -12,6 +12,10 @@ public class Landscaper extends Unit {
     RobotInfo[] nearbyBots;
     MapLocation baseLocation;
 
+    //for telling if i am a terraformer
+    int bornTurn;
+    boolean terraformer = false;
+
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
     int wallPhase;
@@ -85,6 +89,7 @@ public class Landscaper extends Unit {
     public Landscaper(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
+        bornTurn = rc.getRoundNum();
 
         construct();
     }
@@ -144,6 +149,10 @@ public class Landscaper extends Unit {
         super.run();
 
         updateNearbyBots();
+
+        if(rc.getRoundNum()-bornTurn==5) {
+            readMessages();
+        }
 
         if (defensive) {
             defense();
@@ -440,6 +449,40 @@ public class Landscaper extends Unit {
             lDir[6] = lDir[2].rotateRight();
         }
         return lDir;
+    }
+
+    public boolean readMessages() throws GameActionException {
+        int rn = rc.getRoundNum();
+        int prev1 = rn-5;
+        for(int i=prev1; i<rn; i++) {
+            if(i>0) {
+                if(findMessagesFromAllies(i)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //Find message from allies given a round number rn
+    //Checks block of round number rn, loops through messages
+    //Currently: Checks for haltProductionMessage from a Miner
+    public boolean findMessagesFromAllies(int rn) throws GameActionException {
+        Transaction[] msgs = rc.getBlock(rn);
+        for (Transaction transaction : msgs) {
+            int[] msg = transaction.getMessage();
+            if (allyMessage(msg[0])) {
+                if(getSchema(msg[0])==6) {
+                    TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(t.type==1) {
+                        System.out.println("YAY, I'm A TERRAFORMER!");
+                        terraformer = true;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     void updateHoldPositionLoc() throws GameActionException {
