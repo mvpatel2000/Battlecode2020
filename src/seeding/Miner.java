@@ -239,17 +239,17 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady() || myLocation.distanceSquaredTo(hqLocation) < 35 || rc.getTeamSoup() < 500 || rc.getRoundNum() < 250)
+        if (!rc.isReady()  || rc.getTeamSoup() < 500)
             return;
-        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-        boolean existsNetGun = false;
-        for (RobotInfo robot : allyRobots) {
-            switch (robot.getType()) {
-                case NET_GUN:
-                    existsNetGun = true;
-                    break;
-            }
-        }
+//        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+//        boolean existsNetGun = false;
+//        for (RobotInfo robot : allyRobots) {
+//            switch (robot.getType()) {
+//                case NET_GUN:
+//                    existsNetGun = true;
+//                    break;
+//            }
+//        }
         for (Direction dir : directions) {
 //            if (!existsNetGun) {
 //                tryBuild(RobotType.NET_GUN, dir);
@@ -260,10 +260,11 @@ public class Miner extends Unit {
 //            } else {
 //                tryBuild(RobotType.VAPORATOR, dir);
 //            }
-            if (!existsNetGun && rc.getRoundNum() > 500) {
-                rc.buildRobot(RobotType.NET_GUN, dir);
-            }
-            tryBuild(RobotType.VAPORATOR, dir);
+//            if (!existsNetGun && rc.getRoundNum() > 500) {
+//                rc.buildRobot(RobotType.NET_GUN, dir);
+//            }
+            if (myLocation.add(dir).distanceSquaredTo(hqLocation) >= 25)
+                tryBuild(RobotType.VAPORATOR, dir);
         }
     }
 
@@ -298,7 +299,7 @@ public class Miner extends Unit {
             if (turnsToBase >= 0) {                                           // at base
 
                 // build d.school
-                if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (rc.getRoundNum() > 90 || existsNearbyEnemy())) {
+                if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (rc.getRoundNum() > 200 || existsNearbyEnemy())) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
                     if(dSchoolExists) {
                         BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
