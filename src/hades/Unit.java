@@ -77,7 +77,7 @@ public abstract class Unit extends Robot {
      * @throws GameActionException
      */
     boolean tryMove(Direction dir) throws GameActionException {
-        // //System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
+        // System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.isReady() && rc.canMove(dir)) {
             rc.move(dir);
             return true;
@@ -124,7 +124,7 @@ public abstract class Unit extends Robot {
     }
 
     protected boolean pathRandom(MapLocation target, boolean random) throws GameActionException {
-        // //System.out.println("Pathing to: " + target);
+        // System.out.println("Pathing to: " + target);
         if (rc.getCooldownTurns() >= 1)
             return true;
         MapLocation me = history.peekFirst();

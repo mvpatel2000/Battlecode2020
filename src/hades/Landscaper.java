@@ -84,7 +84,7 @@ public class Landscaper extends Unit {
 
     public Landscaper(RobotController rc) throws GameActionException {
         super(rc);
-        //System.out.println(myLocation);
+        System.out.println(myLocation);
 
         construct();
     }
@@ -102,7 +102,7 @@ public class Landscaper extends Unit {
             }
         }
         if (baseLocation != null) {
-            //System.out.println("Found my d.school: " + baseLocation.toString());
+            System.out.println("Found my d.school: " + baseLocation.toString());
         }
 
         // scan for HQ location
@@ -113,12 +113,12 @@ public class Landscaper extends Unit {
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
-            //System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
+            System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
-            ////System.out.println("My hold position location: " + holdPositionLoc.toString());
+            //System.out.println("My hold position location: " + holdPositionLoc.toString());
         }
         else {
-            //System.out.println("I am far from my HQ");
+            System.out.println("I am far from my HQ");
             MapLocation[] enemyHQCandidateLocs = {
                 new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y),
                 new MapLocation(rc.getMapWidth() - hqLocation.x - 1, rc.getMapHeight() - hqLocation.y - 1),
@@ -126,11 +126,11 @@ public class Landscaper extends Unit {
             };
             for (MapLocation enemyHQCandidateLoc : enemyHQCandidateLocs) {
                 if (rc.canSenseLocation(enemyHQCandidateLoc)) {
-                    //System.out.println("I am an aggressive landscaper");
+                    System.out.println("I am an aggressive landscaper");
                     aggressive = true;
                     enemyHQLocation = enemyHQCandidateLoc;
                     if (enemyHQLocation.isAdjacentTo(myLocation)) {
-                        //System.out.println("I am in the enemy wall :o");
+                        System.out.println("I am in the enemy wall :o");
                         wallProxy = true;
                     }
                     break;
@@ -171,24 +171,24 @@ public class Landscaper extends Unit {
 
         if (rc.getDirtCarrying() == 0) { // dig
             if (baseLocation != null && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
-                //System.out.println("Digging under d.school at " + baseLocation.toString());
+                System.out.println("Digging under d.school at " + baseLocation.toString());
                 tryDig(myLocation.directionTo(baseLocation));
             }
             else {
                 if (rc.senseElevation(myLocation.add(Direction.CENTER)) < rc.senseElevation(myLocation.add(enemyHQDir.opposite()))) {
                     if (rc.canDigDirt(enemyHQDir.opposite())) {
-                        //System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
+                        System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
                         tryDig(enemyHQDir.opposite());
                     }
                 }
                 else {
-                    //System.out.println("Digging under myself");
+                    System.out.println("Digging under myself");
                     tryDig(Direction.CENTER);
                 }
             }
         }
         else {
-            //System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
+            System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
             tryDeposit(enemyHQDir);
         }
     }
@@ -206,13 +206,13 @@ public class Landscaper extends Unit {
                 RobotInfo botInfo = nearbyBotsMap.get(myLocation.add(d));
                 if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.DESIGN_SCHOOL) || botInfo.type.equals(RobotType.FULFILLMENT_CENTER) || botInfo.type.equals(RobotType.NET_GUN))) {
                     if (rc.getDirtCarrying() > 0) {
-                        //System.out.println("Dumping dirt on enemy building at " + botInfo.location);
+                        System.out.println("Dumping dirt on enemy building at " + botInfo.location);
                         if (tryDeposit(d)) {
                             return;
                         }
                     }
                     else {
-                        //System.out.println("Attempting to gather dirt in an emergency to kill the enemy building");
+                        System.out.println("Attempting to gather dirt in an emergency to kill the enemy building");
                         if (tryDig(d.opposite())) {
                             return;
                         }
@@ -221,13 +221,13 @@ public class Landscaper extends Unit {
             }
         }
         if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc
-            //System.out.println("Pathing towards my holdPositionLoc: " + holdPositionLoc.toString());
+            System.out.println("Pathing towards my holdPositionLoc: " + holdPositionLoc.toString());
             path(holdPositionLoc);
         }
         else { // i have already reached my position in the turtle, and can now do the dirty work
             if (wallPhase < 2) { // i am an inner landscaper
                 if (rc.canDigDirt(hqDir)) { // first priority: heal HQ
-                    //System.out.println("Healing HQ");
+                    System.out.println("Healing HQ");
                     tryDig(hqDir);
                 }
                 else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
@@ -239,7 +239,7 @@ public class Landscaper extends Unit {
                         }
                         if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
                             foundDigSite = true;
-                            //System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
+                            System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDig(myLocation.directionTo(hqLocation.add(d)));
                         }
                     }
@@ -251,9 +251,9 @@ public class Landscaper extends Unit {
                         if (!rc.canDigDirt(digDir)) {
                             digDir = digDir.rotateRight();
                         }
-                        //System.out.println("Digging from designated dig-site " + digDir.toString());
+                        System.out.println("Digging from designated dig-site " + digDir.toString());
                         if (!tryDig(digDir)) {
-                            //System.out.println("Can't dig...");
+                            System.out.println("Can't dig...");
                         }
                     }
                 }
@@ -266,12 +266,12 @@ public class Landscaper extends Unit {
                         }
                         if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < rc.senseElevation(hqLocation)) {
                             foundDumpSite = true;
-                            //System.out.println("Dumping to trench in direction " + myLocation.directionTo(hqLocation.add(d)));
+                            System.out.println("Dumping to trench in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDeposit(myLocation.directionTo(hqLocation.add(d)));
                         }
                     }
                     if (!foundDumpSite) {
-                        //System.out.println("Dumping dirt under myself");
+                        System.out.println("Dumping dirt under myself");
                         tryDeposit(Direction.CENTER);
                     }
                 }
@@ -300,7 +300,7 @@ public class Landscaper extends Unit {
                             height = rc.senseElevation(candidateDumpLoc);
                         }
                     }
-                    //System.out.println("Dumping dirt in direction " + dump.toString());
+                    System.out.println("Dumping dirt in direction " + dump.toString());
                     tryDeposit(dump);
                 }
             }
@@ -308,14 +308,14 @@ public class Landscaper extends Unit {
                 if (rc.getDirtCarrying() == 0) { // dig dirt.  Note that outer landscapers keep their dirt at 0 or 1 while inner landscapers keep their dirt maximized.
                     // TODO: handle the case where we can't dig where we want to because of buildings, e.g. enemy net guns.
                     for (Direction d : outerRingDig[outerRingIndex]) {
-                        //System.out.println("Attempting to dig from direction " + d);
+                        System.out.println("Attempting to dig from direction " + d);
                         if (tryDig(d)) {
                             break;
                         }
                     }
                 }
-                else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 2) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
-                    //System.out.println("Dumping dirt under myself");
+                else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 3) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
+                    System.out.println("Dumping dirt under myself");
                     tryDeposit(Direction.CENTER);
                 }
                 else {
@@ -327,7 +327,7 @@ public class Landscaper extends Unit {
                             minElev = rc.senseElevation(myLocation.add(d));
                         }
                     }
-                    //System.out.println("Dumping dirt in direction " + dumpDir.toString());
+                    System.out.println("Dumping dirt in direction " + dumpDir.toString());
                     tryDeposit(dumpDir);
                 }
             }
@@ -366,12 +366,12 @@ public class Landscaper extends Unit {
 
     void updateNearbyBots() throws GameActionException {
         nearbyBots = rc.senseNearbyRobots();
-        // //System.out.println("Bots around me: ");
+        // System.out.println("Bots around me: ");
         nearbyBotsMap.clear();
         forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
         for (RobotInfo botInfo : nearbyBots) {
             nearbyBotsMap.put(botInfo.location, botInfo);
-            // //System.out.println(botInfo);
+            // System.out.println(botInfo);
             if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.MINER) || botInfo.type.equals(RobotType.LANDSCAPER))) {
                 forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_CONTESTED;
             }
@@ -397,23 +397,23 @@ public class Landscaper extends Unit {
             }
             wallPhase = 0;
             if (currentlyInInnerWall && numInnerWallOurs == numInnerWallSpots-1 && holdPositionLoc != null && myLocation.equals(holdPositionLoc)) {
-                //System.out.println("I see that the inner wall is tight!");
+                System.out.println("I see that the inner wall is tight!");
                 wallPhase = 1;
             }
             else if (numInnerWall == numInnerWallSpots-1 && holdPositionLoc != null && currentlyInInnerWall && myLocation.equals(holdPositionLoc) && rc.getRoundNum() > 300) { // TODO: important constant round num 300
-                //System.out.println("The inner wall is full, including some enemies.  Trying to close it off right now.");
+                System.out.println("The inner wall is full, including some enemies.  Trying to close it off right now.");
                 wallPhase = 1;
             }
             else if (currentlyInInnerWall && rc.getRoundNum() > forceInnerWallTakeoffAt) {
-                //System.out.println("It's round " + Integer.toString(forceInnerWallTakeoffAt) + " and about time to force the inner wall up even if it's not closed.");
+                System.out.println("It's round " + Integer.toString(forceInnerWallTakeoffAt) + " and about time to force the inner wall up even if it's not closed.");
                 wallPhase = 1;
             }
             else if (numInnerWall == numInnerWallSpots || (rc.getRoundNum() > forceInnerWallTakeoffAt && !currentlyInInnerWall)) {
-                //System.out.println("The inner wall is already full.  So I am an outer landscaper.");
+                System.out.println("The inner wall is already full.  So I am an outer landscaper.");
                 wallPhase = 2;
             }
         }
-        //System.out.println("Wall phase: " + Integer.toString(wallPhase));
+        System.out.println("Wall phase: " + Integer.toString(wallPhase));
     }
 
     Direction[] computeInnerWallFillOrder(MapLocation hqLoc, MapLocation dSchoolLoc) {
@@ -448,15 +448,15 @@ public class Landscaper extends Unit {
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
-                //System.out.println(dir);
+                System.out.println(dir);
             }
             for (Direction dir : innerWallFillOrder) {
-                //System.out.println(dir);
+                System.out.println(dir);
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
                 }
-                //System.out.println(nearbyBotsMap.containsKey(t));
+                System.out.println(nearbyBotsMap.containsKey(t));
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
                     holdPositionLoc = t;
                 }
@@ -476,7 +476,7 @@ public class Landscaper extends Unit {
             for (int i = 0; i < 16; i++) {
                 if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation))  {
                     outerRingIndex = i;
-                    //System.out.println("I'm already in the outer ring.");
+                    System.out.println("I'm already in the outer ring.");
                     holdPositionLoc = myLocation;
                     amInOuterRing = true;
                     break;

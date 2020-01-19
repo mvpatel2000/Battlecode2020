@@ -448,15 +448,10 @@ public class Landscaper extends Unit {
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
-                System.out.println(dir);
-            }
-            for (Direction dir : innerWallFillOrder) {
-                System.out.println(dir);
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
                 }
-                System.out.println(nearbyBotsMap.containsKey(t));
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
                     holdPositionLoc = t;
                 }
