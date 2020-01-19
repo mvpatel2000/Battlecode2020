@@ -372,6 +372,9 @@ public class Miner extends Unit {
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
+                    if (baseLocation.equals(destination)) {
+                        destination = myLocation.add(dir);
+                    }
                     baseLocation = myLocation.add(dir);
                 }
             }
