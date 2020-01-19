@@ -23,6 +23,7 @@ public class Miner extends Unit {
 
     boolean dSchoolExists;
     boolean fulfillmentCenterExists;
+    boolean firstRefineryExists;
 
     boolean aggro; // true if the one aggro miner
     List<MapLocation> target; // possible enemy HQ locations (target.get(0) is the one after HQ found)
@@ -72,6 +73,7 @@ public class Miner extends Unit {
 
         dSchoolExists = false;
         fulfillmentCenterExists = false;
+        firstRefineryExists = false;
 
         soupChecked = new long[64];
         soupMiningTiles = new int[numCols * numRows];
@@ -381,6 +383,14 @@ public class Miner extends Unit {
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
+                    //send message if this is the first refinery built
+                    if(!firstRefineryExists) {
+                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        b.writeTypeBuilt(3); //3 is refinery
+                        if(sendMessage(b.getMessage(), 1)==true) {
+                            firstRefineryExists = true;
+                        }
+                    }
                     if (baseLocation.equals(destination)) {
                         destination = myLocation.add(dir);
                     }
@@ -538,13 +548,15 @@ public class Miner extends Unit {
                         //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
                 }
-                if (getSchema(msg[0]) == 5 && (!fulfillmentCenterExists || !dSchoolExists)) {
+                if (getSchema(msg[0]) == 5 && (!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists)) {
                     //drone has been built.
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(b.typeBuilt==1) {
                         fulfillmentCenterExists = true;
                     } else if (b.typeBuilt==2) {
                         dSchoolExists = true;
+                    } else if (b.typeBuilt==3) {
+                        firstRefineryExists = true;
                     }
 
                 }
