@@ -11,7 +11,7 @@ public class Message {
     final int MAP_HEIGHT;
     final int MAP_WIDTH;
     final int team;
-    final int arbitraryConstant = 23523;
+    final int arbitraryConstant = 57564;
 
     int headerLen = 16;
     final int header;

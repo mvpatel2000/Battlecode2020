@@ -28,7 +28,7 @@ public abstract class Robot {
     final int messageModulus=2;
     final int messageFrequency=5;
     //for reading message headers
-    final int arbitraryConstant=23523; //make sure this is the same constant in Message.java
+    final int arbitraryConstant=57564; //make sure this is the same constant in Message.java
     final int header;
     final int headerLen = 16;
     final int schemaLen = 3;
