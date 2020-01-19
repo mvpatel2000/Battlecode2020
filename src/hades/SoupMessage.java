@@ -8,7 +8,7 @@ public class SoupMessage extends Message {
     final int soupSchema = 1;   //SoupMessages are message type 1
     int tile;
     int soupThere;
-    int bitsPerTile = 8;
+    int bitsPerTile = 9;
     int bitsPerPresence = 6;
 
     public SoupMessage(int myMapHeight, int myMapWidth, int myTeam) {

@@ -7,10 +7,14 @@ import battlecode.common.*;
 
 public class Landscaper extends Unit {
 
-    boolean defensive;
+    boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
     RobotInfo[] nearbyBots;
     MapLocation baseLocation;
+
+    //for telling if i am a terraformer
+    int bornTurn;
+    boolean terraformer = false;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
@@ -85,6 +89,7 @@ public class Landscaper extends Unit {
     public Landscaper(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
+        bornTurn = rc.getRoundNum();
 
         construct();
     }
@@ -111,6 +116,7 @@ public class Landscaper extends Unit {
         wallPhase = 0;
         hqLocation = checkForLocationMessage();
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
+        // TODO: check if i am a terraformer
         if (defensive) {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
@@ -145,15 +151,26 @@ public class Landscaper extends Unit {
 
         updateNearbyBots();
 
+        if(rc.getRoundNum()-bornTurn==5) {
+            readMessages();
+        }
+
         if (defensive) {
             defense();
         }
         else if (aggressive) {
             aggro();
         }
+        else if (terraformer) {
+            terraform();
+        }
         else {
             construct();
         }
+    }
+
+    public void terraform() throws GameActionException {
+        System.out.println("i am terraform");
     }
 
     public void aggro() throws GameActionException {
@@ -442,21 +459,50 @@ public class Landscaper extends Unit {
         return lDir;
     }
 
+    public boolean readMessages() throws GameActionException {
+        int rn = rc.getRoundNum();
+        int prev1 = rn-5;
+        for(int i=prev1; i<rn; i++) {
+            if(i>0) {
+                if(findMessagesFromAllies(i)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //Find message from allies given a round number rn
+    //Checks block of round number rn, loops through messages
+    //Currently: Checks for haltProductionMessage from a Miner
+    public boolean findMessagesFromAllies(int rn) throws GameActionException {
+        Transaction[] msgs = rc.getBlock(rn);
+        for (Transaction transaction : msgs) {
+            int[] msg = transaction.getMessage();
+            if (allyMessage(msg[0])) {
+                if(getSchema(msg[0])==6) {
+                    TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(t.type==1) {
+                        //System.out.println("[i] YAY, I'm A TERRAFORMER!");
+                        terraformer = true;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     void updateHoldPositionLoc() throws GameActionException {
         if (wallPhase < 2) {
             holdPositionLoc = null;
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
-                System.out.println(dir);
-            }
-            for (Direction dir : innerWallFillOrder) {
-                System.out.println(dir);
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
                 }
-                System.out.println(nearbyBotsMap.containsKey(t));
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
                     holdPositionLoc = t;
                 }

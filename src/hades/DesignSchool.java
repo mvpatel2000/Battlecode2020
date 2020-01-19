@@ -12,12 +12,13 @@ public class DesignSchool extends Building {
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
-    int DEFAULT_CLOSE_INNER_WALL_AT = 400;
-    int closeInnerWallAt = DEFAULT_CLOSE_INNER_WALL_AT; // TODO: tweak this
+    int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
+    int terraformersBuilt = 1;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
+    boolean firstRefineryExists = false; //this will only work if first refinery built after d.school exists
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
     MapLocation enemyHQLocApprox = null;
@@ -30,7 +31,7 @@ public class DesignSchool extends Building {
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
-        
+
         construct();
     }
 
@@ -107,16 +108,26 @@ public class DesignSchool extends Building {
     }
 
     public void defense() throws GameActionException {
-        // Removing emergency close wall because drones should be able to handle it
-        // if (existsNearbyEnemy() && numLandscapersMade >= 5) {
-        //     System.out.println("Enemy detected!  I will hurry and close this wall.");
-        //     closeInnerWallAt = 0;
-        // }
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if ((numLandscapersMade < 5 || (rc.getRoundNum() >= closeInnerWallAt && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if (numLandscapersMade == 5 && terraformersBuilt == 0) { // build terraformer
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
+                for (int i = 8; i > 0; i--) {
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
+                        System.out.println("Built landscaper in direction " + spawnDir);
+                        terraformersBuilt++;
+                        // TODO: send terraformer message
+                    }
+                    else {
+                        spawnDir = spawnDir.rotateLeft();
+                    }
+                }
+            }
+            if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+                System.out.println("Ready to make inner wall landscaper");
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
+                        System.out.println("Built landscaper in direction " + spawnDir);
                         numLandscapersMade++;
                     }
                     else {
@@ -125,6 +136,7 @@ public class DesignSchool extends Building {
                 }
             }
             else if(numLandscapersMade >= 8 && numLandscapersMade <= 19) { // WALL PHASE 2
+                System.out.println("Ready to make outer wall landscaper");
                 if (startOuterWallAt == 0) {
                     startOuterWallAt = rc.getRoundNum();
                 }
@@ -141,23 +153,35 @@ public class DesignSchool extends Building {
                     }
                 }
             }
-            else if(numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
-                if (tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(hqLocation).rotateLeft().rotateLeft())) {
+            else if(numLandscapersMade > 19 && numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
+                System.out.println("Building extra landscaper");
+                Direction spawnDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
+                if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
                     numLandscapersMade++;
                 }
+                else {
+                    spawnDir = spawnDir.rotateLeft();
+                }
+            }
+            else if(numLandscapersMade >= 22) {
+                System.out.println("My work is complete.  Goodbye, beautiful world...");
+                rc.disintegrate();
             }
         }
     }
 
+    public boolean sendTerraformMessage() throws GameActionException {
+        TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+        t.writeType(1);
+        return sendMessage(t.getMessage(), 1);
+    }
 
     public boolean readMessages() throws GameActionException {
         int rn = rc.getRoundNum();
         int prev1 = rn-5;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
-                if(findMessagesFromAllies(i)) {
-                    return true;
-                }
+                findMessagesFromAllies(i);
             }
         }
         return false;
@@ -165,22 +189,26 @@ public class DesignSchool extends Building {
     //Find message from allies given a round number rn
     //Checks block of round number rn, loops through messages
     //Currently: Checks for haltProductionMessage from a Miner
-    public boolean findMessagesFromAllies(int rn) throws GameActionException {
+    public void findMessagesFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.println("HOLDING PRODUCTION!");
+                    //System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
-                    return true;
+                }
+                if(getSchema(msg[0])==5 && !firstRefineryExists) {
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(b.typeBuilt==3) {
+                        firstRefineryExists = true;
+                    }
                 }
             }
         }
-        return false;
     }
 
     //Returns true if should continue halting production
@@ -188,14 +216,14 @@ public class DesignSchool extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }

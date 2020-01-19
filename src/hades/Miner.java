@@ -23,6 +23,7 @@ public class Miner extends Unit {
 
     boolean dSchoolExists;
     boolean fulfillmentCenterExists;
+    boolean firstRefineryExists;
 
     boolean aggro; // true if the one aggro miner
     List<MapLocation> target; // possible enemy HQ locations (target.get(0) is the one after HQ found)
@@ -30,6 +31,7 @@ public class Miner extends Unit {
     boolean hasRun = false;
     MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
+    boolean hasBuiltHaltedNetGun = false;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -72,6 +74,7 @@ public class Miner extends Unit {
 
         dSchoolExists = false;
         fulfillmentCenterExists = false;
+        firstRefineryExists = false;
 
         soupChecked = new long[64];
         soupMiningTiles = new int[numCols * numRows];
@@ -127,14 +130,14 @@ public class Miner extends Unit {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if (rc.getRoundNum() - turnAtProductionHalt > 30) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if (previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -197,6 +200,9 @@ public class Miner extends Unit {
                     rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
                     myLocation.add(x).distanceSquaredTo(target.get(0)))).orElse(null);
             if (d != null) {
+                if(hasSentHalt) {
+                    hasBuiltHaltedNetGun = true;
+                }
                 rc.buildRobot(RobotType.NET_GUN, d);
                 return;
             }
@@ -205,7 +211,7 @@ public class Miner extends Unit {
             return;
         // If next to enemy HQ, end aggro and build d.school
         RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
-        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
+        if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                 && myLocation.distanceSquaredTo(target.get(0)) < 3) {
             for (Direction d : directions)
                 if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
@@ -241,18 +247,10 @@ public class Miner extends Unit {
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
-        boolean existsDesignSchool = false;
-        boolean existsFulfillmentCenter = false;
         for (RobotInfo robot : allyRobots) {
             switch (robot.getType()) {
                 case NET_GUN:
                     existsNetGun = true;
-                    break;
-                case DESIGN_SCHOOL:
-                    existsDesignSchool = true;
-                    break;
-                case FULFILLMENT_CENTER:
-                    existsFulfillmentCenter = true;
                     break;
             }
         }
@@ -290,17 +288,27 @@ public class Miner extends Unit {
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
-        if (outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
+        if (rc.getTeamSoup()>220 && outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
             //TODO: Add in fulfillment center
-//            fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+            fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+            if(fulfillmentCenterExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(1); //1 is Fulfillment Center
+                sendMessage(b.getMessage(), 1); //Find better bidding scheme
+            }
         }
 
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
 
                 // build d.school
-                if (!dSchoolExists && !holdProduction && (rc.getRoundNum() > 90 || existsNearbyEnemy())) {
+                if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (rc.getRoundNum() > 90 || existsNearbyEnemy())) {
                     dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, hqDir.opposite());
+                    if(dSchoolExists) {
+                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        b.writeTypeBuilt(2); //2 is d.school
+                        sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+                    }
                 }
 
                 Direction toBase = myLocation.directionTo(baseLocation);
@@ -379,6 +387,14 @@ public class Miner extends Unit {
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
+                    //send message if this is the first refinery built
+                    if(!firstRefineryExists) {
+                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        b.writeTypeBuilt(3); //3 is refinery
+                        if(sendMessage(b.getMessage(), 1)==true) {
+                            firstRefineryExists = true;
+                        }
+                    }
                     if (baseLocation.equals(destination)) {
                         destination = myLocation.add(dir);
                     }
@@ -492,16 +508,16 @@ public class Miner extends Unit {
     //Checks block of round number rn, loops through messages
     //Currently: Checks for Patch message from HQ
     //           Checks for haltProductionMessage from a Miner
-    public int findMessageFromAllies(int rn, boolean hqm, boolean prodm) throws GameActionException {
+    //           Checks for BuiltMessage from Miners to see if Fulfillment Center or d.school exists
+    //Ideally, should stop when it's found them all, but chances are so low
+    //it's probably not a significant bytecode saving.
+    public void findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-        boolean foundHQMessage = hqm;
-        boolean foundProdMessage = prodm;
-        int found = 0;
         //System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
-                if (getSchema(msg[0]) == 2 && !foundHQMessage) {
+                if (getSchema(msg[0]) == 2) {
                     MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
                     int oldPatch = -1;
@@ -523,29 +539,33 @@ public class Miner extends Unit {
                         }
                         oldPatch = thisPatch;
                     }
-                    foundHQMessage = true;
-                    found += 1;
                 }
-                if (getSchema(msg[0]) == 3 && !foundProdMessage) {
+                if (getSchema(msg[0]) == 3) {
                     //don't actually do anything if you are the miner that sent the halt
                     //you shouldn't halt production, we need you to build the net gun.
                     if (!hasSentHalt) {
                         HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                        System.out.println("HOLDING PRODUCTION!");
+                        //System.out.println("[i] HOLDING PRODUCTION!");
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
                         enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
                         ////rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
-                    foundProdMessage = true;
-                    found += 2;
+                }
+                if (getSchema(msg[0]) == 5 && (!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists)) {
+                    //drone has been built.
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(b.typeBuilt==1) {
+                        fulfillmentCenterExists = true;
+                    } else if (b.typeBuilt==2) {
+                        dSchoolExists = true;
+                    } else if (b.typeBuilt==3) {
+                        firstRefineryExists = true;
+                    }
+
                 }
             }
-            if (foundHQMessage && foundProdMessage) {
-                return found;
-            }
         }
-        return found;
     }
 
     //Returns true if it finds all messages it's looking for
@@ -555,26 +575,10 @@ public class Miner extends Unit {
         //System.out.println("start reading");
         int rn = rc.getRoundNum();
         int prev = rn - messageFrequency;
-        boolean foundhq = false;
-        boolean foundprod = false;
         for (int i = prev; i < rn; i++) {
             if (i > 0) {
-                int numfound = findMessageFromAllies(i, foundhq, foundprod);
-                if (numfound == 3) {
-                    foundhq = true;
-                    foundprod = true;
-                } else if (numfound == 2) {
-                    foundprod = true;
-                } else if (numfound == 1) {
-                    foundhq = true;
-                }
-                if (foundhq && foundprod) {
-                    return true;
-                }
+                findMessageFromAllies(i);
             }
-        }
-        if (!foundhq) {
-            System.out.println("CRITICAL ERROR! NO HQ MESSAGE IN 10 TURNS");
         }
         return false;
     }
