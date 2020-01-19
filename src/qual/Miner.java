@@ -309,14 +309,15 @@ public class Miner extends Unit {
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
-//        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)) {
-//            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
-//            if(dSchoolExists) {
-//                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-//                b.writeTypeBuilt(2); //2 is d.school
-//                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-//            }
-//        }
+        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)
+            && myLocation.distanceSquaredTo(hqLocation) < 25) {
+            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
+            if(dSchoolExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(2); //2 is d.school
+                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+            }
+        }
 
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
