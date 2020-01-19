@@ -3,7 +3,7 @@ package seeding;
 public class BuiltMessage extends Message {
 
     final int bSchema = 5;   //BuiltMessages are message type 5
-    int typeBuilt; // 1 is fulfillment center, 2 is d.school
+    int typeBuilt; // 1 is fulfillment center, 2 is d.school, 3 is refinery
     int bitsPerType = 4;
 
     public BuiltMessage(int myMapHeight, int myMapWidth, int myTeam) {

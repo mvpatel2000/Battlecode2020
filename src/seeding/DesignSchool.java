@@ -18,6 +18,7 @@ public class DesignSchool extends Building {
 
     //For halting production and resuming it.
     boolean holdProduction = false;
+    boolean firstRefineryExists = false; //this will only work if first refinery built after d.school exists
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
     MapLocation enemyHQLocApprox = null;
@@ -30,7 +31,7 @@ public class DesignSchool extends Building {
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
-        
+
         construct();
     }
 
@@ -155,9 +156,7 @@ public class DesignSchool extends Building {
         int prev1 = rn-5;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
-                if(findMessagesFromAllies(i)) {
-                    return true;
-                }
+                findMessagesFromAllies(i);
             }
         }
         return false;
@@ -165,7 +164,7 @@ public class DesignSchool extends Building {
     //Find message from allies given a round number rn
     //Checks block of round number rn, loops through messages
     //Currently: Checks for haltProductionMessage from a Miner
-    public boolean findMessagesFromAllies(int rn) throws GameActionException {
+    public void findMessagesFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
@@ -176,11 +175,15 @@ public class DesignSchool extends Building {
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
-                    return true;
+                }
+                if(getSchema(msg[0])==5 && !firstRefineryExists) {
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(b.typeBuilt==3) {
+                        firstRefineryExists = true;
+                    }
                 }
             }
         }
-        return false;
     }
 
     //Returns true if should continue halting production
