@@ -41,7 +41,7 @@ public class Miner extends Unit {
         super(rc);
 
         aggro = rc.getRoundNum() == 2;
-        // aggro = false; // uncomment to disable aggro
+        aggro = false; // uncomment to disable aggro
         aggroDone = false;
         if (aggro) {
             target = new ArrayList<>();
@@ -278,7 +278,8 @@ public class Miner extends Unit {
 
 //        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
-        System.out.println("Soup: " + rc.getSoupCarrying());
+        System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase);
+        rc.setIndicatorDot(myLocation, (int)(rc.getSoupCarrying()*2.5), 0,0);
         rc.setIndicatorLine(myLocation, destination, 0,150,255);
 
         if (dSchoolExists) {
@@ -288,10 +289,10 @@ public class Miner extends Unit {
         Direction hqDir = myLocation.directionTo(hqLocation);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
-        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
+//        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         if (outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
             //TODO: Add in fulfillment center
-            fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
+//            fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
         }
 
         if (distanceToDestination <= 2) {                                     // at destination
@@ -313,6 +314,7 @@ public class Miner extends Unit {
             } else {                                                            // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {
+                    System.out.println("I am at destination. Soup: " + rc.senseSoup(destination));
                     sendSoupMessageIfShould(destination, true);
                     destination = updateNearestSoupLocation();
                 } else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
@@ -347,18 +349,22 @@ public class Miner extends Unit {
             if (robot.getType() == RobotType.REFINERY || (robot.getType() == RobotType.HQ && rc.getRoundNum() < 100)) {
                 int distToNew = myLocation.distanceSquaredTo(robot.getLocation());
                 if (distToNew < distToBase || (distToNew == distToBase && robot.getType() == RobotType.REFINERY)) {
+                    if (baseLocation.equals(destination)) {
+                        destination = robot.getLocation();
+                    }
                     baseLocation = robot.getLocation();
                     distToBase = distToNew;
                 }
             }
         }
-        if (distToBase > 25) {
+        if (distToBase > 64) {
             rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
         } else {
             rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
         }
-        if ((distToBase > 25 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
-                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 25 || turnsToBase > 10)) {
+        // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
+        if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
+                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)) {
             //TODO: build a refinery smarter and in good direction.
             //build new refinery!
             for (Direction dir : directions) {
