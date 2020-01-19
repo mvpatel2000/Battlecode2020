@@ -81,7 +81,7 @@ public class HQ extends Building {
                 if(minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
                     minerCount++;
                     minerCooldown = 5;
-                } else if ((soupSum/(300*minerCount)>Math.sqrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, dir)) {
+                } else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, dir)) {
                     //System.out.println("I producing miners");
                     //System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
                     //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
