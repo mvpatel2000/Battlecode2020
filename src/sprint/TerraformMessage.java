@@ -1,4 +1,4 @@
-package seeding;
+package sprint;
 
 public class TerraformMessage extends Message {
 
