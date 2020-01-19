@@ -110,13 +110,11 @@ public class HQ extends Building {
     // future sending to miners.
     void initialScan() throws GameActionException {
         HashMap<Integer, Integer> tileToCount = new HashMap<Integer, Integer>();
-        for (int[] d : visible) {
-            MapLocation m = myLocation.translate(d[0], d[1]);
-            if(rc.canSenseLocation(m)) {
-                int sloc = rc.senseSoup(m);
-                int tnum = getTileNumber(m);
-                tileToCount.put(tnum, sloc+tileToCount.getOrDefault(tnum, 0));
-            }
+        MapLocation[] nearbySoups = rc.senseNearbySoup();
+        for (MapLocation m: nearbySoups) {
+            int sloc = rc.senseSoup(m);
+            int tnum = getTileNumber(m);
+            tileToCount.put(tnum, sloc+tileToCount.getOrDefault(tnum, 0));
         }
         for(int key: tileToCount.keySet()) {
             int soupval = tileToCount.get(key);
