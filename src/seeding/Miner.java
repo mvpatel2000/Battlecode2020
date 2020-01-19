@@ -278,7 +278,7 @@ public class Miner extends Unit {
 
 //        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
-        System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase);
+        System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation);
         rc.setIndicatorDot(myLocation, (int)(rc.getSoupCarrying()*2.5), 0,0);
         rc.setIndicatorLine(myLocation, destination, 0,150,255);
 
@@ -332,6 +332,12 @@ public class Miner extends Unit {
                     System.out.println("I am at destination. Soup: " + rc.senseSoup(destination));
                     sendSoupMessageIfShould(destination, true);
                     destination = updateNearestSoupLocation();
+                    if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
+                        refineryCheck();
+                        destination = baseLocation;
+                        turnsToBase++;
+                        clearHistory();
+                    }
                 } else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
                     System.out.print("Last soup loc: ");
                     System.out.println(lastSoupLocation);
@@ -453,7 +459,7 @@ public class Miner extends Unit {
     public MapLocation updateNearestSoupLocation() throws GameActionException {
         int distanceToNearest = MAX_SQUARED_DISTANCE;
         MapLocation nearest = null;
-        if (destination != null && !(rc.canSenseLocation(destination) && (rc.senseSoup(destination) == 0 || rc.senseFlooding(destination)))) {
+        if (destination != null && lastSoupLocation!= null && !(rc.canSenseLocation(destination) && (rc.senseSoup(destination) == 0 || rc.senseFlooding(destination)))) {
             nearest = destination;
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
@@ -489,7 +495,7 @@ public class Miner extends Unit {
                 // Note: Uses soupDistance comparison instead of rc.canSenseLocation since location guarenteed to be on map
                 if (soupDistance < scanRadius && (rc.senseSoup(soupLocation) == 0 || isSurroundedByWater(soupLocation)  )) {
                     if (soupPriority == HQ_SEARCH) { // This is an HQ location. I should get close, then delete if no soup
-                        if (soupDistance < 10) { // Ad hoc threshold. Make sure to scan the entire tile.
+                        if (soupDistance < 25) { // Ad hoc threshold. Make sure to scan the entire tile.
                             soupIterator.remove();
                             priorityIterator.remove();
                             sendSoupMessageIfShould(soupLocation, true);
