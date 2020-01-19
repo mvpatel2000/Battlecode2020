@@ -298,7 +298,7 @@ public class Landscaper extends Unit {
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation)) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
                             foundDigSite = true;
                             System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDig(myLocation.directionTo(hqLocation.add(d)));
@@ -327,9 +327,9 @@ public class Landscaper extends Unit {
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < rc.senseElevation(hqLocation)) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
                             foundDumpSite = true;
-                            System.out.println("Dumping to trench in direction " + myLocation.directionTo(hqLocation.add(d)));
+                            System.out.println("Dumping to pit in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDeposit(myLocation.directionTo(hqLocation.add(d)));
                         }
                     }
@@ -550,7 +550,7 @@ public class Landscaper extends Unit {
                     continue;
                 }
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
-                    if (rc.canSenseLocation(t) && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 3 && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 3) {
+                    if (rc.canSenseLocation(t) && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 6 && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 6) {
                         holdPositionLoc = t;
                     }
                 }
@@ -565,7 +565,7 @@ public class Landscaper extends Unit {
                 holdPositionLoc = myLocation;
             }
         }
-        else {
+        if (wallPhase >= 2 || holdPositionLoc == null) {
             boolean amInOuterRing = false;
             for (int i = 0; i < 16; i++) {
                 if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation))  {
