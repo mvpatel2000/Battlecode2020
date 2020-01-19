@@ -117,7 +117,7 @@ public class Landscaper extends Unit {
         holdPositionLoc = null;
         wallPhase = 0;
         hqLocation = checkForLocationMessage();
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= 64; // arbitrary cutoff, but should be more than big enough.
         // TODO: check if i am a terraformer
         if (defensive) {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
