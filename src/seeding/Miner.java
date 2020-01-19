@@ -31,6 +31,7 @@ public class Miner extends Unit {
     boolean hasRun = false;
     MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
+    boolean hasBuiltHaltedNetGun = false;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -199,6 +200,9 @@ public class Miner extends Unit {
                     rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
                     myLocation.add(x).distanceSquaredTo(target.get(0)))).orElse(null);
             if (d != null) {
+                if(hasSentHalt) {
+                    hasBuiltHaltedNetGun = true;
+                }
                 rc.buildRobot(RobotType.NET_GUN, d);
                 return;
             }
@@ -207,7 +211,7 @@ public class Miner extends Unit {
             return;
         // If next to enemy HQ, end aggro and build d.school
         RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
-        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
+        if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                 && myLocation.distanceSquaredTo(target.get(0)) < 3) {
             for (Direction d : directions)
                 if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
