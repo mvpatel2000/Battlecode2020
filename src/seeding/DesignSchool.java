@@ -156,6 +156,11 @@ public class DesignSchool extends Building {
         }
     }
 
+    public boolean sendTerraformMessage() throws GameActionException {
+        TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+        t.writeType(1);
+        return sendMessage(t.getMessage(), 1);
+    }
 
     public boolean readMessages() throws GameActionException {
         int rn = rc.getRoundNum();
