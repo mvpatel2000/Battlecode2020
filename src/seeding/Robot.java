@@ -302,9 +302,6 @@ public abstract class Robot {
     }
 
     boolean allyMessage(int firstInt) throws GameActionException {
-        System.out.println("Reading headers...");
-        System.out.println(header);
-        System.out.println(firstInt>>(32-headerLen));
         if(firstInt>>>(32-headerLen)==header) {
             return true;
         } else {
@@ -313,8 +310,6 @@ public abstract class Robot {
     }
 
     int getSchema(int firstInt) throws GameActionException {
-        System.out.println("Reading schemas...");
-        System.out.println((firstInt<<headerLen)>>>(32-schemaLen));
         return (firstInt<<headerLen)>>>(32-schemaLen);
     }
 
