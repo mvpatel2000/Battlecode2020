@@ -403,7 +403,7 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                        && onBuildingGridSquare(newLoc) && rc.senseElevation(newLoc) >= rc.senseElevation(loc)) {
+                        && onBuildingGridSquare(newLoc) && newLoc.distanceSquaredTo(hqLocation) <= loc.distanceSquaredTo(hqLocation)) {
                     target = dir;
                     loc = newLoc;
                 }
