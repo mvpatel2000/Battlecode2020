@@ -67,8 +67,8 @@ public class HQ extends Building {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
                 if (soupPerTile[1] > 0) {
-                    System.out.println("There is soup at the tile");
-                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 224, 124, 32);
+                    System.out.println(Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
+                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 224, 124, 42);
                     soupSum += soupPerTile[1];
                 }
             }
@@ -81,18 +81,16 @@ public class HQ extends Building {
                 if(minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
                     minerCount++;
                     minerCooldown = 5;
-                } else if (soupSum/minerCount>Math.sqrt(rc.getRoundNum())/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) {
-                    System.out.println("I'd like to produce miners, I'm better than the heuristic");
+                } else if ((soupSum/(200*minerCount)>Math.sqrt(rc.getRoundNum())/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, dir)) {
+                    System.out.println("I producing miners");
                     System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
                     System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
-                    if(tryBuild(RobotType.MINER, dir)) {
-                        minerCount++;
-                    }
+                    minerCount++;
                 } else {
                     //System.out.println("I can't build miners");
                     //System.out.println("SoupSum " + Integer.toString(soupSum));
                     //System.out.println("MinerCount " + Integer.toString(minerCount));
-                    //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
+                    //System.out.println("SQRT(roundNum)/5 " + Math.sqrt(rc.getRoundNum())/5);
                 }
             }
         }
@@ -237,6 +235,7 @@ public class HQ extends Building {
                         }
                     } else {
                         //miner telling me there is soup at tile
+                        System.out.println("MINER TELLING ME THERE IS " + Integer.toString(s.soupThere) + " SOUP AT TILE " + Integer.toString(s.tile));
                         addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
                     lookingForMessages-=1;

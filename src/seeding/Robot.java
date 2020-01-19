@@ -249,7 +249,7 @@ public abstract class Robot {
     }
 
     int powerToSoup(int powerAmount) {
-        return powerAmount*2000;
+        return powerAmount*200;
     }
 
     int getTileNumber(MapLocation loc) throws GameActionException {

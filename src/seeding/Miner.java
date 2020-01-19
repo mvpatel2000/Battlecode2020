@@ -578,7 +578,7 @@ public class Miner extends Unit {
                 }
             }
             // 0 when hq doesn't know about it
-//            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
+            System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
             if (!noSoup || soupTotal == 0) {
                 generateSoupMessage(destination, soupToPower(soupTotal));
             }
