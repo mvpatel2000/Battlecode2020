@@ -33,6 +33,11 @@ public abstract class Robot {
     final int headerLen = 16;
     final int schemaLen = 3;
     //discretized grid for communicating map information
+    //if changing squareWidth and squareHeight, make sure to change
+    //number of bits allocated to tile in HoldProductionMessage and MinePatchMessage and SoupMessage
+    //(bitsPerPatch in MinePatchMessage) and
+    //(bitsPerTile in HoldProductionMessage) and
+    //(bitsPerTile in SoupMessage)
     final int squareWidth = 3;    //number of cells wide per tile
     final int squareHeight = 3;   //number of cells tall per tile
     final int numRows;

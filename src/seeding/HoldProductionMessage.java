@@ -4,7 +4,7 @@ public class HoldProductionMessage extends Message {
 
     final int prodMessage = 3;   //HoldProductionMessages are message type 3
     int enemyHQTile;
-    int bitsPerTile = 8;
+    int bitsPerTile = 9;
 
     public HoldProductionMessage(int myMapHeight, int myMapWidth, int myTeam) {
         super(myMapHeight, myMapWidth, myTeam);
@@ -13,7 +13,6 @@ public class HoldProductionMessage extends Message {
     }
 
     //Use for recieved message.
-    //use .tile and .soupThere to get information
     public HoldProductionMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         super(recieved, myMapHeight, myMapWidth, myTeam);
         this.schema=prodMessage;
