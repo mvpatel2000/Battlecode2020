@@ -29,7 +29,7 @@ public class DesignSchool extends Building {
 
     public DesignSchool(RobotController rc) throws GameActionException {
         super(rc);
-        System.out.println(myLocation);
+        //System.out.println(myLocation);
         
         construct();
     }
@@ -38,13 +38,13 @@ public class DesignSchool extends Building {
         hqLocation = checkForLocationMessage();
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 25; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
-            System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
+            //System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
 
             // Determine if I am the primary defensive d.school or if I am an extra.
             primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
         }
         else {
-            System.out.println("I am far from my HQ.");
+            //System.out.println("I am far from my HQ.");
             MapLocation[] enemyHQCandidateLocs = {
                 new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y),
                 new MapLocation(rc.getMapWidth() - hqLocation.x - 1, rc.getMapHeight() - hqLocation.y - 1),
@@ -52,11 +52,11 @@ public class DesignSchool extends Building {
             };
             for (MapLocation enemyHQCandidateLoc : enemyHQCandidateLocs) {
                 if (rc.canSenseLocation(enemyHQCandidateLoc)) {
-                    System.out.println("I am an offensive d.school.");
+                    //System.out.println("I am an offensive d.school.");
                     aggressive = true;
                     enemyHQLocation = enemyHQCandidateLoc;
                     if (enemyHQLocation.isAdjacentTo(myLocation)) {
-                        System.out.println("I am a wall proxy");
+                        //System.out.println("I am a wall proxy");
                         wallProxy = true;
                     }
                     break;
@@ -100,7 +100,7 @@ public class DesignSchool extends Building {
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
                 if(tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(t))) {
-                    System.out.println("Built aggressive landscaper at " + t.toString());
+                    //System.out.println("Built aggressive landscaper at " + t.toString());
                 }
             }
         }
@@ -109,7 +109,7 @@ public class DesignSchool extends Building {
     public void defense() throws GameActionException {
         // Removing emergency close wall because drones should be able to handle it
         // if (existsNearbyEnemy() && numLandscapersMade >= 5) {
-        //     System.out.println("Enemy detected!  I will hurry and close this wall.");
+        //     //System.out.println("Enemy detected!  I will hurry and close this wall.");
         //     closeInnerWallAt = 0;
         // }
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
@@ -172,7 +172,7 @@ public class DesignSchool extends Building {
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.println("HOLDING PRODUCTION!");
+                    //System.out.println("HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
@@ -188,14 +188,14 @@ public class DesignSchool extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            //System.out.println("UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }

@@ -40,7 +40,7 @@ public strictfp class RobotPlayer {
                 robot = new NetGun(rc);
                 break;
             default:
-                System.out.println(rc.getType() + " is not supported.");
+                //System.out.println(rc.getType() + " is not supported.");
                 return;
         }
         while (true) {
@@ -48,7 +48,7 @@ public strictfp class RobotPlayer {
                 robot.run();
                 Clock.yield();
             } catch (Exception e) {
-                System.out.println(rc.getType() + " Exception");
+                //System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();
             }
         }

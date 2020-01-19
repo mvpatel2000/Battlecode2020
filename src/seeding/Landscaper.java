@@ -314,7 +314,7 @@ public class Landscaper extends Unit {
                         }
                     }
                 }
-                else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 2) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
+                else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 3) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
                     System.out.println("Dumping dirt under myself");
                     tryDeposit(Direction.CENTER);
                 }
@@ -437,7 +437,7 @@ public class Landscaper extends Unit {
             lDir[0] = lDir[4].rotateRight();
             lDir[5] = lDir[0].rotateRight();
             lDir[2] = lDir[5].rotateRight();
-            lDir[6] = lDir[1].rotateRight();
+            lDir[6] = lDir[2].rotateRight();
         }
         return lDir;
     }
@@ -448,10 +448,15 @@ public class Landscaper extends Unit {
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
+                System.out.println(dir);
+            }
+            for (Direction dir : innerWallFillOrder) {
+                System.out.println(dir);
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
                 }
+                System.out.println(nearbyBotsMap.containsKey(t));
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
                     holdPositionLoc = t;
                 }

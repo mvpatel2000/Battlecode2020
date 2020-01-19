@@ -24,10 +24,11 @@ public abstract class Robot {
     int myId;
     final int MAP_WIDTH;
     final int MAP_HEIGHT;
+    final int HQ_SEARCH = 31;
     final int messageModulus=2;
     final int messageFrequency=5;
     //for reading message headers
-    final int arbitraryConstant=23523; //make sure this is the same constant in Message.java
+    final int arbitraryConstant=57564; //make sure this is the same constant in Message.java
     final int header;
     final int headerLen = 16;
     final int schemaLen = 3;
@@ -241,7 +242,14 @@ public abstract class Robot {
 
      //TODO: Better, easily invertible function
     int soupToPower(int soupAmount) {
-         return Math.min((soupAmount+199)/200, 31);
+         if(soupAmount==-1) {
+             return HQ_SEARCH;
+         }
+         return Math.min((soupAmount+199)/200, 30); //31 is used for HQ search
+    }
+
+    int powerToSoup(int powerAmount) {
+        return powerAmount*200;
     }
 
     int getTileNumber(MapLocation loc) throws GameActionException {
@@ -302,9 +310,6 @@ public abstract class Robot {
     }
 
     boolean allyMessage(int firstInt) throws GameActionException {
-        System.out.println("Reading headers...");
-        System.out.println(header);
-        System.out.println(firstInt>>(32-headerLen));
         if(firstInt>>>(32-headerLen)==header) {
             return true;
         } else {
@@ -313,20 +318,21 @@ public abstract class Robot {
     }
 
     int getSchema(int firstInt) throws GameActionException {
-        System.out.println("Reading schemas...");
-        System.out.println((firstInt<<headerLen)>>>(32-schemaLen));
         return (firstInt<<headerLen)>>>(32-schemaLen);
     }
 
-    void tryBlockchain() throws GameActionException {
-        if (4 < 3) {
-            int[] message = new int[10];
-            for (int i = 0; i < 10; i++) {
-                message[i] = 123;
-            }
-            if (rc.canSubmitTransaction(message, 10))
-                rc.submitTransaction(message, 10);
-        }
-        // System.out.println(rc.getRoundMessages(turnCount-1));
+    boolean isAccessible(MapLocation target) throws GameActionException {
+         int lastElevation = rc.senseElevation(myLocation);
+         MapLocation ptr = myLocation;
+         while (ptr.distanceSquaredTo(target) > 2) { // adjacent to tile
+             if (!rc.canSenseLocation(ptr) || rc.senseFlooding(ptr))
+                 return false;
+             int elevation = rc.senseElevation(ptr);
+             if (Math.abs(elevation - lastElevation) > 3)
+                 return false;
+             lastElevation = elevation;
+             ptr = ptr.add(ptr.directionTo(target));
+         }
+         return true;
     }
 }
