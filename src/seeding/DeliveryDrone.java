@@ -27,8 +27,6 @@ public class DeliveryDrone extends Unit {
     boolean carryingEnemy;
     boolean carryingAlly;
 
-    boolean[] visitedEnemyCorners;
-
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
@@ -78,8 +76,6 @@ public class DeliveryDrone extends Unit {
 //        else {
 //            DEFEND_TURN = 700-5;
 //        }
-
-        visitedEnemyCorners = new boolean[4];
 
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
@@ -166,8 +162,7 @@ public class DeliveryDrone extends Unit {
                 if (!enemyVisited) { // visit enemy first
                     if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
                         path(enemyLocation);
-                    }
-                    else {
+                    } else {
                         enemyVisited = true;
                         destination = getNearestUnexploredTile();
                     }
@@ -176,38 +171,14 @@ public class DeliveryDrone extends Unit {
                         tilesVisited[getTileNumber(destination)] = 1;
                         destination = getNearestUnexploredTile();
                         stuckCount = 0;
-                    }
-                    else {
+                    } else {
                         stuckCount++;
                     }
                     safePath(destination);
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
-            } else if (attackDrone && rc.getRoundNum() >= DEFEND_TURN) { // late game attack drone
-                MapLocation target;
-                if (!visitedEnemyCorners[0]) {
-                    target = enemyLocation.translate(-3,-3);
-                    safePath(target);
-                    if (myLocation.distanceSquaredTo(target) == 0)
-                        visitedEnemyCorners[0] = true;
-                } else if (!visitedEnemyCorners[1]) {
-                    target = enemyLocation.translate(-3,3);
-                    safePath(target);
-                    if (myLocation.distanceSquaredTo(target) == 0)
-                        visitedEnemyCorners[1] = true;
-                } else if (!visitedEnemyCorners[2]) {
-                    target = enemyLocation.translate(3,3);
-                    safePath(target);
-                    if (myLocation.distanceSquaredTo(target) == 0)
-                        visitedEnemyCorners[2] = true;
-                } else if (!visitedEnemyCorners[3]) {
-                    target = enemyLocation.translate(3,-3);
-                    safePath(target);
-                    if (myLocation.distanceSquaredTo(target) == 0)
-                        visitedEnemyCorners[3] = true;
-                } else {
-                    fuzzyMoveToLoc(hqLocation);
-                }
+            } else if (rc.getRoundNum() > 1500) {
+                fuzzyMoveToLoc(enemyLocation);
             } else { // defend drone / go back to base
                 destination = hqLocation;
                 int distance = myLocation.distanceSquaredTo(destination);

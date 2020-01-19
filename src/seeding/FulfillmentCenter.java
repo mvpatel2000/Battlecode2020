@@ -30,7 +30,8 @@ public class FulfillmentCenter extends Building {
 
         super.run();
         if(!holdProduction) {
-            if ((rc.getTeamSoup() >= Math.min(150 + 15 * (attackDroneCount + defendDroneCount), 200)) && ((attackDroneCount + defendDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
+            if ((rc.getTeamSoup() >= Math.min(150 + 15 * (attackDroneCount + defendDroneCount), 200))
+                    && ((attackDroneCount + defendDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
                 buildDrone();
         }
 
@@ -43,8 +44,9 @@ public class FulfillmentCenter extends Building {
     }
 
     private void buildDrone() throws GameActionException {
-        boolean built = false;
+        boolean built = true;
         if (attackDroneCount > defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
+            System.out.println("Building defense drone");
             Direction toHQ = myLocation.directionTo(hqLocation);
             if (tryBuild(RobotType.DELIVERY_DRONE, toHQ)) {
                 defendDroneCount++;
@@ -53,10 +55,11 @@ public class FulfillmentCenter extends Building {
             } else if (tryBuild(RobotType.DELIVERY_DRONE, toHQ.rotateRight())) {
                 defendDroneCount++;
             } else {
-                built = true;
+                built = false;
             }
         }
         else {
+            System.out.println("Building attack drone");
             Direction awayHQ = myLocation.directionTo(hqLocation).opposite();
             if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ)) {
                 attackDroneCount++;
@@ -69,13 +72,14 @@ public class FulfillmentCenter extends Building {
             } else if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ.rotateRight().rotateRight())) {
                 attackDroneCount++;
             } else {
-                built = true;
+                built = false;
             }
         }
         if (!built) {
+            System.out.println("Build failed, just build whatever");
             for (Direction dir : directions) {
-                if (tryBuild(RobotType.DELIVERY_DRONE, dir)) {
-                    if (attackDroneCount > defendDroneCount) // we built a type that we already had
+                if (tryBuild(RobotType.DELIVERY_DRONE, dir)) { // we built a type that we already had and tried not to
+                    if (attackDroneCount > defendDroneCount * ATTACK_TO_DEFENSE_RATIO)
                         attackDroneCount++;
                     else
                         defendDroneCount++;
