@@ -499,7 +499,7 @@ public class Miner extends Unit {
     //it's probably not a significant bytecode saving.
     public void findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-        System.out.println("reading messages from " + Integer.toString(rn) + " round.");
+        //System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
