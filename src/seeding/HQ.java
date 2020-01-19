@@ -227,6 +227,7 @@ public class HQ extends Building {
             //sent from our team
             if(allyMessage(f)) {
                 //soup message
+                System.out.println("found ally message...");
                 if(getSchema(f)==1) {
                     System.out.println("found soup message...");
                     SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
