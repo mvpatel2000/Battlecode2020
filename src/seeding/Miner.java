@@ -318,6 +318,8 @@ public class Miner extends Unit {
                     sendSoupMessageIfShould(destination, true);
                     destination = updateNearestSoupLocation();
                 } else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
+                    System.out.print("Last soup loc: ");
+                    System.out.println(lastSoupLocation);
                     refineryCheck();
                     destination = baseLocation;
                     turnsToBase++;
@@ -370,6 +372,8 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
+                System.out.print("canbuildrobot: ");
+                System.out.println(rc.canBuildRobot(RobotType.REFINERY, dir));
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     if (baseLocation.equals(destination)) {

@@ -81,12 +81,15 @@ public class HQ extends Building {
                 if(minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
                     minerCount++;
                     minerCooldown = 5;
-                } else if ((soupSum/(200*minerCount)>Math.sqrt(rc.getRoundNum())/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, dir)) {
-                    System.out.println("I producing miners");
-                    System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
-                    System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
+                } else if ((soupSum/(300*minerCount)>Math.sqrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, dir)) {
+                    //System.out.println("I producing miners");
+                    //System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
+                    //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
+                    System.out.println("Producing extra miner");
                     minerCount++;
                 } else {
+                    System.out.println("Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
+                    System.out.println("I have produced " + Integer.toString(minerCount));
                     //System.out.println("I can't build miners");
                     //System.out.println("SoupSum " + Integer.toString(soupSum));
                     //System.out.println("MinerCount " + Integer.toString(minerCount));
