@@ -23,6 +23,7 @@ public class DeliveryDrone extends Unit {
 
     boolean attackDrone;
     final int DEFEND_TURN;
+    final int ATTACK_TURN;
 
     boolean carryingEnemy;
     boolean carryingAlly;
@@ -60,6 +61,7 @@ public class DeliveryDrone extends Unit {
         }
 
         DEFEND_TURN = 950;
+        ATTACK_TURN = 1600;
 //        if (rc.canSenseLocation(hqLocation)) {
 //            switch (rc.senseElevation(hqLocation)) {
 //                case 5:
@@ -155,13 +157,16 @@ public class DeliveryDrone extends Unit {
                     rc.pickUpUnit(nearest.getID());
                     carryingEnemy = true;
                 }
-            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100)) { // after defend turn, don't rush far away enemy units
-                path(nearest.location); // to nearest enemy.
+            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // after defend turn, don't rush far away enemy units
+                if (rc.getRoundNum() > ATTACK_TURN) // charge after ATTACK_TURN
+                    fuzzyMoveToLoc(nearest.location);
+                else
+                    path(nearest.location); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 if (!enemyVisited) { // visit enemy first
                     if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
-                        path(enemyLocation);
+                        safePath(enemyLocation);
                     } else {
                         enemyVisited = true;
                         destination = getNearestUnexploredTile();
@@ -177,8 +182,13 @@ public class DeliveryDrone extends Unit {
                     safePath(destination);
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
-            } else if (rc.getRoundNum() > 1500) {
-                fuzzyMoveToLoc(enemyLocation);
+            } else if (rc.getRoundNum() > ATTACK_TURN - 100) { // drone attack-move
+                if (rc.getRoundNum() > ATTACK_TURN) {
+                    fuzzyMoveToLoc(enemyLocation);
+                }
+                else if (rc.getRoundNum() > ATTACK_TURN - 100) {
+                    safePath(enemyLocation);
+                }
             } else { // defend drone / go back to base
                 destination = hqLocation;
                 int distance = myLocation.distanceSquaredTo(destination);
@@ -273,7 +283,9 @@ public class DeliveryDrone extends Unit {
         while (soupIterator.hasNext()) {
             MapLocation soupLocation = soupIterator.next();
             int soupDistance = myLocation.distanceSquaredTo(soupLocation);
-            if (soupDistance < distanceToNearest) {
+            if (rc.canSenseLocation(soupLocation) && !rc.senseFlooding(soupLocation)) {
+                soupIterator.remove();
+            } else if (soupDistance < distanceToNearest) {
                 nearest = soupLocation;
                 distanceToNearest = soupDistance;
             }
