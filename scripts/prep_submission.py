@@ -21,7 +21,8 @@ if __name__ == '__main__':
 		out_content = content
 		out_content = re.sub('System.out.println\("\[i\]', '//System.out.println("[i]', out_content)
 		out_content = re.sub('System.out.print\("\[i\]', '//System.out.print("[i]', out_content)
-		out_content = re.sub('rc.setIndicator', '//rc.setIndicator', out_content)
+		if f.name != 'Landscaper.java':
+			out_content = re.sub('rc.setIndicator', '//rc.setIndicator', out_content)
 		out_content = re.sub('package [^\n]*;', 'package ' + out_dir_name + ';', out_content)
 		with open(out, 'w') as out_file:
 			out_file.write(out_content)

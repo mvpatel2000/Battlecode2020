@@ -12,9 +12,10 @@ public class Landscaper extends Unit {
     RobotInfo[] nearbyBots;
     MapLocation baseLocation;
 
-    //for telling if i am a terraformer
+    // class variables used specifically by terraformers:
     int bornTurn;
     boolean terraformer = false;
+    MapLocation plotCenter = null;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
@@ -79,6 +80,7 @@ public class Landscaper extends Unit {
     int outerRingIndex = 0;
     int forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
     boolean currentlyInInnerWall = false;
+    int pauseDigAndWaitForAllyToPass = 0;
 
     // class variables used by aggressive landscapers:
     boolean aggressive = false;
@@ -170,7 +172,27 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        System.out.println("i am terraform");
+        System.out.println("Terraform");
+        // if (plotCenter == null) {
+        //     if (checkIfValidPlot()) {
+        //         plotCenter = myLocation;
+        //     }
+        //     else {
+
+        //     }
+        // }
+        // if (plotCenter != null) {
+
+        // }
+    }
+
+    public boolean checkIfValidPlot() throws GameActionException { // TODO: this is extremely naive
+        for (Direction d : directions) {
+            if (!rc.canMove(d)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void aggro() throws GameActionException {
@@ -188,12 +210,12 @@ public class Landscaper extends Unit {
 
         if (rc.getDirtCarrying() == 0) { // dig
             if (baseLocation != null && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
-                System.out.println("Digging under d.school at " + baseLocation.toString());
+                System.out.println("Digging from d.school at " + baseLocation.toString());
                 tryDig(myLocation.directionTo(baseLocation));
             }
             else {
                 if (rc.senseElevation(myLocation.add(Direction.CENTER)) < rc.senseElevation(myLocation.add(enemyHQDir.opposite()))) {
-                    if (rc.canDigDirt(enemyHQDir.opposite())) {
+                    if (rc.canDigDirt(enemyHQDir.opposite()) && !isAdjacentToWater(myLocation.add(enemyHQDir.opposite())) && notTrappingAlly(enemyHQDir.opposite())) {
                         System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
                         tryDig(enemyHQDir.opposite());
                     }
@@ -208,6 +230,28 @@ public class Landscaper extends Unit {
             System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
             tryDeposit(enemyHQDir);
         }
+    }
+
+    public boolean notTrappingAlly(Direction d) throws GameActionException {
+        MapLocation t = myLocation.add(d);
+        if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(allyTeam)) {
+            pauseDigAndWaitForAllyToPass++;
+            return pauseDigAndWaitForAllyToPass >= 2;
+        }
+        else {
+            pauseDigAndWaitForAllyToPass = 0;
+            return true;
+        }
+    }
+
+    public boolean isAdjacentToWater(MapLocation t) throws GameActionException {
+        // is this location adjacent to water to the best of my knowledge
+        for (Direction d : directionsWithCenter) {
+            if (rc.canSenseLocation(t.add(d)) && rc.senseFlooding(t.add(d))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void defense() throws GameActionException {
@@ -230,7 +274,7 @@ public class Landscaper extends Unit {
                     }
                     else {
                         System.out.println("Attempting to gather dirt in an emergency to kill the enemy building");
-                        if (tryDig(d.opposite())) {
+                        if (tryDig(d.opposite())) { // TODO: should we allow gathering dirt from anywhere?
                             return;
                         }
                     }
@@ -268,9 +312,11 @@ public class Landscaper extends Unit {
                         if (!rc.canDigDirt(digDir)) {
                             digDir = digDir.rotateRight();
                         }
-                        System.out.println("Digging from designated dig-site " + digDir.toString());
-                        if (!tryDig(digDir)) {
-                            System.out.println("Can't dig...");
+                        if (notTrappingAlly(digDir)) {
+                            System.out.println("Digging from designated dig-site " + digDir.toString());
+                            if (!tryDig(digDir)) {
+                                System.out.println("Can't dig...");
+                            }
                         }
                     }
                 }
@@ -504,7 +550,9 @@ public class Landscaper extends Unit {
                     continue;
                 }
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
-                    holdPositionLoc = t;
+                    if (rc.canSenseLocation(t) && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 3 && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 3) {
+                        holdPositionLoc = t;
+                    }
                 }
                 if (t.equals(myLocation)) {
                     currentlyInInnerWall = true;
