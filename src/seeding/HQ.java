@@ -67,7 +67,7 @@ public class HQ extends Building {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
                 if (soupPerTile[1] > 0) {
-                    System.out.println(Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
+                    System.out.println("[i] " + Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
                     rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 224, 124, 42);
                     soupSum += soupPerTile[1];
                 }
@@ -85,11 +85,11 @@ public class HQ extends Building {
                     //System.out.println("I producing miners");
                     //System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
                     //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
-                    System.out.println("Producing extra miner");
+                    System.out.println("[i] Producing extra miner");
                     minerCount++;
                 } else {
-                    System.out.println("Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
-                    System.out.println("I have produced " + Integer.toString(minerCount));
+                    System.out.println("[i] Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
+                    System.out.println("[i] I have produced " + Integer.toString(minerCount));
                     //System.out.println("I can't build miners");
                     //System.out.println("SoupSum " + Integer.toString(soupSum));
                     //System.out.println("MinerCount " + Integer.toString(minerCount));
@@ -203,14 +203,14 @@ public class HQ extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -219,6 +219,7 @@ public class HQ extends Building {
     }
 
     void readMessages() throws GameActionException {
+        System.out.println("reading messages...");
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
         int lookingForMessages = 2;
         for (int i=0; i<msgs.length; i++) {
@@ -226,10 +227,12 @@ public class HQ extends Building {
             //sent from our team
             if(allyMessage(f)) {
                 //soup message
+                System.out.println("found ally message...");
                 if(getSchema(f)==1) {
+                    System.out.println("found soup message...");
                     SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
-                        //delete from arraylist of so`ups
+                        //delete from arraylist of soups
                         for(int j=0; j<accessibleSoupsPerTile.size(); j++) {
                             if(accessibleSoupsPerTile.get(j)[0]==s.tile) {
                                 accessibleSoupsPerTile.remove(j);
@@ -238,14 +241,14 @@ public class HQ extends Building {
                         }
                     } else {
                         //miner telling me there is soup at tile
-                        System.out.println("MINER TELLING ME THERE IS " + Integer.toString(s.soupThere) + " SOUP AT TILE " + Integer.toString(s.tile));
+                        System.out.println("[i] MINER TELLING ME THERE IS " + Integer.toString(s.soupThere) + " SOUP AT TILE " + Integer.toString(s.tile));
                         addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
                     lookingForMessages-=1;
                 }
                 if(getSchema(f)==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.println("HOLDING PRODUCTION!");
+                    System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);

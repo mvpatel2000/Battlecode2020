@@ -31,6 +31,7 @@ public class Miner extends Unit {
     boolean hasRun = false;
     MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
+    boolean hasBuiltHaltedNetGun = false;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -42,7 +43,7 @@ public class Miner extends Unit {
         super(rc);
 
         aggro = rc.getRoundNum() == 2;
-//        aggro = false; // uncomment to disable aggro
+        aggro = false; // uncomment to disable aggro
         aggroDone = false;
         if (aggro) {
             target = new ArrayList<>();
@@ -129,14 +130,14 @@ public class Miner extends Unit {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if (rc.getRoundNum() - turnAtProductionHalt > 30) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if (previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("UNHOLDING PRODUCTION!");
+            System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
@@ -199,6 +200,9 @@ public class Miner extends Unit {
                     rc.canBuildRobot(RobotType.NET_GUN, x) && myLocation.add(x).distanceSquaredTo(dLoc) > 2).min(Comparator.comparingInt(x ->
                     myLocation.add(x).distanceSquaredTo(target.get(0)))).orElse(null);
             if (d != null) {
+                if(hasSentHalt) {
+                    hasBuiltHaltedNetGun = true;
+                }
                 rc.buildRobot(RobotType.NET_GUN, d);
                 return;
             }
@@ -207,7 +211,7 @@ public class Miner extends Unit {
             return;
         // If next to enemy HQ, end aggro and build d.school
         RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
-        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
+        if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                 && myLocation.distanceSquaredTo(target.get(0)) < 3) {
             for (Direction d : directions)
                 if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
@@ -542,7 +546,7 @@ public class Miner extends Unit {
                     //you shouldn't halt production, we need you to build the net gun.
                     if (!hasSentHalt) {
                         HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                        System.out.println("HOLDING PRODUCTION!");
+                        System.out.println("[i] HOLDING PRODUCTION!");
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
                         enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
