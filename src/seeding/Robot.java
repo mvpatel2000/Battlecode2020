@@ -24,6 +24,7 @@ public abstract class Robot {
     int myId;
     final int MAP_WIDTH;
     final int MAP_HEIGHT;
+    final int HQ_SEARCH = 31;
     final int messageModulus=2;
     final int messageFrequency=5;
     //for reading message headers
@@ -241,7 +242,14 @@ public abstract class Robot {
 
      //TODO: Better, easily invertible function
     int soupToPower(int soupAmount) {
-         return Math.min((soupAmount+199)/200, 31);
+         if(soupAmount==-1) {
+             return HQ_SEARCH;
+         }
+         return Math.min((soupAmount+199)/200, 30); //31 is used for HQ search
+    }
+
+    int powerToSoup(int powerAmount) {
+        return powerAmount*2000;
     }
 
     int getTileNumber(MapLocation loc) throws GameActionException {
@@ -302,9 +310,6 @@ public abstract class Robot {
     }
 
     boolean allyMessage(int firstInt) throws GameActionException {
-        System.out.println("Reading headers...");
-        System.out.println(header);
-        System.out.println(firstInt>>(32-headerLen));
         if(firstInt>>>(32-headerLen)==header) {
             return true;
         } else {
@@ -313,8 +318,6 @@ public abstract class Robot {
     }
 
     int getSchema(int firstInt) throws GameActionException {
-        System.out.println("Reading schemas...");
-        System.out.println((firstInt<<headerLen)>>>(32-schemaLen));
         return (firstInt<<headerLen)>>>(32-schemaLen);
     }
 

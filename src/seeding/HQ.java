@@ -67,6 +67,8 @@ public class HQ extends Building {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
                 if (soupPerTile[1] > 0) {
+                    System.out.println("There is soup at the tile");
+                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 224, 124, 32);
                     soupSum += soupPerTile[1];
                 }
             }
@@ -86,6 +88,11 @@ public class HQ extends Building {
                     if(tryBuild(RobotType.MINER, dir)) {
                         minerCount++;
                     }
+                } else {
+                    //System.out.println("I can't build miners");
+                    //System.out.println("SoupSum " + Integer.toString(soupSum));
+                    //System.out.println("MinerCount " + Integer.toString(minerCount));
+                    //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
                 }
             }
         }
@@ -114,7 +121,7 @@ public class HQ extends Building {
         for(int key: tileToCount.keySet()) {
             int soupval = tileToCount.get(key);
             if(soupval>0) {
-                addToSoupList(key, soupval/50);
+                addToSoupList(key, soupval);
             }
         }
     }
@@ -232,7 +239,7 @@ public class HQ extends Building {
                         }
                     } else {
                         //miner telling me there is soup at tile
-                        addToSoupList(s.tile, s.soupThere);
+                        addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
                     lookingForMessages-=1;
                 }

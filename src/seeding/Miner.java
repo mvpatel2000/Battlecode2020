@@ -409,7 +409,7 @@ public class Miner extends Unit {
             if (soupDistance < distanceToNearest) {
                 // Note: Uses soupDistance comparison instead of rc.canSenseLocation since location guarenteed to be on map
                 if (soupDistance < scanRadius && (rc.senseSoup(soupLocation) == 0 || isSurroundedByWater(soupLocation)  )) {
-                    if (soupPriority == 63) { // This is an HQ location. I should get close, then delete if no soup
+                    if (soupPriority == HQ_SEARCH) { // This is an HQ location. I should get close, then delete if no soup
                         if (soupDistance < 10) { // Ad hoc threshold. Make sure to scan the entire tile.
                             soupIterator.remove();
                             priorityIterator.remove();
