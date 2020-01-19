@@ -37,7 +37,7 @@ public class DesignSchool extends Building {
 
     private void construct() throws GameActionException {
         hqLocation = checkForLocationMessage();
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 25; // arbitrary cutoff, but should be more than big enough.
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= 49; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
             System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
 
