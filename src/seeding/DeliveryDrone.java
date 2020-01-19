@@ -61,7 +61,7 @@ public class DeliveryDrone extends Unit {
         }
 
         DEFEND_TURN = 950;
-        ATTACK_TURN = 1600;
+        ATTACK_TURN = 1700;
 //        if (rc.canSenseLocation(hqLocation)) {
 //            switch (rc.senseElevation(hqLocation)) {
 //                case 5:
@@ -130,7 +130,7 @@ public class DeliveryDrone extends Unit {
                 path(nearestWaterLocation);
             }
             else {
-//                System.out.println(myLocation + " " + nearestWaterLocation);
+//                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
                 path(nearestWaterLocation);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
@@ -186,7 +186,7 @@ public class DeliveryDrone extends Unit {
                 if (rc.getRoundNum() > ATTACK_TURN) {
                     fuzzyMoveToLoc(enemyLocation);
                 }
-                else if (rc.getRoundNum() > ATTACK_TURN - 100) {
+                else if (rc.getRoundNum() > ATTACK_TURN - 200) {
                     safePath(enemyLocation);
                 }
             } else { // defend drone / go back to base
