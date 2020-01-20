@@ -152,15 +152,15 @@ public abstract class Unit extends Robot {
             List<PathState> path = speculativePath(state, speculation);
             PathState next = null;
             for (PathState p : path) {
+                System.out.println(p.me);
+                rc.setIndicatorDot(p.me, 60, 60, 60);
                 Direction tmp = toward(myLocation, p.me);
                 if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
                     next = p;
                 }
             }
-            //for (PathState st : path) {
-            //    rc.setIndicatorDot(st.me, 60, 60, 60);
-            //}
-            state = next;
+            if (next != null)
+                state = next;
             go(toward(myLocation, state.me));
         } catch (GameActionException e) {
             e.printStackTrace();
