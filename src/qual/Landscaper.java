@@ -116,7 +116,8 @@ public class Landscaper extends Unit {
         hqLocation = null;
         holdPositionLoc = null;
         wallPhase = 0;
-        hqLocation = checkForLocationMessage();
+        checkForLocationMessage();
+        hqLocation = HEADQUARTERS_LOCATION;
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 64; // arbitrary cutoff, but should be more than big enough.
         // TODO: check if i am a terraformer
         if (defensive) {
@@ -598,7 +599,7 @@ public class Landscaper extends Unit {
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==6) {
                     TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    if(t.type==1) {
+                    if(t.type==1 && t.id==rc.getID()%1000) {
                         System.out.println("[i] YAY, I'm A TERRAFORMER!");
                         terraformer = true;
                         return true;

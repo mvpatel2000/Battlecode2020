@@ -37,11 +37,11 @@ public class Miner extends Unit {
     boolean holdProduction = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
-    MapLocation enemyHQLocApprox = null;
+    MapLocation enemyHQLocation = null;
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
-
+        checkForLocationMessage();
         aggro = rc.getRoundNum() == 2;
         // aggro = false; // uncomment to disable aggro
         aggroDone = false;
@@ -70,6 +70,11 @@ public class Miner extends Unit {
                     break;
                 }
             }
+        }
+
+        if(HEADQUARTERS_LOCATION != null) {
+            hqLocation = HEADQUARTERS_LOCATION;
+            baseLocation = hqLocation;
         }
 
         dSchoolExists = false;
@@ -196,7 +201,7 @@ public class Miner extends Unit {
                 && Arrays.stream(nearby).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
             if (rc.getTeamSoup() < 250 && !hasSentHalt) { // send save resources message if can't build netgun
                 HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                h.writeEnemyHQTile(getTileNumber(target.get(0)));
+                h.writeEnemyHQLocation(target.get(0).x, target.get(0).y);
                 //make sure this sends successfully.
                 if (sendMessage(h.getMessage(), 2)) {
                     hasSentHalt = true;
@@ -610,7 +615,7 @@ public class Miner extends Unit {
                         System.out.println("[i] HOLDING PRODUCTION!");
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
-                        enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                        enemyHQLocation = new MapLocation(h.enemyHQx, h.enemyHQy);
                         //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
                 }

@@ -3,29 +3,33 @@ package qual;
 public class HoldProductionMessage extends Message {
 
     final int prodMessage = 3;   //HoldProductionMessages are message type 3
-    int enemyHQTile;
-    int bitsPerTile = 9;
+    int enemyHQx;
+    int enemyHQy;
+    int bitsPerCoord = 6;
 
     public HoldProductionMessage(int myMapHeight, int myMapWidth, int myTeam) {
         super(myMapHeight, myMapWidth, myTeam);
         this.writeSchema(prodMessage);
-        enemyHQTile = -1;
+        enemyHQx = -1;
+        enemyHQy = -1;
     }
 
     //Use for recieved message.
     public HoldProductionMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
         super(recieved, myMapHeight, myMapWidth, myTeam);
         this.schema=prodMessage;
-        readEnemyHQTile();
+        readEnemyHQLocation();
     }
 
-    boolean writeEnemyHQTile(int tileNum) {
-        enemyHQTile = tileNum;
-        return writeToArray(tileNum, bitsPerTile);
+    boolean writeEnemyHQLocation(int x, int y) {
+        enemyHQx = x;
+        enemyHQy = y;
+        return writeToArray(enemyHQx, bitsPerCoord) && writeToArray(enemyHQy, bitsPerCoord);
     }
 
-    void readEnemyHQTile() {
-        enemyHQTile = readFromArray(headerLen + schemaLen, bitsPerTile);
+    void readEnemyHQLocation() {
+        enemyHQx = readFromArray(headerLen + schemaLen, bitsPerCoord);
+        enemyHQy = readFromArray(headerLen + schemaLen + bitsPerCoord, bitsPerCoord);
     }
 
 }
