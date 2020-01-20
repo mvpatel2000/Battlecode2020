@@ -219,6 +219,8 @@ public class DeliveryDrone extends Unit {
             }
             if (droneCount > 6)
                 enemySwarmDefense = true;
+            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
+                attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
             if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
                 if (rc.isReady()) {
