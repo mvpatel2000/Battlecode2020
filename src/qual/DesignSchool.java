@@ -220,9 +220,12 @@ public class DesignSchool extends Building {
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                    trueEnemyHQLocation = new MapLocation(h.enemyHQx, h.enemyHQy);
-                }
-                if(getSchema(msg[0])==5 && !firstRefineryExists) {
+                } else if(getSchema(msg[0])==4 && trueEnemyHQLocation==null) {
+                    checkForEnemyHQLocationMessageSubroutine(msg);
+                    if(ENEMY_HQ_LOCATION != null) {
+                        trueEnemyHQLocation = ENEMY_HQ_LOCATION;
+                    }
+                } else if(getSchema(msg[0])==5 && !firstRefineryExists) {
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(b.typeBuilt==3) {
                         firstRefineryExists = true;
