@@ -88,6 +88,7 @@ public class Landscaper extends Unit {
     boolean aggressive = false;
     boolean wallProxy = false;
     MapLocation enemyHQLocation = null;
+    MapLocation enemyDSchoolLocation = null;
 
 
     public Landscaper(RobotController rc) throws GameActionException {
@@ -281,7 +282,31 @@ public class Landscaper extends Unit {
             }
         }
 
+        enemyDSchoolLocation = null;
+        for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
+            if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
+                enemyDSchoolLocation = r.getLocation();
+            }
+        }
+
         Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
+
+        // if i can move closer to enemy d.school while being adjacent to enemy HQ, do it
+        if (enemyDSchoolLocation != null) {
+            Direction moveDir = Direction.CENTER;
+            int minDist = myLocation.distanceSquaredTo(enemyDSchoolLocation);
+            for (Direction d : directions) {
+                MapLocation t = enemyHQLocation.add(d);
+                int newDist = enemyDSchoolLocation.distanceSquaredTo(t);
+                if (myLocation.isAdjacentTo(t) && newDist < minDist) {
+                    moveDir = d;
+                    minDist = newDist;
+                }
+            }
+            if (moveDir != Direction.CENTER) {
+                tryMove(moveDir);
+            }
+        }
 
         if (rc.getDirtCarrying() == 0) { // dig
             if (baseLocation != null && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
