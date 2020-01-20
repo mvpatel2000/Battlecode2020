@@ -173,6 +173,8 @@ public class DesignSchool extends Building {
     }
 
     public boolean sendTerraformMessage(int i) throws GameActionException {
+        System.out.println("Sending terraform message");
+        System.out.println("ID: " + Integer.toString(i%1000));
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
