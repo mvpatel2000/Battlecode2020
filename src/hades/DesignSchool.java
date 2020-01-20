@@ -99,6 +99,25 @@ public class DesignSchool extends Building {
         if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
             return;
         if (wallProxy && !holdProduction) {
+            // look for enemy d.school
+            MapLocation enemyDSchoolLocation = null;
+            RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+            for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
+                if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
+                    enemyDSchoolLocation = r.getLocation();
+                }
+            }
+            // spawn adjacent to enemy d.school if possible
+            if (enemyDSchoolLocation != null) {
+                for (Direction d : directions) {
+                    if (myLocation.add(d).isAdjacentTo(enemyDSchoolLocation)) {
+                        if (tryBuild(RobotType.LANDSCAPER, d)) {
+                            System.out.println("Built aggressive landscaper in direction " + d);
+                        }
+                    }
+                }
+            }
+
             Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
             Direction[] buildDirs = {enemyHQDir.rotateLeft(), enemyHQDir.rotateRight(), enemyHQDir.rotateLeft().rotateLeft(), enemyHQDir.rotateRight().rotateRight()};
 

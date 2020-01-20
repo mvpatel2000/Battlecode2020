@@ -14,7 +14,7 @@ public class Miner extends Unit {
     List<MapLocation> soupLocations = new ArrayList<MapLocation>();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage;
-    public static int SPECULATION = 4;
+    public static int SPECULATION = 3;
 
     MapLocation destination;
     MapLocation hqLocation;
@@ -33,13 +33,16 @@ public class Miner extends Unit {
     boolean hasRun = false;
     MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
+    boolean hasSentRushCommit = false;
     boolean hasBuiltHaltedNetGun = false;
     boolean hasSentEnemyLoc = false;
     int timeout = 0;
 
     //For halting production and resuming it.
+    boolean rushHold = false;
     boolean holdProduction = false;
     int turnAtProductionHalt = -1;
+    int turnAtRushHalt = -1;
     int previousSoup = 200;
     MapLocation enemyHQLocation = null;
 
@@ -102,7 +105,7 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        if (holdProduction) {
+        if (holdProduction || rushHold) {
             checkIfContinueHold();
         }
 
@@ -150,17 +153,26 @@ public class Miner extends Unit {
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
-        if (rc.getRoundNum() - turnAtProductionHalt > 30) {
-            //System.out.println("[i] UNHOLDING PRODUCTION!");
-            holdProduction = false;
-            return false;
+        if(holdProduction) {
+            if (rc.getRoundNum() - turnAtProductionHalt > 30) {
+                //System.out.println("[i] UNHOLDING PRODUCTION!");
+                holdProduction = false;
+                return false;
+            }
+            //-200 soup in one turn good approximation for building net gun
+            //so we resume earlier than 10 turns if this happens
+            if (previousSoup - rc.getTeamSoup() > 200) {
+                //System.out.println("[i] UNHOLDING PRODUCTION!");
+                holdProduction = false;
+                return false;
+            }
         }
-        //-200 soup in one turn good approximation for building net gun
-        //so we resume earlier than 10 turns if this happens
-        if (previousSoup - rc.getTeamSoup() > 200) {
-            //System.out.println("[i] UNHOLDING PRODUCTION!");
-            holdProduction = false;
-            return false;
+        if(rushHold) {
+            if(rc.getRoundNum() - turnAtRushHalt > 100) {
+                //System.out.println("[i] NO LONGER RUSH HALTING!");
+                rushHold = false;
+                return false;
+            }
         }
         //if neither condition happens (10 turns or -200), continue holding production
         return true;
@@ -245,8 +257,19 @@ public class Miner extends Unit {
         if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                 && myLocation.distanceSquaredTo(target.get(0)) < 3) {
             for (Direction d : directions)
-                if (myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
+                if (!hasSentRushCommit && myLocation.add(d).distanceSquaredTo(target.get(0)) < 2 && rc.canBuildRobot(RobotType.DESIGN_SCHOOL, d)) {
                     rc.buildRobot(RobotType.DESIGN_SCHOOL, d);
+                    if (Arrays.stream(rc.senseNearbyRobots()).filter(x ->
+                        !x.getTeam().equals(allyTeam)).noneMatch(x ->
+                        x.getType().equals(RobotType.DESIGN_SCHOOL)
+                        || x.getType().equals(RobotType.FULFILLMENT_CENTER))) {
+                            RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            r.writeTypeOfCommit(1);
+                            if(sendMessage(r.getMessage(), 1)) {
+                                //System.out.println("[i] Sending Rush Commit!!");
+                                hasSentRushCommit = true;
+                            }
+                        }
                     aggroDone = true;
                     dLoc = myLocation.add(d);
                     return;
@@ -268,8 +291,12 @@ public class Miner extends Unit {
             target.remove(0);
             setDestination(target.get(0));
         }
-        // path to next candidate enemy HQ location
-        navigate(SPECULATION);
+
+        // path to next candidate enemy HQ locationbat
+        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ))
+            navigate(1);
+        else
+            navigate(SPECULATION);
     }
 
     public void checkBuildBuildings() throws GameActionException {
@@ -324,7 +351,7 @@ public class Miner extends Unit {
 
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         //TODO: Fix this check to make like dschool so it checks all dirs instead of just trying 1
-        if (rc.getTeamSoup()>220 && !fulfillmentCenterExists && dSchoolExists && !holdProduction) {
+        if (rc.getTeamSoup()>220 && !fulfillmentCenterExists && dSchoolExists && !holdProduction && !rushHold) {
             Direction optimalDir = determineOptimalFulfillmentCenter();
             if (optimalDir != null) {
                 fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, optimalDir);
@@ -337,7 +364,7 @@ public class Miner extends Unit {
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
-        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)
+        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
             dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
             if(dSchoolExists) {
@@ -412,7 +439,7 @@ public class Miner extends Unit {
             // Just dropped off soup (adjacent to HQ) now leaving for far away / late soup
             if (myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
-                    && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction) {
+                    && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
                 dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
                 if(dSchoolExists) {
                     BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -482,7 +509,7 @@ public class Miner extends Unit {
     // Updates base location and builds refinery if base is too far
     //TODO: Make this actually work and do better
     public void refineryCheck() throws GameActionException {
-        if (holdProduction)
+        if (holdProduction || rushHold)
             return;
         int distToBase = myLocation.distanceSquaredTo(baseLocation);
         RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
@@ -642,7 +669,7 @@ public class Miner extends Unit {
     //it's probably not a significant bytecode saving.
     public void findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-        //System.out.println("reading messages from " + Integer.toString(rn) + " round.");
+        System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
@@ -673,7 +700,6 @@ public class Miner extends Unit {
                     //don't actually do anything if you are the miner that sent the halt
                     //you shouldn't halt production, we need you to build the net gun.
                     if (!hasSentHalt) {
-                        HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                         //System.out.println("[i] HOLDING PRODUCTION!");
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
@@ -697,6 +723,13 @@ public class Miner extends Unit {
                         enemyHQLocation = ENEMY_HQ_LOCATION;
                         //System.out.println("[i] I know ENEMY HQ");
                         System.out.println(enemyHQLocation);
+                    }
+                }
+                if(getSchema(msg[0])==7) {
+                    if(!hasSentRushCommit) {
+                        //System.out.println("[i] Commiting to Rush!");
+                        rushHold = true;
+                        turnAtRushHalt = rc.getRoundNum();
                     }
                 }
             }

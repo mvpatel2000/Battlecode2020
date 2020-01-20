@@ -110,7 +110,7 @@ public class DesignSchool extends Building {
             // spawn adjacent to enemy d.school if possible
             if (enemyDSchoolLocation != null) {
                 for (Direction d : directions) {
-                    if (myLocation.add(d).isAdjacentTo(enemyDSchoolLocation)) {
+                    if (myLocation.add(d).isAdjacentTo(enemyDSchoolLocation) && myLocation.add(d).isAdjacentTo(enemyHQLocation)) {
                         if (tryBuild(RobotType.LANDSCAPER, d)) {
                             System.out.println("Built aggressive landscaper in direction " + d);
                         }
@@ -160,7 +160,7 @@ public class DesignSchool extends Building {
                 // spawn adjacent to enemy d.school if possible
                 if (enemyDSchoolLocation != null) {
                     for (Direction d : directions) {
-                        if (myLocation.add(d).isAdjacentTo(enemyDSchoolLocation)) {
+                        if (myLocation.add(d).isAdjacentTo(enemyDSchoolLocation) && myLocation.add(d).isAdjacentTo(hqLocation)) {
                             if (tryBuild(RobotType.LANDSCAPER, d)) {
                                 System.out.println("Built landscaper in direction " + d);
                                 numLandscapersMade++;
