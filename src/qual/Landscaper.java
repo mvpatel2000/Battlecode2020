@@ -155,7 +155,7 @@ public class Landscaper extends Unit {
         updateNearbyBots();
 
         if(rc.getRoundNum()-bornTurn==5) {
-            readMessages();
+            readBirthMessage();
         }
 
         if (defensive) {
@@ -576,12 +576,12 @@ public class Landscaper extends Unit {
         return lDir;
     }
 
-    public boolean readMessages() throws GameActionException {
+    public boolean readBirthMessage() throws GameActionException {
         int rn = rc.getRoundNum();
         int prev1 = rn-6;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
-                if(findMessagesFromAllies(i)) {
+                if(findTerraformMessage(i)) {
                     return true;
                 }
             }
@@ -592,7 +592,7 @@ public class Landscaper extends Unit {
     //Find message from allies given a round number rn
     //Checks block of round number rn, loops through messages
     //Currently: Checks for haltProductionMessage from a Miner
-    public boolean findMessagesFromAllies(int rn) throws GameActionException {
+    public boolean findTerraformMessage(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();

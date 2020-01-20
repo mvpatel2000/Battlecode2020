@@ -32,6 +32,7 @@ public class Miner extends Unit {
     MapLocation dLoc; // location of aggro d.school
     boolean hasSentHalt = false;
     boolean hasBuiltHaltedNetGun = false;
+    boolean hasSentEnemyLoc = false;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -42,6 +43,10 @@ public class Miner extends Unit {
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
         checkForLocationMessage();
+        initialCheckForEnemyHQLocationMessage();
+        if(ENEMY_HQ_LOCATION != null) {
+            enemyHQLocation = ENEMY_HQ_LOCATION;
+        }
         aggro = rc.getRoundNum() == 2;
         // aggro = false; // uncomment to disable aggro
         aggroDone = false;
@@ -201,7 +206,6 @@ public class Miner extends Unit {
                 && Arrays.stream(nearby).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
             if (rc.getTeamSoup() < 250 && !hasSentHalt) { // send save resources message if can't build netgun
                 HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                h.writeEnemyHQLocation(target.get(0).x, target.get(0).y);
                 //make sure this sends successfully.
                 if (sendMessage(h.getMessage(), 2)) {
                     hasSentHalt = true;
@@ -223,6 +227,16 @@ public class Miner extends Unit {
             return;
         // If next to enemy HQ, end aggro and build d.school
         RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
+        if(seen.length > 0 && seen[0].getType().equals(RobotType.HQ) && !hasSentEnemyLoc) {
+            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+            MapLocation ml = seen[0].getLocation();
+            l.writeInformation(ml.x, ml.y, 1);
+            if(sendMessage(l.getMessage(), 1)) {
+                hasSentEnemyLoc = true;
+                System.out.println("[i] SENDING ENEMY HQ LOCATION");
+                System.out.println(ml);
+            }
+        }
         if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
                 && myLocation.distanceSquaredTo(target.get(0)) < 3) {
             for (Direction d : directions)
@@ -631,7 +645,6 @@ public class Miner extends Unit {
                         System.out.println("[i] HOLDING PRODUCTION!");
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
-                        enemyHQLocation = new MapLocation(h.enemyHQx, h.enemyHQy);
                         //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
                 }
@@ -645,7 +658,14 @@ public class Miner extends Unit {
                     } else if (b.typeBuilt==3) {
                         firstRefineryExists = true;
                     }
-
+                }
+                if(getSchema(msg[0])==4 && enemyHQLocation==null) {
+                    checkForEnemyHQLocationMessageSubroutine(msg);
+                    if(ENEMY_HQ_LOCATION != null) {
+                        enemyHQLocation = ENEMY_HQ_LOCATION;
+                        System.out.println("[i] I know ENEMY HQ");
+                        System.out.println(enemyHQLocation);
+                    }
                 }
             }
         }

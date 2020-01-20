@@ -22,6 +22,8 @@ public class DeliveryDrone extends Unit {
     MapLocation destination;
     int whichEnemyLocation;
 
+    boolean hasSentEnemyLoc = false;
+
     boolean attackDrone;
     final int DEFEND_TURN;
     final int ATTACK_TURN;
@@ -44,6 +46,11 @@ public class DeliveryDrone extends Unit {
         if (baseLocation == null)
             baseLocation = myLocation;
         checkForLocationMessage();
+        initialCheckForEnemyHQLocationMessage();
+        if(ENEMY_HQ_LOCATION != null) {
+            enemyLocation = ENEMY_HQ_LOCATION;
+            System.out.println("[i] I know enemy HQ");
+        }
         hqLocation = HEADQUARTERS_LOCATION;
         hqLocation = hqLocation != null ? hqLocation : baseLocation;
 
@@ -153,6 +160,19 @@ public class DeliveryDrone extends Unit {
             RobotInfo nearest = null;
             int distToNearest = MAX_SQUARED_DISTANCE;
             for (RobotInfo enemyRobot : enemyRobots) {
+                if(enemyRobot.team != allyTeam && enemyRobot.type == RobotType.HQ && !hasSentEnemyLoc) {
+                    if(enemyLocation != ENEMY_HQ_LOCATION) {
+                        ENEMY_HQ_LOCATION = enemyRobot.getLocation();
+                        enemyLocation = ENEMY_HQ_LOCATION;
+                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        l.writeInformation(enemyLocation.x, enemyLocation.y, 1);
+                        if(sendMessage(l.getMessage(), 1)) {
+                            hasSentEnemyLoc = true;
+                            System.out.println("[i] SENDING ENEMY HQ LOCATION");
+                            System.out.println(enemyLocation);
+                        }
+                    }
+                }
                 if (enemyRobot.team == allyTeam || enemyRobot.type == RobotType.DELIVERY_DRONE
                         || enemyRobot.type == RobotType.FULFILLMENT_CENTER || enemyRobot.type == RobotType.HQ
                         || enemyRobot.type == RobotType.NET_GUN || enemyRobot.type == RobotType.REFINERY
@@ -230,6 +250,16 @@ public class DeliveryDrone extends Unit {
                     path(destination, false);
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
+            }
+        }
+
+        //Check every 100 turns for enemy location message sent in the previous 5 turns.
+        //until you've read it and set the variable.
+        if(rc.getRoundNum()%100==4 && enemyLocation != ENEMY_HQ_LOCATION) {
+            checkForEnemyHQLocationMessage(5);
+            if(ENEMY_HQ_LOCATION != null) {
+                enemyLocation = ENEMY_HQ_LOCATION;
+                rc.setIndicatorDot(enemyLocation, 255, 83, 126);
             }
         }
     }
