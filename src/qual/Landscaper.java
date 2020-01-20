@@ -316,16 +316,16 @@ public class Landscaper extends Unit {
                 tryDig(myLocation.directionTo(baseLocation));
             }
             else {
-                if (rc.senseElevation(myLocation.add(Direction.CENTER)) < rc.senseElevation(myLocation.add(enemyHQDir.opposite()))) {
-                    if (rc.canDigDirt(enemyHQDir.opposite()) && !isAdjacentToWater(myLocation.add(enemyHQDir.opposite())) && notTrappingAlly(enemyHQDir.opposite())) {
-                        System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
-                        tryDig(enemyHQDir.opposite());
-                    }
-                }
-                else {
-                    System.out.println("Digging under myself");
-                    tryDig(Direction.CENTER);
-                }
+                // if (rc.senseElevation(myLocation.add(Direction.CENTER)) < rc.senseElevation(myLocation.add(enemyHQDir.opposite()))) {
+                //     if (rc.canDigDirt(enemyHQDir.opposite()) && !isAdjacentToWater(myLocation.add(enemyHQDir.opposite())) && notTrappingAlly(enemyHQDir.opposite())) {
+                //         System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
+                //         tryDig(enemyHQDir.opposite());
+                //     }
+                // }
+                // else {
+                System.out.println("Digging under myself");
+                tryDig(Direction.CENTER);
+                // }
             }
         }
         else {
@@ -386,7 +386,7 @@ public class Landscaper extends Unit {
                         }
                         else {
                             for (MapLocation digLoc : depositSiteExceptions) {
-                                if (myLocation.isAdjacentTo(digLoc) &&
+                                if (digLoc != null && myLocation.isAdjacentTo(digLoc) &&
                                     (!nearbyBotsMap.containsKey(digLoc)) ||
                                         (nearbyBotsMap.containsKey(digLoc) && nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding())) {
                                     System.out.println("Attempting to dig from pre-designated dig site " + digLoc.toString());
