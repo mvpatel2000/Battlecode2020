@@ -295,16 +295,18 @@ public class Landscaper extends Unit {
         if (enemyDSchoolLocation != null) {
             Direction moveDir = Direction.CENTER;
             int minDist = myLocation.distanceSquaredTo(enemyDSchoolLocation);
+            MapLocation moveLoc = myLocation;
             for (Direction d : directions) {
                 MapLocation t = enemyHQLocation.add(d);
                 int newDist = enemyDSchoolLocation.distanceSquaredTo(t);
                 if (myLocation.isAdjacentTo(t) && newDist < minDist) {
                     moveDir = d;
                     minDist = newDist;
+                    moveLoc = t;
                 }
             }
-            if (moveDir != Direction.CENTER) {
-                tryMove(moveDir);
+            if (moveLoc != myLocation) {
+                tryMove(myLocation.directionTo(moveLoc));
             }
         }
 
@@ -400,7 +402,8 @@ public class Landscaper extends Unit {
                 }
             }
         }
-        if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc, dig in if needed
+        if (!myLocation.equals(holdPositionLoc)) { // first priority: path to holdPositionLoc, dig in if needed
+            rc.setIndicatorLine(myLocation, holdPositionLoc, 255, 192, 203);
             if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) > 3) {
                 tryDig(myLocation.directionTo(holdPositionLoc));
                 tryDeposit(Direction.CENTER);
@@ -443,6 +446,14 @@ public class Landscaper extends Unit {
                             System.out.println("Digging from designated dig-site " + digDir.toString());
                             if (!tryDig(digDir)) {
                                 System.out.println("Can't dig...");
+                                if (!rc.canDigDirt(digDir) && hqDist == 2) {
+                                    digDir = hqDir.rotateLeft().rotateLeft();
+                                    if (!rc.canDigDirt(digDir)) {
+                                        digDir = digDir.rotateLeft();
+                                    }
+                                    System.out.println("Dig in backup spot because I'm up against the wall");
+                                    tryDig(digDir);
+                                }
                             }
                         }
                     }
@@ -698,7 +709,7 @@ public class Landscaper extends Unit {
                 if (t.equals(myLocation)) {
                     currentlyInInnerWall = true;
                 }
-                if (nearbyBotsMap.get(hqLocation).getDirtCarrying() > 20) {
+                if (nearbyBotsMap.containsKey(hqLocation) && nearbyBotsMap.get(hqLocation).getDirtCarrying() > 20) {
                     hqInDanger = true;
                 }
             }
