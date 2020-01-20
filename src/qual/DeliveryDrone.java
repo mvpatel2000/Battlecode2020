@@ -130,7 +130,7 @@ public class DeliveryDrone extends Unit {
                         }
                     }
                 }
-                path(nearestWaterLocation, true);
+                path(nearestWaterLocation, false); //TODO: Fix this and move safely
             }
             else {
 //                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
@@ -142,7 +142,7 @@ public class DeliveryDrone extends Unit {
                         return;
                     }
                 }
-                path(nearestWaterLocation, true);
+                path(nearestWaterLocation, false);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
