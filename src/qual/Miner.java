@@ -15,7 +15,6 @@ public class Miner extends Unit {
     boolean readMessage;
 
     MapLocation destination;
-    MapLocation hqLocation;
     MapLocation baseLocation;
     MapLocation lastSoupLocation;
     int turnsToBase;
@@ -60,17 +59,7 @@ public class Miner extends Unit {
             }
         }
 
-        for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
-            MapLocation t = myLocation.add(dir);
-            if (rc.canSenseLocation(t)) {
-                RobotInfo r = rc.senseRobotAtLocation(t);
-                if (r != null && r.getType() == RobotType.HQ) {
-                    baseLocation = t;
-                    hqLocation = t;
-                    break;
-                }
-            }
-        }
+        baseLocation = HEADQUARTERS_LOCATION;
 
         dSchoolExists = false;
         fulfillmentCenterExists = false;
@@ -127,9 +116,9 @@ public class Miner extends Unit {
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9)
+        if (location.distanceSquaredTo(HEADQUARTERS_LOCATION) < 9)
             return false;
-        return ((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
+        return ((location.y - HEADQUARTERS_LOCATION.y) % 3 != 0) && ((location.x - HEADQUARTERS_LOCATION.x) % 3 != 0);
     }
 
     //Returns true if should continue halting production
@@ -293,9 +282,9 @@ public class Miner extends Unit {
             refineryCheck();
         }
 
-        Direction hqDir = myLocation.directionTo(hqLocation);
+        Direction hqDir = myLocation.directionTo(HEADQUARTERS_LOCATION);
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
-        boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
+        boolean outsideOuterWall = (candidateBuildLoc.x - HEADQUARTERS_LOCATION.x) > 2 || (candidateBuildLoc.x - HEADQUARTERS_LOCATION.x) < -2 || (candidateBuildLoc.y - HEADQUARTERS_LOCATION.y) > 2 || (candidateBuildLoc.y - HEADQUARTERS_LOCATION.y) < -2;
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         //TODO: Fix this check to make like dschool so it checks all dirs instead of just trying 1
         if (rc.getTeamSoup()>220 && outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction
@@ -310,7 +299,7 @@ public class Miner extends Unit {
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
         if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)
-            && myLocation.distanceSquaredTo(hqLocation) < 25) {
+            && myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) < 25) {
             dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
             if(dSchoolExists) {
                 BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -334,9 +323,9 @@ public class Miner extends Unit {
                     turnsToBase = -1;
                     clearHistory();
                 }
-            } else if (myLocation.distanceSquaredTo(hqLocation) < 3
-                       && !destination.equals(hqLocation)) {                   // don't mine next to HQ
-                fuzzyMoveToLoc(myLocation.add(myLocation.directionTo(hqLocation).opposite()));
+            } else if (myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) < 3
+                       && !destination.equals(HEADQUARTERS_LOCATION)) {                   // don't mine next to HQ
+                fuzzyMoveToLoc(myLocation.add(myLocation.directionTo(HEADQUARTERS_LOCATION).opposite()));
             } else {                                                           // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {
@@ -363,7 +352,7 @@ public class Miner extends Unit {
             }
         } else {                                                                // in transit
             // Just dropped off soup (adjacent to HQ) now leaving for far away / late soup
-            if (myLocation.isAdjacentTo(hqLocation) &&
+            if (myLocation.isAdjacentTo(HEADQUARTERS_LOCATION) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 200)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction) {
                 dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
@@ -384,26 +373,26 @@ public class Miner extends Unit {
     }
 
     public Direction determineOptimalDSchoolDirection(Direction hqDir) throws GameActionException {
-        if (myLocation.distanceSquaredTo(hqLocation) < 9) { // close to HQ, build highest elevation in outer ring
-            Direction target = myLocation.directionTo(hqLocation).opposite();
+        if (myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) < 9) { // close to HQ, build highest elevation in outer ring
+            Direction target = myLocation.directionTo(HEADQUARTERS_LOCATION).opposite();
             MapLocation loc = myLocation.add(target);
             for (Direction dir : directions) {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
                     && rc.senseElevation(newLoc) >= rc.senseElevation(loc) && onBuildingGridSquare(newLoc)
-                        && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2) {
+                        && HEADQUARTERS_LOCATION.distanceSquaredTo(newLoc) < 9 && HEADQUARTERS_LOCATION.distanceSquaredTo(newLoc) > 2) {
                     target = dir;
                     loc = newLoc;
                 }
             }
             return target;
         } else { // far away, just take highest elevation point
-            Direction target = myLocation.directionTo(hqLocation).rotateRight();
+            Direction target = myLocation.directionTo(HEADQUARTERS_LOCATION).rotateRight();
             MapLocation loc = myLocation.add(target);
             for (Direction dir : directions) {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                        && onBuildingGridSquare(newLoc) && newLoc.distanceSquaredTo(hqLocation) <= loc.distanceSquaredTo(hqLocation)) {
+                        && onBuildingGridSquare(newLoc) && newLoc.distanceSquaredTo(HEADQUARTERS_LOCATION) <= loc.distanceSquaredTo(HEADQUARTERS_LOCATION)) {
                     target = dir;
                     loc = newLoc;
                 }
@@ -423,7 +412,7 @@ public class Miner extends Unit {
             if (robot.getType() == RobotType.REFINERY || (robot.getType() == RobotType.HQ && rc.getRoundNum() < 100)) {
                 int distToNew = myLocation.distanceSquaredTo(robot.getLocation());
                 if (distToNew < distToBase || (distToNew == distToBase && robot.getType() == RobotType.REFINERY)
-                    || baseLocation.equals(hqLocation)) {
+                    || baseLocation.equals(HEADQUARTERS_LOCATION)) {
                     if (baseLocation.equals(destination)) {
                         destination = robot.getLocation();
                     }
@@ -438,14 +427,14 @@ public class Miner extends Unit {
             rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
         }
         // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
-        if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
+        if ((distToBase > 64 || (baseLocation.equals(HEADQUARTERS_LOCATION) && rc.getRoundNum() > 100))
                 && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)) {
             System.out.println("Refinery Check: " + distToBase + " " + lastSoupLocation + " " + myLocation + " " + turnsToBase);
             //TODO: build a refinery smarter and in good direction.
             //build new refinery!
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
-                boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
+                boolean outsideOuterWall = (candidateBuildLoc.x - HEADQUARTERS_LOCATION.x) > 3 || (candidateBuildLoc.x - HEADQUARTERS_LOCATION.x) < -3 || (candidateBuildLoc.y - HEADQUARTERS_LOCATION.y) > 3 || (candidateBuildLoc.y - HEADQUARTERS_LOCATION.y) < -3;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)
                         && dSchoolExists && onBuildingGridSquare(myLocation.add(dir))) {
                     rc.buildRobot(RobotType.REFINERY, dir);
@@ -500,7 +489,7 @@ public class Miner extends Unit {
             MapLocation soupLocation = soupIterator.next();
             int soupPriority = priorityIterator.next();
             int soupDistance = myLocation.distanceSquaredTo(soupLocation);
-            if (soupLocation.equals(hqLocation) && myLocation.distanceSquaredTo(hqLocation) < 3) {
+            if (soupLocation.equals(HEADQUARTERS_LOCATION) && myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) < 3) {
                 soupDistance = -1;
             }
             if (soupDistance < distanceToNearest) {

@@ -8,7 +8,6 @@ import java.util.function.Function;
 public class DesignSchool extends Building {
 
     // defense variables
-    MapLocation hqLocation = null;
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
@@ -36,10 +35,10 @@ public class DesignSchool extends Building {
     }
 
     private void construct() throws GameActionException {
-        hqLocation = checkForLocationMessage();
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 25; // arbitrary cutoff, but should be more than big enough.
+        checkForLocationMessage();
+        defensive = myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) <= 25; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
-            System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
+            System.out.println("I am a defensive d.school. Found our HQ: " + HEADQUARTERS_LOCATION.toString());
 
             // Determine if I am the primary defensive d.school or if I am an extra.
             primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
@@ -47,9 +46,9 @@ public class DesignSchool extends Building {
         else {
             System.out.println("I am far from my HQ.");
             MapLocation[] enemyHQCandidateLocs = {
-                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y),
-                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, rc.getMapHeight() - hqLocation.y - 1),
-                new MapLocation(hqLocation.x, rc.getMapHeight() - hqLocation.y - 1)
+                new MapLocation(rc.getMapWidth() - HEADQUARTERS_LOCATION.x - 1, HEADQUARTERS_LOCATION.y),
+                new MapLocation(rc.getMapWidth() - HEADQUARTERS_LOCATION.x - 1, rc.getMapHeight() - HEADQUARTERS_LOCATION.y - 1),
+                new MapLocation(HEADQUARTERS_LOCATION.x, rc.getMapHeight() - HEADQUARTERS_LOCATION.y - 1)
             };
             for (MapLocation enemyHQCandidateLoc : enemyHQCandidateLocs) {
                 if (rc.canSenseLocation(enemyHQCandidateLoc)) {
@@ -110,7 +109,7 @@ public class DesignSchool extends Building {
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
             if (numLandscapersMade == 5 && terraformersBuilt == 0) { // build terraformer
-                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
+                Direction spawnDir = myLocation.directionTo(HEADQUARTERS_LOCATION).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         System.out.println("Built landscaper in direction " + spawnDir);
@@ -124,7 +123,7 @@ public class DesignSchool extends Building {
             }
             if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
-                Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
+                Direction spawnDir = myLocation.directionTo(HEADQUARTERS_LOCATION).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         System.out.println("Built landscaper in direction " + spawnDir);
@@ -143,7 +142,7 @@ public class DesignSchool extends Building {
                 if (rc.getRoundNum() - startOuterWallAt < 80 && rc.getTeamSoup() < 400) {
                     return;
                 }
-                Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+                Direction spawnDir = myLocation.directionTo(HEADQUARTERS_LOCATION).rotateRight().rotateRight();
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
                         numLandscapersMade++;
@@ -155,7 +154,7 @@ public class DesignSchool extends Building {
             }
             else if(numLandscapersMade > 19 && numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
                 System.out.println("Building extra landscaper");
-                Direction spawnDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
+                Direction spawnDir = myLocation.directionTo(HEADQUARTERS_LOCATION).rotateLeft().rotateLeft();
                 if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
                     numLandscapersMade++;
                 }
