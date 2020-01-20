@@ -21,7 +21,7 @@ public class DesignSchool extends Building {
     boolean firstRefineryExists = false; //this will only work if first refinery built after d.school exists
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
-    MapLocation enemyHQLocApprox = null;
+    MapLocation trueEnemyHQLocation = null;
 
     // aggression variables
     boolean aggressive = false;
@@ -171,9 +171,9 @@ public class DesignSchool extends Building {
         }
     }
 
-    public boolean sendTerraformMessage() throws GameActionException {
+    public boolean sendTerraformMessage(int i) throws GameActionException {
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-        t.writeType(1);
+        t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
     }
 
@@ -200,7 +200,7 @@ public class DesignSchool extends Building {
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                    enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                    trueEnemyHQLocation = new MapLocation(h.enemyHQx, h.enemyHQy);
                 }
                 if(getSchema(msg[0])==5 && !firstRefineryExists) {
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);

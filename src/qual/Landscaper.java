@@ -529,7 +529,7 @@ public class Landscaper extends Unit {
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==6) {
                     TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    if(t.type==1) {
+                    if(t.type==1 && t.id==rc.getID()%1000) {
                         System.out.println("[i] YAY, I'm A TERRAFORMER!");
                         terraformer = true;
                         return true;
