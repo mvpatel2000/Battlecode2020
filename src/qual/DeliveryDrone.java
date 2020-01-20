@@ -179,7 +179,8 @@ public class DeliveryDrone extends Unit {
                         || enemyRobot.type == RobotType.DESIGN_SCHOOL || enemyRobot.type == RobotType.VAPORATOR)
                     continue;
                 int distToEnemy = myLocation.distanceSquaredTo(enemyRobot.location);
-                if (distToEnemy < distToNearest) {
+                // consider nearest, prioritizing enemy landscapers over all
+                if (distToEnemy < distToNearest || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)) {
                     nearest = enemyRobot;
                     distToNearest = distToEnemy;
                 }
@@ -194,8 +195,11 @@ public class DeliveryDrone extends Unit {
                     || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
                 if (rc.getRoundNum() > ATTACK_TURN) // charge after ATTACK_TURN
                     fuzzyMoveToLoc(nearest.location);
-                else
-                    path(nearest.location, true); // to nearest enemy.
+                else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN) {
+                    path(nearest.location, false); // to nearest enemy.
+                } else {
+                    path(nearest.location, true);
+                }
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 spiral(enemyLocation, true);
@@ -236,6 +240,23 @@ public class DeliveryDrone extends Unit {
 //                }
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (rc.getRoundNum() > ATTACK_TURN - 200) { // drone attack-move
+                if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
+                    RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
+                    if (enemy == null || enemy.type != RobotType.HQ) {
+                        switch (whichEnemyLocation) {
+                            case 0:
+                                enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
+                                whichEnemyLocation++;
+                                break;
+                            case 1:
+                                enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
+                                whichEnemyLocation++;
+                                break;
+                            case 2:
+                                System.out.println("Critical Error!! Somehow checked all HQ locations and didn't find anything.");
+                        }
+                    }
+                }
                 if (rc.getRoundNum() > ATTACK_TURN) {
                     fuzzyMoveToLoc(enemyLocation);
                 } else if (rc.getRoundNum() > ATTACK_TURN - 25) {
@@ -273,10 +294,13 @@ public class DeliveryDrone extends Unit {
         int x = (int)(dx * cs - dy * sn);
         int y = (int)(dx * sn + dy * cs);
         if (myLocation.distanceSquaredTo(center) > 35) {
+            System.out.println("Spiral is pushing me in");
             path(center, safe);
         } else if (myLocation.distanceSquaredTo(center) < 20) {
+            System.out.println("Spiral is pushing me out");
             path(myLocation.add(center.directionTo(myLocation)),safe);
         } else {
+            System.out.println("Spiraling to " + center.translate(x,y));
             path(center.translate(x,y), safe);
         }
     }
