@@ -13,6 +13,7 @@ public class Miner extends Unit {
     List<MapLocation> soupLocations = new ArrayList<MapLocation>();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage;
+    public static int SPECULATION = 3;
 
     MapLocation destination;
     MapLocation hqLocation;

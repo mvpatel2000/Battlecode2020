@@ -14,6 +14,7 @@ public class Miner extends Unit {
     List<MapLocation> soupLocations = new ArrayList<MapLocation>();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage;
+    public static int SPECULATION = 4;
 
     MapLocation destination;
     MapLocation hqLocation;
@@ -268,7 +269,7 @@ public class Miner extends Unit {
             setDestination(target.get(0));
         }
         // path to next candidate enemy HQ location
-        navigate();
+        navigate(SPECULATION);
     }
 
     public void checkBuildBuildings() throws GameActionException {
