@@ -204,6 +204,14 @@ public class DeliveryDrone extends Unit {
         }
     }
 
+    public void spiral (MapLocation center, boolean safe) throws GameActionException {
+        int dx = myLocation.x - center.x;
+        int dy = myLocation.y - center.y;
+        if (!path(center, safe)) {
+            
+        }
+    }
+
     public boolean path(MapLocation target, boolean safe) throws GameActionException {
         RobotInfo[] enemyUnits = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam);
         Direction optimalDir = null;
