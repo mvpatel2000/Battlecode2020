@@ -19,7 +19,8 @@ public class FulfillmentCenter extends Building {
 
     public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
-        hqLocation = checkForLocationMessage();
+        checkForLocationMessage();
+        hqLocation = HEADQUARTERS_LOCATION;
     }
 
     @Override

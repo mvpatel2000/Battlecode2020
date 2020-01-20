@@ -116,7 +116,8 @@ public class Landscaper extends Unit {
         hqLocation = null;
         holdPositionLoc = null;
         wallPhase = 0;
-        hqLocation = checkForLocationMessage();
+        checkForLocationMessage();
+        hqLocation = HEADQUARTERS_LOCATION;
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 64; // arbitrary cutoff, but should be more than big enough.
         // TODO: check if i am a terraformer
         if (defensive) {

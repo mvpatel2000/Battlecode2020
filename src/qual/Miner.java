@@ -41,7 +41,7 @@ public class Miner extends Unit {
 
     public Miner(RobotController rc) throws GameActionException {
         super(rc);
-
+        checkForLocationMessage();
         aggro = rc.getRoundNum() == 2;
         // aggro = false; // uncomment to disable aggro
         aggroDone = false;
@@ -70,6 +70,11 @@ public class Miner extends Unit {
                     break;
                 }
             }
+        }
+
+        if(HEADQUARTERS_LOCATION != null) {
+            hqLocation = HEADQUARTERS_LOCATION;
+            baseLocation = hqLocation;
         }
 
         dSchoolExists = false;
