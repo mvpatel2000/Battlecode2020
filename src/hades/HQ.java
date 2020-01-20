@@ -134,18 +134,15 @@ public class HQ extends Building {
                 //TODO: instead of inserting s.soupThere do the weighting calculation here and compare based on weighting?
                 if (tileNum == accessibleSoupsPerTile.get(j)[0]) {
                     added = true;
-                    System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                     break;
                 } else if (accessibleSoupsPerTile.get(j)[1] < soupThere) {
                     accessibleSoupsPerTile.add(j, new int[]{tileNum, soupThere});
                     added = true;
-                    System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                     break;
                 }
             }
             if (!added) {
                 accessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
-                System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
             }
         }
         else {
@@ -174,18 +171,15 @@ public class HQ extends Building {
             //TODO: instead of inserting s.soupThere do the weighting calculation here and compare based on weighting?
             if (tileNum == accessibleSoupsPerTile.get(j)[0]) {
                 added = true;
-                System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                 break;
             } else if (accessibleSoupsPerTile.get(j)[1] < soupThere) {
                 accessibleSoupsPerTile.add(j, new int[]{tileNum, soupThere});
                 added = true;
-                System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                 break;
             }
         }
         if (!added) {
             accessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
-            System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
         }
     }
 
@@ -193,9 +187,6 @@ public class HQ extends Building {
         for (Iterator<int[]> itr = accessibleSoupsPerTile.iterator(); itr.hasNext();) {
             int[] soupPerTile = itr.next();
             if(soupPerTile[1] == -1 && ehql != null) {
-                System.out.println("Removing soupLoc b/c I know Enemy HQ");
-                System.out.println(soupPerTile[0]);
-                System.out.println(getTileNumber(enemyHQLocation));
                 if(soupPerTile[0] != getTileNumber(enemyHQLocation)) {
                     itr.remove();
                 }
@@ -268,16 +259,14 @@ public class HQ extends Building {
     }
 
     void readMessages() throws GameActionException {
-        System.out.println("reading messages...");
+        //System.out.println("[i] reading messages...");
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
         for (int i=0; i<msgs.length; i++) {
             int f = msgs[i].getMessage()[0];
             //sent from our team
             if(allyMessage(f)) {
                 //soup message
-                System.out.println("found ally message...");
                 if(getSchema(f)==1) {
-                    System.out.println("found soup message...");
                     SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
                         //delete from arraylist of soups

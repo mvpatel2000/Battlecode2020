@@ -70,7 +70,7 @@ public class DeliveryDrone extends Unit {
         }
 
         DEFEND_TURN = 1100;
-        ATTACK_TURN = 1700;
+        ATTACK_TURN = 2200;
 //        if (rc.canSenseLocation(hqLocation)) {
 //            switch (rc.senseElevation(hqLocation)) {
 //                case 5:
@@ -169,7 +169,7 @@ public class DeliveryDrone extends Unit {
                         if(sendMessage(l.getMessage(), 1)) {
                             hasSentEnemyLoc = true;
                             //System.out.println("[i] SENDING ENEMY HQ LOCATION");
-                            System.out.println(enemyLocation);
+                            //System.out.println(enemyLocation);
                         }
                     }
                 }
