@@ -43,7 +43,7 @@ public class Miner extends Unit {
         super(rc);
         checkForLocationMessage();
         aggro = rc.getRoundNum() == 2;
-        // aggro = false; // uncomment to disable aggro
+        aggro = false; // uncomment to disable aggro
         aggroDone = false;
         if (aggro) {
             target = new ArrayList<>();

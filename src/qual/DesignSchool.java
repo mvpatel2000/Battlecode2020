@@ -14,7 +14,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
-    int terraformersBuilt = 0;
+    int numTerraformersMade = 0;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -99,8 +99,11 @@ public class DesignSchool extends Building {
         if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
             return;
         if (wallProxy && !holdProduction) {
-            for (Direction d : directions) {
-                MapLocation t = enemyHQLocation.add(d);
+            Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
+            Direction[] buildDirs = {enemyHQDir.rotateLeft(), enemyHQDir.rotateRight(), enemyHQDir.rotateLeft().rotateLeft(), enemyHQDir.rotateRight().rotateRight()};
+
+            for (Direction d : buildDirs) {
+                MapLocation t = myLocation.add(d);
                 if(tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(t))) {
                     System.out.println("Built aggressive landscaper at " + t.toString());
                 }
@@ -110,13 +113,13 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (numLandscapersMade == 5 && terraformersBuilt == 0) { // build terraformer
-                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
+            if (numLandscapersMade == 5 && numTerraformersMade == 0) { // build terraformer
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
                 for (int i = 8; i > 0; i--) {
-                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
                         System.out.println("Built terraformer in direction " + spawnDir);
                         int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
-                        terraformersBuilt++;
+                        numTerraformersMade++;
                         sendTerraformMessage(terraformerID);
                     }
                     else {
@@ -131,6 +134,20 @@ public class DesignSchool extends Building {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         System.out.println("Built landscaper in direction " + spawnDir);
                         numLandscapersMade++;
+                    }
+                    else {
+                        spawnDir = spawnDir.rotateLeft();
+                    }
+                }
+            }
+            if (numLandscapersMade == 8 && numTerraformersMade < 4) {
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
+                for (int i = 8; i > 0; i--) {
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+                        System.out.println("Built terraformer in direction " + spawnDir);
+                        int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
+                        numTerraformersMade++;
+                        sendTerraformMessage(terraformerID);
                     }
                     else {
                         spawnDir = spawnDir.rotateLeft();

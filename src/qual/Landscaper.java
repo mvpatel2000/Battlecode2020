@@ -16,11 +16,13 @@ public class Landscaper extends Unit {
     int bornTurn;
     boolean terraformer = false;
     int TERRAFORM_HEIGHT = 7;
+    MapLocation[] depositSiteExceptions = {null, null, null, null, null};
+    boolean spiralClockwise = true;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
     int wallPhase;
-    MapLocation holdPositionLoc = null; // this is important; used in updateNearbyBots() to prevent circular reasoning
+    MapLocation holdPositionLoc = null; // null init is important; used in updateNearbyBots() to prevent circular reasoning
     boolean innerWaller = true;
     Direction[] innerWallFillOrder;
     Direction[][] outerRing = {
@@ -111,6 +113,13 @@ public class Landscaper extends Unit {
         if (baseLocation != null) {
             System.out.println("Found my d.school: " + baseLocation.toString());
         }
+        else {
+            for (int i = 0; i < MAP_HEIGHT; i++) {
+                for (int j = 0; j < MAP_WIDTH; j++) {
+                    rc.setIndicatorDot(new MapLocation(j, i), 255, 255, 0);
+                }
+            }
+        }
 
         // scan for HQ location
         hqLocation = null;
@@ -120,7 +129,16 @@ public class Landscaper extends Unit {
         hqLocation = HEADQUARTERS_LOCATION;
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 64; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
-            innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
+            depositSiteExceptions[0] = hqLocation.add(Direction.SOUTH).add(Direction.SOUTH);
+            depositSiteExceptions[1] = hqLocation.add(Direction.NORTH).add(Direction.NORTH);
+            depositSiteExceptions[2] = hqLocation.add(Direction.EAST).add(Direction.EAST);
+            depositSiteExceptions[3] = hqLocation.add(Direction.WEST).add(Direction.WEST);
+            if (baseLocation != null) {
+                if (baseLocation.distanceSquaredTo(hqLocation) == 4) {
+                    depositSiteExceptions[4] = baseLocation.add(baseLocation.directionTo(hqLocation).rotateLeft().rotateLeft());
+                }
+                innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
+            }
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
             //System.out.println("My hold position location: " + holdPositionLoc.toString());
@@ -187,18 +205,36 @@ public class Landscaper extends Unit {
                 boolean plotComplete = true;
                 for (Direction d : directionsWithCenter) {
                     MapLocation t = myLocation.add(d);
-                    if (rc.onTheMap(t) && !t.equals(digLoc) && rc.senseElevation(myLocation.add(d)) < TERRAFORM_HEIGHT) {
-                        System.out.println("Depositing dirt in direction " + d.toString());
+                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && rc.senseElevation(t) < TERRAFORM_HEIGHT && 
+                        (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
+                        System.out.println("Dumping dirt in direction " + d.toString());
                         if (tryDeposit(d)) {
                             plotComplete = false;
                         }
                     }
                 }
                 if (plotComplete) {
-                    System.out.println("All squares around me are elevated.");
+                    Direction moveDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
+                    if (!spiralClockwise) {
+                        moveDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+                    }
+                    if (!rc.onTheMap(myLocation.add(moveDir))) {
+                        spiralClockwise = !spiralClockwise;
+                        moveDir = moveDir.opposite();
+                    }
+                    path(myLocation.add(moveDir).add(moveDir).add(moveDir).add(moveDir).add(moveDir));
                 }
             }
         }
+    }
+
+    public boolean isNotDepositSiteException(MapLocation t) {
+        for (MapLocation l : depositSiteExceptions) {
+            if (t.equals(l)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public Direction getTerraformDigDirection() throws GameActionException {
@@ -208,7 +244,8 @@ public class Landscaper extends Unit {
          *  3 4 5 -
          *  x 1 2 x
          */
-        int k = 3 * ((myLocation.y - hqLocation.x) % 3) + ((myLocation.x - hqLocation.x) % 3);
+        int k = 3 * ((((myLocation.y - hqLocation.y) % 3) + 3) % 3) + ((((myLocation.x - hqLocation.x) % 3) + 3) % 3);
+        System.out.println("k = "+Integer.toString(k));
         switch (k) {
             case 0:
                 return Direction.CENTER;
