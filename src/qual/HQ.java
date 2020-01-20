@@ -22,7 +22,7 @@ public class HQ extends Building {
     boolean holdProduction = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
-    MapLocation enemyHQLocApprox = null;
+    MapLocation enemyHQLocation = null;
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
@@ -277,7 +277,7 @@ public class HQ extends Building {
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                    enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
+                    enemyHQLocation = new MapLocation(h.enemyHQx, h.enemyHQy);
                     lookingForMessages-=1;
                 }
             }
