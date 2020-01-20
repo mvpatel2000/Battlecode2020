@@ -199,20 +199,21 @@ public class DeliveryDrone extends Unit {
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 spiral(enemyLocation, true);
-                if (rc.canSenseLocation(enemyLocation)) {
+                rc.setIndicatorLine(myLocation, enemyLocation, 100,0,0);
+                if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
                     RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
                     if (enemy == null || enemy.type != RobotType.HQ) {
                         switch (whichEnemyLocation) {
                             case 0:
-                                enemyLocation = new MapLocation(MAP_WIDTH, MAP_HEIGHT - destination.y);
+                                enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
                                 whichEnemyLocation++;
                                 break;
                             case 1:
-                                enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT);
+                                enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
                                 whichEnemyLocation++;
                                 break;
                             case 2:
-                                System.out.println("Critical Error!!");
+                                System.out.println("Critical Error!! Somehow checked all HQ locations and didn't find anything.");
                         }
                     }
                 }
