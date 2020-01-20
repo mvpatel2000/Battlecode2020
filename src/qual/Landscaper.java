@@ -683,7 +683,7 @@ public class Landscaper extends Unit {
     void updateHoldPositionLoc() throws GameActionException {
         if (wallPhase < 2) {
             holdPositionLoc = null;
-            boolean enemyInWall = false;
+            boolean hqInDanger = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
                 MapLocation t = hqLocation.add(dir);
@@ -698,11 +698,11 @@ public class Landscaper extends Unit {
                 if (t.equals(myLocation)) {
                     currentlyInInnerWall = true;
                 }
-                if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(enemyTeam) && nearbyBotsMap.get(t).type.equals(RobotType.LANDSCAPER)) {
-                    enemyInWall = true;
+                if (nearbyBotsMap.get(hqLocation).getDirtCarrying() > 20) {
+                    hqInDanger = true;
                 }
             }
-            if (enemyInWall && currentlyInInnerWall) { // emergency override: if enemy is spotted in the wall and i'm already in the wall, just hold there
+            if (hqInDanger && currentlyInInnerWall) { // emergency override: if HQ is dying and i'm already in the wall, just hold there
                 holdPositionLoc = myLocation;
             }
         }

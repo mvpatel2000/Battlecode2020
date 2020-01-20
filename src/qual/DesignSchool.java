@@ -129,6 +129,26 @@ public class DesignSchool extends Building {
             }
             if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
+
+                // look for enemy d.school
+                enemyDSchoolLocation = null;
+                for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
+                    if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
+                        enemyDSchoolLocation = r.getLocation();
+                    }
+                }
+                // spawn adjacent to enemy d.school if possible
+                if (enemyDSchoolLocation != null) {
+                    for (Direction d : directions) {
+                        if (myLocation.add(d).isAdjacentTo(enemyDSchoolLocation)) {
+                            if (tryBuild(RobotType.LANDSCAPER, d)) {
+                                System.out.println("Built landscaper in direction " + d);
+                                numLandscapersMade++;
+                            }
+                        }
+                    }
+                }
+
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
