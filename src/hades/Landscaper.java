@@ -309,7 +309,7 @@ public class Landscaper extends Unit {
 
     public boolean notTrappingAlly(Direction d) throws GameActionException {
         MapLocation t = myLocation.add(d);
-        if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(allyTeam)) {
+        if (nearbyBotsMap.containsKey(t) && !nearbyBotsMap.get(t).team.equals(enemyTeam)) {
             pauseDigAndWaitForAllyToPass++;
             return pauseDigAndWaitForAllyToPass >= 2;
         }

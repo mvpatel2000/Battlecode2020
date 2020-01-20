@@ -309,7 +309,7 @@ public class Landscaper extends Unit {
 
     public boolean notTrappingAlly(Direction d) throws GameActionException {
         MapLocation t = myLocation.add(d);
-        if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(allyTeam)) {
+        if (nearbyBotsMap.containsKey(t) && !nearbyBotsMap.get(t).team.equals(enemyTeam)) {
             pauseDigAndWaitForAllyToPass++;
             return pauseDigAndWaitForAllyToPass >= 2;
         }
@@ -353,7 +353,7 @@ public class Landscaper extends Unit {
                             System.out.println("Healing HQ");
                             tryDig(hqDir);
                         }
-                        else if (myLocation.isAdjacentTo(baseLocation) && rc.canDigDirt(myLocation.directionTo(baseLocation))) {
+                        else if (myLocation.isAdjacentTo(baseLocation) && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // second priority: heal d.school
                             System.out.println("Healing d.school");
                             tryDig(myLocation.directionTo(baseLocation));
                         }
@@ -366,12 +366,24 @@ public class Landscaper extends Unit {
                                     tryDig(myLocation.directionTo(digLoc));
                                 }
                             }
+                            tryDig(d.opposite());
+                            for (Direction di : directions) {
+                                tryDig(di);
+                            }
                         }
                     }
                 }
             }
         }
-        if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc
+        if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc, dig in if needed
+            if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) > 3) {
+                tryDig(myLocation.directionTo(holdPositionLoc));
+                tryDeposit(Direction.CENTER);
+            }
+            if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) < -3) {
+                tryDig(Direction.CENTER);
+                tryDeposit(myLocation.directionTo(holdPositionLoc));
+            }
             System.out.println("Pathing towards my holdPositionLoc: " + holdPositionLoc.toString());
             path(holdPositionLoc);
         }
@@ -654,7 +666,7 @@ public class Landscaper extends Unit {
                     continue;
                 }
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
-                    if (rc.canSenseLocation(t) && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 6 && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 6) {
+                    if (rc.canSenseLocation(t) && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 8 && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 8) {
                         holdPositionLoc = t;
                     }
                 }
