@@ -114,7 +114,7 @@ public class DesignSchool extends Building {
                 Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
-                        System.out.println("Built landscaper in direction " + spawnDir);
+                        System.out.println("Built terraformer in direction " + spawnDir);
                         int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
                         terraformersBuilt++;
                         sendTerraformMessage(terraformerID);

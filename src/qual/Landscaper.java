@@ -119,7 +119,6 @@ public class Landscaper extends Unit {
         checkForLocationMessage();
         hqLocation = HEADQUARTERS_LOCATION;
         defensive = myLocation.distanceSquaredTo(hqLocation) <= 64; // arbitrary cutoff, but should be more than big enough.
-        // TODO: check if i am a terraformer
         if (defensive) {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
@@ -157,15 +156,14 @@ public class Landscaper extends Unit {
         if(rc.getRoundNum()-bornTurn==5) {
             readMessages();
         }
-
-        if (defensive) {
+        if (terraformer) {
+            terraform();
+        }
+        else if (defensive) {
             defense();
         }
         else if (aggressive) {
             aggro();
-        }
-        else if (terraformer) {
-            terraform();
         }
         else {
             construct();
@@ -173,6 +171,7 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
+        rc.setIndicatorDot(myLocation, 0, 255, 0);
         if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             path(myLocation.add(d).add(d).add(d).add(d).add(d).add(d).add(d));
