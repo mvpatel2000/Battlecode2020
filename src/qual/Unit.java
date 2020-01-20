@@ -2,7 +2,9 @@ package qual;
 
 import battlecode.common.*;
 
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public abstract class Unit extends Robot {
 
@@ -12,7 +14,6 @@ public abstract class Unit extends Robot {
     protected int stuck;
     protected PathState state;
 
-    public static int SPECULATION = 2;
     public static int HISTORY_SIZE = 30;
 
     public Unit(RobotController rc) throws GameActionException {
@@ -121,14 +122,16 @@ public abstract class Unit extends Robot {
         }
     }
 
-    public void aggroPath(MapLocation target) throws GameActionException {
-        path(target);
-    }
-
     public void path(MapLocation target) {
         if (state.target == null || !state.target.equals(target))
             setDestination(target);
-        navigate();
+        navigate(1);
+    }
+
+    public void path(MapLocation target, int speculation) {
+        if (state.target == null || !state.target.equals(target))
+            setDestination(target);
+        navigate(speculation);
     }
 
     public void setDestination(MapLocation loc) {
@@ -136,16 +139,26 @@ public abstract class Unit extends Robot {
     }
 
     public void navigate() {
+        navigate(1);
+    }
+
+    public void navigate(int speculation) {
         if (rc.getCooldownTurns() >= 1) {
             return;
         }
         System.out.println("Pathing to: " + state.target);
         try {
-            PathState next = bugPath(state, null);
-            //PathState tmp = new PathState(myLocation, next.me, state.follow, state.face, Integer.MAX_VALUE);
-            //next = bugPath(tmp, null);
-            //next.best = Math.min(next.me.distanceSquaredTo(state.target), state.best);
-            //next.target = state.target;
+            List<PathState> path = speculativePath(state, speculation);
+            PathState next = null;
+            for (PathState p : path) {
+                Direction tmp = toward(myLocation, p.me);
+                if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
+                    next = p;
+                }
+            }
+            //for (PathState st : path) {
+            //    rc.setIndicatorDot(st.me, 60, 60, 60);
+            //}
             state = next;
             go(toward(myLocation, state.me));
         } catch (GameActionException e) {
@@ -160,6 +173,8 @@ public abstract class Unit extends Robot {
 
         boolean[] branch = {false};
         for (int i = 0; i < depth; i++) {
+            if (Clock.getBytecodesLeft() < 2000)
+                break;
             for (LinkedList<PathState> st : states) {
                 PathState next = bugPath(st.getLast(), branch);
                 if (branch[0]) {
@@ -227,20 +242,17 @@ public abstract class Unit extends Robot {
     }
 
     private PathState bugPath(PathState state, boolean[] needsBranch) throws GameActionException {
-        Direction best = null;
-        int bestDist = Integer.MAX_VALUE;
+        if (state.me.equals(state.target)) {
+            return state;
+        }
+        Direction best = toward(state.me, state.target);
         Direction possible = null;
         int possibleDist = Integer.MAX_VALUE;
         for (Direction d : directions) {
             int dist = state.me.add(d).distanceSquaredTo(state.target);
-
             if (dist < possibleDist && canMove(state.me, d)) {
                 possibleDist = dist;
                 possible = d;
-            }
-            if (dist < bestDist) {
-                bestDist = dist;
-                best = d;
             }
         }
         if (possible == null) {
