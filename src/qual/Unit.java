@@ -6,26 +6,19 @@ import java.util.*;
 
 public abstract class Unit extends Robot {
 
-    private enum Hand {LEFT, RIGHT}
-
     protected Deque<MapLocation> history;
     protected Map<MapLocation, Integer> historySet;
     protected boolean hasHistory;
     protected int stuck;
-    protected Direction facing;
-    protected Direction following;
-    protected int rand;
-    protected int time;
+    protected PathState state;
 
-    public static int WALL_FOLLOW_LENGTH = 10 ;
+    public static int SPECULATION = 2;
     public static int HISTORY_SIZE = 30;
 
     public Unit(RobotController rc) throws GameActionException {
         super(rc);
         stuck = 0;
         clearHistory();
-        facing = null;
-        rand = 0;
     }
 
     public void clearHistory() {
@@ -37,15 +30,14 @@ public abstract class Unit extends Robot {
             history.addFirst(loc);
         }
         historySet.put(loc, HISTORY_SIZE);
-        following = null;
-        facing = null;
-        time = 0;
+        state = new PathState(myLocation, null, null, null, Integer.MAX_VALUE);
     }
 
     @Override
     public void run() throws GameActionException {
         myLocation = rc.getLocation();
         MapLocation me = myLocation;
+        state.me = me;
         history.addFirst(me);
         historySet.merge(me, 1, Integer::sum);
         MapLocation loc = history.pollLast();
@@ -92,7 +84,6 @@ public abstract class Unit extends Robot {
         return itr.next();
     }
 
-
     protected Direction right(Direction in) {
         return intToDirection((directionToInt(in) + 2) % 8);
     }
@@ -106,7 +97,7 @@ public abstract class Unit extends Robot {
     }
 
     protected boolean canMove(Direction in) {
-        MapLocation me = history.peekFirst().add(in);
+        MapLocation me = myLocation.add(in);
         try {
             return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me);
         } catch (GameActionException e) {
@@ -115,131 +106,190 @@ public abstract class Unit extends Robot {
         }
     }
 
-    public boolean aggroPath(MapLocation target) throws GameActionException {
-        return pathRandom(target, false);
-    }
-
-    public boolean path(MapLocation target) throws GameActionException {
-        return pathRandom(target, true);
-    }
-
-    protected boolean pathRandom(MapLocation target, boolean random) throws GameActionException {
-        // System.out.println("Pathing to: " + target);
-        if (rc.getCooldownTurns() >= 1)
-            return true;
-        MapLocation me = history.peekFirst();
-        if (me.equals(target)) {
+    protected boolean canMove(MapLocation from, Direction in) {
+        if (from.equals(myLocation)) {
+            return canMove(in);
+        }
+        MapLocation to = from.add(in);
+        try {
+            return rc.canSenseLocation(to)
+                    && rc.senseNearbyRobots(to, 0, null).length == 0
+                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4;
+        } catch (GameActionException e) {
+            e.printStackTrace();
             return false;
         }
-        double cost = Double.POSITIVE_INFINITY;
+    }
+
+    public void aggroPath(MapLocation target) throws GameActionException {
+        path(target);
+    }
+
+    public void path(MapLocation target) {
+        if (state.target == null || !state.target.equals(target))
+            setDestination(target);
+        navigate();
+    }
+
+    public void setDestination(MapLocation loc) {
+        state = new PathState(myLocation, loc, null, null, Integer.MAX_VALUE);
+    }
+
+    public void navigate() {
+        if (rc.getCooldownTurns() >= 1) {
+            return;
+        }
+        System.out.println("Pathing to: " + state.target);
+        try {
+            PathState next = bugPath(state, null);
+            //PathState tmp = new PathState(myLocation, next.me, state.follow, state.face, Integer.MAX_VALUE);
+            //next = bugPath(tmp, null);
+            //next.best = Math.min(next.me.distanceSquaredTo(state.target), state.best);
+            //next.target = state.target;
+            state = next;
+            go(toward(myLocation, state.me));
+        } catch (GameActionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private LinkedList<PathState> speculativePath(PathState state, int depth) throws GameActionException {
+        LinkedList<LinkedList<PathState>> states = new LinkedList<>(
+                Collections.singleton(new LinkedList<>(Collections.singletonList(state))));
+        LinkedList<LinkedList<PathState>> buffer = new LinkedList<>();
+
+        boolean[] branch = {false};
+        for (int i = 0; i < depth; i++) {
+            for (LinkedList<PathState> st : states) {
+                PathState next = bugPath(st.getLast(), branch);
+                if (branch[0]) {
+                    PathState tmp = st.getLast().clone();
+                    tmp.follow = next.follow == Hand.Left ? Hand.Right : Hand.Left;
+                    PathState alternate = bugPath(tmp, null);
+                    branch[0] = false;
+                    LinkedList<PathState> alst = new LinkedList<>(st);
+                    alst.addLast(alternate);
+                    buffer.add(alst);
+                }
+                st.addLast(next);
+            }
+            states.addAll(buffer);
+            buffer.clear();
+        }
+        return states.stream().min(Comparator.comparingInt(x -> x.getLast().best)).orElse(null);
+    }
+
+    private enum Hand implements Cloneable {
+        Left, Right;
+
+        public int dir() {
+            if (this == Hand.Left) {
+                return -1;
+            } else if (this == Hand.Right) {
+                return 1;
+            }
+            throw new RuntimeException();
+        }
+    }
+
+    private static class PathState implements Cloneable {
+        MapLocation me;
+        MapLocation target;
+        Hand follow;
+        Direction face;
+        Integer best;
+
+        public PathState clone() {
+            try {
+                return (PathState) super.clone();
+            } catch (CloneNotSupportedException e) {
+                return null;
+            }
+        }
+
+        public String toString() {
+            return "PathState{" +
+                    "me=" + me +
+                    ", target=" + target +
+                    ", follow=" + follow +
+                    ", face=" + face +
+                    ", best=" + best +
+                    '}';
+        }
+
+        public PathState(MapLocation me, MapLocation target, Hand follow, Direction face, Integer best) {
+            this.me = me;
+            this.target = target;
+            this.follow = follow;
+            this.face = face;
+            this.best = best;
+        }
+    }
+
+    private PathState bugPath(PathState state, boolean[] needsBranch) throws GameActionException {
         Direction best = null;
-        double pcost = Double.POSITIVE_INFINITY;
-        Direction pbest = null;
-        for (Direction x : directions) {
-            MapLocation next = me.add(x);
-            int tmpcost = next.distanceSquaredTo(target);
-            if (tmpcost < cost) {
-                cost = tmpcost;
-                best = x;
+        int bestDist = Integer.MAX_VALUE;
+        Direction possible = null;
+        int possibleDist = Integer.MAX_VALUE;
+        for (Direction d : directions) {
+            int dist = state.me.add(d).distanceSquaredTo(state.target);
+
+            if (dist < possibleDist && canMove(state.me, d)) {
+                possibleDist = dist;
+                possible = d;
             }
-            if (tmpcost < pcost && canMove(x)) {
-                pcost = tmpcost;
-                pbest = x;
-            }
-        }
-        if (me.distanceSquaredTo(target) < 3 && canMove(best)) {
-            go(best);
-            return true;
-        }
-        if (random && Math.random() < 0.2 && following == null) {
-            return pathHelper(target, pbest);
-        }
-        if (following != null && facing != null) {
-            Direction escape = toward(myLocation, myLocation.add(following).add(facing));
-            if (canMove(escape)) {
-                go(escape);
-                facing = null;
-                following = null;
-                return true;
+            if (dist < bestDist) {
+                bestDist = dist;
+                best = d;
             }
         }
-        if (following != null && !canMove(facing) && canMove(following)) {
-            if (time > 20) {
-                time = 0;
-                following = null;
-                facing = null;
-            } else {
-                time++;
-                go(following);
-                return false;
+        if (possible == null) {
+            return state;
+        }
+        if (possibleDist < state.best) {
+            return new PathState(state.me.add(possible), state.target, null, null, possibleDist);
+        }
+        if (state.face != null && !canMove(state.me, state.face)) {
+            return pathHelper(state);
+        }
+
+        if (canMove(state.me, best)) {
+            PathState next = state.clone();
+            next.me = next.me.add(best);
+            return next;
+        } else {
+            if (needsBranch != null)
+                needsBranch[0] = true;
+            PathState next = state.clone();
+            if (next.follow == null) {
+                next.follow = state.me.add(best.rotateRight()).distanceSquaredTo(state.target) <
+                        state.me.add(best.rotateLeft()).distanceSquaredTo(state.target) ?
+                        Hand.Right : Hand.Left;
             }
+            next.face = best;
+            return pathHelper(next);
         }
-        if (following != null && !canMove(facing) && !canMove(following)) {
-            best = following;
-            following = null;
-            facing = null;
+    }
+
+    public PathState pathHelper(PathState state) {
+        Direction best = state.face;
+        Direction prev = null;
+        for (int i = 0; i < 8 && !canMove(state.me, best); i++) {
+            prev = best;
+            best = adj(best, 8 + state.follow.dir());
         }
-        if (following == null && !canMove(best)) {
-            if (myLocation.add(adj(best, 1)).distanceSquaredTo(target)
-                    < myLocation.add(adj(best, 7)).distanceSquaredTo(target)) {
-                for (int i = 0; i < 16; i++) {
-                    Direction d = adj(best, i % 2 == 0 ? i / 2 : 8 - i / 2);
-                    if (canMove(d)) {
-                        facing = best;
-                        following = d;
-                        tryMove(d);
-                        return true;
-                    }
-                }
-            } else {
-                for (int i = 0; i < 16; i++) {
-                    Direction d = adj(best, i % 2 == 0 ? 8 - i / 2 : i / 2);
-                    if (canMove(d)) {
-                        facing = best;
-                        following = d;
-                        tryMove(d);
-                        return true;
-                    }
-                }
-            }
+        MapLocation next = state.me.add(best);
+        Direction newFace = toward(next, state.me.add(prev));
+        if (!canMove(state.me, best)) {
+            return state;
         }
-        time = 0;
-        if (facing != null && canMove(facing)) {
-            go(facing);
-            following = null;
-            facing = null;
-            return true;
-        }
-        facing = null;
-        following = null;
-        return pathHelper(target, best);
+        return new PathState(next, state.target, state.follow, newFace,
+                Math.min(state.best, next.distanceSquaredTo(state.target)));
     }
 
     protected void go(Direction d) throws GameActionException {
         tryMove(d);
         myLocation = rc.getLocation();
-    }
-
-    protected boolean pathHelper(MapLocation target, Direction best) throws GameActionException {
-        if (best != null) {
-            stuck = 0;
-            go(best);
-            return true;
-        } else {
-            if (!hasHistory) {
-                stuck = 0;
-                return false;
-            } else {
-                if (stuck < 3) {
-                    stuck++;
-                    return true;
-                } else {
-                    stuck = 0;
-                    clearHistory();
-                    return path(target);
-                }
-            }
-        }
     }
 
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
