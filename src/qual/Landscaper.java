@@ -172,24 +172,65 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        if (myLocation.isAdjacentTo(hqLocation)) { // if I'm adjacent to HQ, get out of there
+        if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             path(myLocation.add(d).add(d).add(d).add(d).add(d).add(d).add(d));
         }
         else {
+            Direction digDir = getTerraformDigDirection();
+            MapLocation digLoc = myLocation.add(digDir);
             if (rc.getDirtCarrying() == 0) { // dig
-                
+                System.out.println("Trying to dig in direction " + digDir.toString());
+                tryDig(digDir);
+            }
+            else {
+                boolean plotComplete = true;
+                for (Direction d : directionsWithCenter) {
+                    MapLocation t = myLocation.add(d);
+                    if (rc.onTheMap(t) && !t.equals(digLoc) && rc.senseElevation(myLocation.add(d)) < TERRAFORM_HEIGHT) {
+                        System.out.println("Depositing dirt in direction " + d.toString());
+                        if (tryDeposit(d)) {
+                            plotComplete = false;
+                        }
+                    }
+                }
+                if (plotComplete) {
+                    System.out.println("All squares around me are elevated.");
+                }
             }
         }
     }
 
-    public boolean checkIfValidPlot() throws GameActionException { // TODO: this is extremely naive
-        for (Direction d : directions) {
-            if (!rc.canMove(d)) {
-                return false;
-            }
+    public Direction getTerraformDigDirection() throws GameActionException {
+        /*
+         *  x - - x
+         *  6 7 8 -
+         *  3 4 5 -
+         *  x 1 2 x
+         */
+        int k = 3 * ((myLocation.y - hqLocation.x) % 3) + ((myLocation.x - hqLocation.x) % 3);
+        switch (k) {
+            case 0:
+                return Direction.CENTER;
+            case 1:
+                return Direction.WEST;
+            case 2:
+                return Direction.EAST;
+            case 3:
+                return Direction.SOUTH;
+            case 4:
+                return Direction.SOUTHWEST;
+            case 5:
+                return Direction.SOUTHEAST;
+            case 6:
+                return Direction.NORTH;
+            case 7:
+                return Direction.NORTHWEST;
+            case 8:
+                return Direction.NORTHEAST;
+            default:
+                return null;
         }
-        return true;
     }
 
     public void aggro() throws GameActionException {
@@ -295,7 +336,7 @@ public class Landscaper extends Unit {
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && shouldLowerPile(hqLocation, d)) {
                             foundDigSite = true;
                             System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDig(myLocation.directionTo(hqLocation.add(d)));
@@ -324,7 +365,7 @@ public class Landscaper extends Unit {
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && shouldRaisePit(hqLocation, d)) {
                             foundDumpSite = true;
                             System.out.println("Dumping to pit in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDeposit(myLocation.directionTo(hqLocation.add(d)));
@@ -382,7 +423,7 @@ public class Landscaper extends Unit {
                     Direction dumpDir = outerRingDeposit[outerRingIndex][0];
                     int minElev = 50000;
                     for (Direction d : outerRingDeposit[outerRingIndex]) {
-                        if (rc.senseElevation(myLocation.add(d)) < minElev) {
+                        if (rc.canSenseLocation(myLocation.add(d)) && rc.senseElevation(myLocation.add(d)) < minElev) {
                             dumpDir = d;
                             minElev = rc.senseElevation(myLocation.add(d));
                         }
@@ -392,6 +433,38 @@ public class Landscaper extends Unit {
                 }
             }
         }
+    }
+
+    boolean shouldLowerPile(MapLocation hqLocation, Direction d) throws GameActionException {
+        MapLocation a = hqLocation.add(d).add(d.rotateRight());
+        MapLocation b = hqLocation.add(d).add(d.rotateLeft());
+        MapLocation c = null;
+        if (!rc.canSenseLocation(a) || !rc.canSenseLocation(b) || !rc.canSenseLocation(hqLocation.add(d))) {
+            return false;
+        }
+        if (Math.abs(rc.senseElevation(a) - rc.senseElevation(hqLocation)) < Math.abs(rc.senseElevation(b) - rc.senseElevation(hqLocation))) {
+            c = a;
+        }
+        else {
+            c = b;
+        }
+        return rc.senseElevation(hqLocation.add(d)) > 0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c));
+    }
+
+    boolean shouldRaisePit(MapLocation hqLocation, Direction d) throws GameActionException {
+        MapLocation a = hqLocation.add(d).add(d.rotateRight());
+        MapLocation b = hqLocation.add(d).add(d.rotateLeft());
+        MapLocation c = null;
+        if (!rc.canSenseLocation(a) || !rc.canSenseLocation(b)) {
+            return false;
+        }
+        if (Math.abs(rc.senseElevation(a) - rc.senseElevation(hqLocation)) < Math.abs(rc.senseElevation(b) - rc.senseElevation(hqLocation))) {
+            c = a;
+        }
+        else {
+            c = b;
+        }
+        return rc.senseElevation(hqLocation.add(d)) < 0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c));
     }
 
     boolean tryDeposit(Direction dir) throws GameActionException {

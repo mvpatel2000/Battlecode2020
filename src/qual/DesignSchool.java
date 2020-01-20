@@ -14,7 +14,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
-    int terraformersBuilt = 1;
+    int terraformersBuilt = 0;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -114,8 +114,9 @@ public class DesignSchool extends Building {
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         System.out.println("Built landscaper in direction " + spawnDir);
+                        int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
                         terraformersBuilt++;
-                        // TODO: send terraformer message
+                        sendTerraformMessage(terraformerID);
                     }
                     else {
                         spawnDir = spawnDir.rotateLeft();
