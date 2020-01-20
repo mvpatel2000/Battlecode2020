@@ -485,7 +485,7 @@ public class Landscaper extends Unit {
         else {
             c = b;
         }
-        return rc.senseElevation(hqLocation.add(d)) > 0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c));
+        return rc.senseElevation(hqLocation.add(d)) > (int) (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c)));
     }
 
     boolean shouldRaisePit(MapLocation hqLocation, Direction d) throws GameActionException {
@@ -501,7 +501,7 @@ public class Landscaper extends Unit {
         else {
             c = b;
         }
-        return rc.senseElevation(hqLocation.add(d)) < 0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c));
+        return rc.senseElevation(hqLocation.add(d)) < (int) (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c)));
     }
 
     boolean tryDeposit(Direction dir) throws GameActionException {

@@ -32,6 +32,10 @@ public abstract class Robot {
     final int header;
     final int headerLen = 16;
     final int schemaLen = 3;
+
+    public MapLocation HEADQUARTERS_LOCATION = null;
+    public MapLocation ENEMY_HQ_LOCATION = null;
+
     //discretized grid for communicating map information
     //if changing squareWidth and squareHeight, make sure to change
     //number of bits allocated to tile in HoldProductionMessage and MinePatchMessage and SoupMessage
@@ -182,7 +186,7 @@ public abstract class Robot {
      */
     //Returns MapLocation if it finds a LocationMessage from our HQ.
     //returns null if it doesn't.
-    public MapLocation checkForLocationMessage() throws GameActionException {
+    public void checkForLocationMessage() throws GameActionException {
         int rn = rc.getRoundNum();
         for(int i=1; i<=3; i++) {
             if(i<rn) {
@@ -192,15 +196,62 @@ public abstract class Robot {
                     if (allyMessage(msg[0])) {
                         if(getSchema(msg[0])==4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            return new MapLocation(l.xLoc, l.yLoc);
+                            if(l.unitType==0) {
+                                HEADQUARTERS_LOCATION = new MapLocation(l.xLoc, l.yLoc);
+                            }
                         }
                     }
                 }
             }
         }
-        return null;
     }
 
+    public void initialCheckForEnemyHQLocationMessage()  throws GameActionException {
+        int rn = rc.getRoundNum();
+        for(int i=100; i<105; i++) {
+            if(i<rn) {
+                Transaction[] msgs = rc.getBlock(i);
+                for (Transaction transaction : msgs) {
+                    int[] msg = transaction.getMessage();
+                    if (allyMessage(msg[0])) {
+                        if(getSchema(msg[0])==4) {
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            if(l.unitType==1) {
+                                ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkForEnemyHQLocationMessage(int howfarback)  throws GameActionException {
+        int rn = rc.getRoundNum();
+        for(int i=rn-howfarback; i<rn; i++) {
+            if(i>0) {
+                Transaction[] msgs = rc.getBlock(i);
+                for (Transaction transaction : msgs) {
+                    int[] msg = transaction.getMessage();
+                    if (allyMessage(msg[0])) {
+                        if(getSchema(msg[0])==4) {
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            if(l.unitType==1) {
+                                ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void checkForEnemyHQLocationMessageSubroutine(int[] msg)  throws GameActionException {
+        LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+        if(l.unitType==1) {
+            ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
+        }
+    }
      /**
      * Grid used for communication
      * discretization.
