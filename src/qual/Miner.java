@@ -268,8 +268,12 @@ public class Miner extends Unit {
             target.remove(0);
             setDestination(target.get(0));
         }
-        // path to next candidate enemy HQ location
-        navigate(SPECULATION);
+
+        // path to next candidate enemy HQ locationbat
+        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ))
+            navigate(1);
+        else
+            navigate(SPECULATION);
     }
 
     public void checkBuildBuildings() throws GameActionException {
