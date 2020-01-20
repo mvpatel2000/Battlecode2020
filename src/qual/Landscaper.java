@@ -15,7 +15,7 @@ public class Landscaper extends Unit {
     // class variables used specifically by terraformers:
     int bornTurn;
     boolean terraformer = false;
-    MapLocation plotCenter = null;
+    int TERRAFORM_HEIGHT = 7;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
@@ -172,18 +172,15 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        System.out.println("Terraform");
-        // if (plotCenter == null) {
-        //     if (checkIfValidPlot()) {
-        //         plotCenter = myLocation;
-        //     }
-        //     else {
-
-        //     }
-        // }
-        // if (plotCenter != null) {
-
-        // }
+        if (myLocation.isAdjacentTo(hqLocation)) { // if I'm adjacent to HQ, get out of there
+            Direction d = hqLocation.directionTo(myLocation);
+            path(myLocation.add(d).add(d).add(d).add(d).add(d).add(d).add(d));
+        }
+        else {
+            if (rc.getDirtCarrying() == 0) { // dig
+                
+            }
+        }
     }
 
     public boolean checkIfValidPlot() throws GameActionException { // TODO: this is extremely naive
