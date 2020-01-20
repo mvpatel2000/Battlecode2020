@@ -577,7 +577,7 @@ public class Landscaper extends Unit {
 
     public boolean readMessages() throws GameActionException {
         int rn = rc.getRoundNum();
-        int prev1 = rn-5;
+        int prev1 = rn-6;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
                 if(findMessagesFromAllies(i)) {

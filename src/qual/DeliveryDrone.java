@@ -61,7 +61,7 @@ public class DeliveryDrone extends Unit {
             attackDrone = true;
         }
 
-        DEFEND_TURN = 950;
+        DEFEND_TURN = 1100;
         ATTACK_TURN = 1700;
 //        if (rc.canSenseLocation(hqLocation)) {
 //            switch (rc.senseElevation(hqLocation)) {
@@ -79,7 +79,7 @@ public class DeliveryDrone extends Unit {
 //        else {
 //            DEFEND_TURN = 700-5;
 //        }
-
+        tilesVisited[getTileNumber(enemyLocation)] = 1;
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
@@ -110,8 +110,10 @@ public class DeliveryDrone extends Unit {
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
         if (carryingEnemy) { // go to water and drop
+            rc.setIndicatorLine(myLocation, nearestWaterLocation, 255,0,255);
             int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
             if (distanceToDestination <= 2) { // drop
+//                System.out.println("Drop this guy " + rc.isReady());
                 for (Direction dir : directions) { // drop anywhere wet
                     if (rc.isReady() && rc.canDropUnit(dir) &&
                             rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
@@ -128,11 +130,19 @@ public class DeliveryDrone extends Unit {
                         }
                     }
                 }
-                path(nearestWaterLocation);
+                path(nearestWaterLocation, false); //TODO: Fix this and move safely
             }
             else {
 //                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
-                path(nearestWaterLocation);
+                for (Direction dir : directions) { // drop anywhere wet
+                    if (rc.isReady() && rc.canDropUnit(dir) &&
+                            rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
+                        rc.dropUnit(dir);
+                        carryingEnemy = false;
+                        return;
+                    }
+                }
+                path(nearestWaterLocation, false);
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
@@ -153,55 +163,71 @@ public class DeliveryDrone extends Unit {
                 }
             }
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
-            if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) {
+            if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
                 if (rc.isReady()) {
                     rc.pickUpUnit(nearest.getID());
                     carryingEnemy = true;
                 }
-            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // after defend turn, don't rush far away enemy units
+            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
+                    || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
                 if (rc.getRoundNum() > ATTACK_TURN) // charge after ATTACK_TURN
                     fuzzyMoveToLoc(nearest.location);
                 else
-                    path(nearest.location); // to nearest enemy.
+                    path(nearest.location, true); // to nearest enemy.
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
-                if (!enemyVisited) { // visit enemy first
-                    if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
-                        path(enemyLocation, true);
-                    } else {
-                        enemyVisited = true;
-                        destination = getNearestUnexploredTile();
-                    }
-                } else { // explore around the map
-                    if (myLocation.distanceSquaredTo(destination) <= 4 || stuckCount > 8) {
-                        tilesVisited[getTileNumber(destination)] = 1;
-                        destination = getNearestUnexploredTile();
-                        stuckCount = 0;
-                    } else {
-                        stuckCount++;
-                    }
-                    path(destination, true);
-                }
+                spiral(enemyLocation, true);
+//                if (!enemyVisited) { // visit enemy first
+//                    if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
+//                        path(enemyLocation, true);
+//                    } else {
+//                        enemyVisited = true;
+//                        destination = getNearestUnexploredTile();
+//                    }
+//                } else { // explore around the map
+//                    if (myLocation.distanceSquaredTo(destination) <= 4 || stuckCount > 8) {
+//                        tilesVisited[getTileNumber(destination)] = 1;
+//                        destination = getNearestUnexploredTile();
+//                        stuckCount = 0;
+//                    } else {
+//                        stuckCount++;
+//                    }
+//                    path(destination, true);
+//                }
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (rc.getRoundNum() > ATTACK_TURN - 200) { // drone attack-move
                 if (rc.getRoundNum() > ATTACK_TURN) {
                     fuzzyMoveToLoc(enemyLocation);
-                }
-                else if (rc.getRoundNum() > ATTACK_TURN - 200) {
+                } else if (rc.getRoundNum() > ATTACK_TURN - 25) {
                     path(enemyLocation, true);
+                } else if (rc.getRoundNum() > ATTACK_TURN - 200) {
+                    spiral(enemyLocation, true);
                 }
             } else { // defend drone / go back to base
                 destination = hqLocation;
-                int distance = myLocation.distanceSquaredTo(destination);
-                if (distance > 35 || (rc.getRoundNum() > DEFEND_TURN && distance > 8)) {
-                    fuzzyMoveToLoc(destination);
-                } else if (rc.getRoundNum() < DEFEND_TURN) {
-                    path(myLocation.add(myLocation.directionTo(hqLocation).opposite().rotateLeft()));
-                }
                 if (rc.getRoundNum() < DEFEND_TURN) {
-                    nearestWaterLocation = updateNearestWaterLocation();
+                    spiral(destination, false);
+                } else {
+                    path(destination, false);
                 }
+                nearestWaterLocation = updateNearestWaterLocation();
             }
+        }
+    }
+
+    public void spiral (MapLocation center, boolean safe) throws GameActionException {
+        int dx = myLocation.x - center.x;
+        int dy = myLocation.y - center.y;
+        double cs = Math.cos(.5);
+        double sn = Math.sin(.5);
+        int x = (int)(dx * cs - dy * sn);
+        int y = (int)(dx * sn + dy * cs);
+        if (myLocation.distanceSquaredTo(center) > 35) {
+            path(center, safe);
+        } else if (myLocation.distanceSquaredTo(center) < 20) {
+            path(myLocation.add(center.directionTo(myLocation)),safe);
+        } else {
+            path(center.translate(x,y), safe);
         }
     }
 
@@ -218,7 +244,6 @@ public class DeliveryDrone extends Unit {
             MapLocation newLoc = myLocation.add(dir);
             boolean safeSpot = true;
             for (RobotInfo enemyUnit : enemyUnits) {
-                System.out.println(enemyUnit.type + " " + newLoc + " " + enemyUnit.location.distanceSquaredTo(newLoc) + " " + GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
                 if ((enemyUnit.type == RobotType.NET_GUN || enemyUnit.type == RobotType.HQ)
                         && newLoc.distanceSquaredTo(enemyUnit.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                     safeSpot = false;
@@ -234,7 +259,7 @@ public class DeliveryDrone extends Unit {
             tryMove(optimalDir);
             return true;
         }
-        return false;
+        return false; //path(target, false);
     }
 
     // Returns location of nearest water
