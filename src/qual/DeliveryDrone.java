@@ -169,7 +169,7 @@ public class DeliveryDrone extends Unit {
                         if(sendMessage(l.getMessage(), 1)) {
                             hasSentEnemyLoc = true;
                             System.out.println("[i] SENDING ENEMY HQ LOCATION");
-                            System.out.println(enemyLocation);
+                            //System.out.println(enemyLocation);
                         }
                     }
                 }
