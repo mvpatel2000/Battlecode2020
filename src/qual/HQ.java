@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java. util.Iterator;
 
 public class HQ extends Building {
 
@@ -188,9 +189,23 @@ public class HQ extends Building {
         }
     }
 
+    void removeExtraneous(MapLocation ehql) throws GameActionException {
+        for (Iterator<int[]> itr = accessibleSoupsPerTile.iterator(); itr.hasNext();) {
+            int[] soupPerTile = itr.next();
+            if(soupPerTile[1] == -1 && ehql != null) {
+                System.out.println("Removing soupLoc b/c I know Enemy HQ");
+                System.out.println(soupPerTile[0]);
+                System.out.println(getTileNumber(enemyHQLocation));
+                if(soupPerTile[0] != getTileNumber(enemyHQLocation)) {
+                    itr.remove();
+                }
+            }
+        }
+    }
+
     void writeLocationMessage() throws GameActionException {
         LocationMessage l = new LocationMessage(MAP_WIDTH, MAP_HEIGHT, teamNum);
-        l.writeLocation(myLocation.x, myLocation.y);
+        l.writeInformation(myLocation.x, myLocation.y, 0); // 0 indicates our HQ
         sendMessage(l.getMessage(), 1);
     }
 
@@ -222,6 +237,14 @@ public class HQ extends Building {
             //TODO: figure out better bidding scheme
             sendMessage(m.getMessage(), 1);
         }
+
+        if(rc.getRoundNum()%100==0 && enemyHQLocation!=null) {
+            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+            l.writeInformation(enemyHQLocation.x, enemyHQLocation.y, 1);
+            if(sendMessage(l.getMessage(), 1)) {
+                System.out.println("[i] SENDING ENEMY HQ LOCATION");
+            }
+        }
     }
 
     //Returns true if should continue halting production
@@ -247,7 +270,6 @@ public class HQ extends Building {
     void readMessages() throws GameActionException {
         System.out.println("reading messages...");
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
-        int lookingForMessages = 2;
         for (int i=0; i<msgs.length; i++) {
             int f = msgs[i].getMessage()[0];
             //sent from our team
@@ -270,21 +292,21 @@ public class HQ extends Building {
                         System.out.println("[i] MINER TELLING ME THERE IS " + Integer.toString(powerToSoup(s.soupThere)) + " POWERSOUP AT TILE " + Integer.toString(s.tile));
                         addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
-                    lookingForMessages-=1;
                 }
                 if(getSchema(f)==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                    enemyHQLocation = new MapLocation(h.enemyHQx, h.enemyHQy);
-                    lookingForMessages-=1;
                 }
-            }
-            //found all the messages I was looking for
-            //save computation by not looking at any more.
-            if(lookingForMessages==0) {
-                break;
+                if(getSchema(f)==4 && enemyHQLocation==null) {
+                    checkForEnemyHQLocationMessageSubroutine(msgs[i].getMessage());
+                    if(ENEMY_HQ_LOCATION != null) {
+                        System.out.println("[i] I know ENEMY HQ");
+                        enemyHQLocation = ENEMY_HQ_LOCATION;
+                        removeExtraneous(enemyHQLocation);
+                    }
+                }
             }
         }
     }

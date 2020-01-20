@@ -14,14 +14,14 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
-    int terraformersBuilt = 1;
+    int numTerraformersMade = 1000; // set to 0 to enable
 
     //For halting production and resuming it.
     boolean holdProduction = false;
     boolean firstRefineryExists = false; //this will only work if first refinery built after d.school exists
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
-    MapLocation enemyHQLocApprox = null;
+    MapLocation trueEnemyHQLocation = null;
 
     // aggression variables
     boolean aggressive = false;
@@ -36,8 +36,9 @@ public class DesignSchool extends Building {
     }
 
     private void construct() throws GameActionException {
-        hqLocation = checkForLocationMessage();
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 25; // arbitrary cutoff, but should be more than big enough.
+        checkForLocationMessage();
+        hqLocation = HEADQUARTERS_LOCATION;
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= 49; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
             System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
 
@@ -98,8 +99,11 @@ public class DesignSchool extends Building {
         if (countAggroLandscapers(allyTeam) < countAggroLandscapers(enemyTeam) - 1) // give up if they are beating us by two
             return;
         if (wallProxy && !holdProduction) {
-            for (Direction d : directions) {
-                MapLocation t = enemyHQLocation.add(d);
+            Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
+            Direction[] buildDirs = {enemyHQDir.rotateLeft(), enemyHQDir.rotateRight(), enemyHQDir.rotateLeft().rotateLeft(), enemyHQDir.rotateRight().rotateRight()};
+
+            for (Direction d : buildDirs) {
+                MapLocation t = myLocation.add(d);
                 if(tryBuild(RobotType.LANDSCAPER, myLocation.directionTo(t))) {
                     System.out.println("Built aggressive landscaper at " + t.toString());
                 }
@@ -109,13 +113,14 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (numLandscapersMade == 5 && terraformersBuilt == 0) { // build terraformer
-                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight(); // note: added rotateRight for rush defense purposes
+            if (numLandscapersMade == 5 && numTerraformersMade == 0) { // build terraformer
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
                 for (int i = 8; i > 0; i--) {
-                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
-                        System.out.println("Built landscaper in direction " + spawnDir);
-                        terraformersBuilt++;
-                        // TODO: send terraformer message
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+                        System.out.println("Built terraformer in direction " + spawnDir);
+                        int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
+                        numTerraformersMade++;
+                        sendTerraformMessage(terraformerID);
                     }
                     else {
                         spawnDir = spawnDir.rotateLeft();
@@ -129,6 +134,20 @@ public class DesignSchool extends Building {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) { // TODO: hardcoded base cost of landscaper
                         System.out.println("Built landscaper in direction " + spawnDir);
                         numLandscapersMade++;
+                    }
+                    else {
+                        spawnDir = spawnDir.rotateLeft();
+                    }
+                }
+            }
+            if (numLandscapersMade == 8 && numTerraformersMade < 4) {
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
+                for (int i = 8; i > 0; i--) {
+                    if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+                        System.out.println("Built terraformer in direction " + spawnDir);
+                        int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
+                        numTerraformersMade++;
+                        sendTerraformMessage(terraformerID);
                     }
                     else {
                         spawnDir = spawnDir.rotateLeft();
@@ -170,9 +189,11 @@ public class DesignSchool extends Building {
         }
     }
 
-    public boolean sendTerraformMessage() throws GameActionException {
+    public boolean sendTerraformMessage(int i) throws GameActionException {
+        System.out.println("Sending terraform message");
+        System.out.println("ID: " + Integer.toString(i%1000));
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-        t.writeType(1);
+        t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
     }
 
@@ -199,9 +220,12 @@ public class DesignSchool extends Building {
                     //System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                    enemyHQLocApprox = getCenterFromTileNumber(h.enemyHQTile);
-                }
-                if(getSchema(msg[0])==5 && !firstRefineryExists) {
+                } else if(getSchema(msg[0])==4 && trueEnemyHQLocation==null) {
+                    checkForEnemyHQLocationMessageSubroutine(msg);
+                    if(ENEMY_HQ_LOCATION != null) {
+                        trueEnemyHQLocation = ENEMY_HQ_LOCATION;
+                    }
+                } else if(getSchema(msg[0])==5 && !firstRefineryExists) {
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(b.typeBuilt==3) {
                         firstRefineryExists = true;

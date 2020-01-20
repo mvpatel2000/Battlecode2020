@@ -15,12 +15,14 @@ public class Landscaper extends Unit {
     // class variables used specifically by terraformers:
     int bornTurn;
     boolean terraformer = false;
-    MapLocation plotCenter = null;
+    int TERRAFORM_HEIGHT = 7;
+    MapLocation[] depositSiteExceptions = {null, null, null, null, null};
+    boolean spiralClockwise = true;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
     int wallPhase;
-    MapLocation holdPositionLoc = null; // this is important; used in updateNearbyBots() to prevent circular reasoning
+    MapLocation holdPositionLoc = null; // null init is important; used in updateNearbyBots() to prevent circular reasoning
     boolean innerWaller = true;
     Direction[] innerWallFillOrder;
     Direction[][] outerRing = {
@@ -111,16 +113,32 @@ public class Landscaper extends Unit {
         if (baseLocation != null) {
             System.out.println("Found my d.school: " + baseLocation.toString());
         }
+        else {
+            for (int i = 0; i < MAP_HEIGHT; i++) {
+                for (int j = 0; j < MAP_WIDTH; j++) {
+                    rc.setIndicatorDot(new MapLocation(j, i), 255, 255, 0);
+                }
+            }
+        }
 
         // scan for HQ location
         hqLocation = null;
         holdPositionLoc = null;
         wallPhase = 0;
-        hqLocation = checkForLocationMessage();
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
-        // TODO: check if i am a terraformer
+        checkForLocationMessage();
+        hqLocation = HEADQUARTERS_LOCATION;
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= 64; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
-            innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
+            depositSiteExceptions[0] = hqLocation.add(Direction.SOUTH).add(Direction.SOUTH);
+            depositSiteExceptions[1] = hqLocation.add(Direction.NORTH).add(Direction.NORTH);
+            depositSiteExceptions[2] = hqLocation.add(Direction.EAST).add(Direction.EAST);
+            depositSiteExceptions[3] = hqLocation.add(Direction.WEST).add(Direction.WEST);
+            if (baseLocation != null) {
+                if (baseLocation.distanceSquaredTo(hqLocation) == 4) {
+                    depositSiteExceptions[4] = baseLocation.add(baseLocation.directionTo(hqLocation).rotateLeft().rotateLeft());
+                }
+                innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
+            }
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
             //System.out.println("My hold position location: " + holdPositionLoc.toString());
@@ -154,17 +172,16 @@ public class Landscaper extends Unit {
         updateNearbyBots();
 
         if(rc.getRoundNum()-bornTurn==5) {
-            readMessages();
+            readBirthMessage();
         }
-
-        if (defensive) {
+        if (terraformer) {
+            terraform();
+        }
+        else if (defensive) {
             defense();
         }
         else if (aggressive) {
             aggro();
-        }
-        else if (terraformer) {
-            terraform();
         }
         else {
             construct();
@@ -172,27 +189,85 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        System.out.println("Terraform");
-        // if (plotCenter == null) {
-        //     if (checkIfValidPlot()) {
-        //         plotCenter = myLocation;
-        //     }
-        //     else {
-
-        //     }
-        // }
-        // if (plotCenter != null) {
-
-        // }
+        rc.setIndicatorDot(myLocation, 0, 255, 0);
+        if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
+            Direction d = hqLocation.directionTo(myLocation);
+            path(myLocation.add(d).add(d).add(d).add(d).add(d).add(d).add(d));
+        }
+        else {
+            Direction digDir = getTerraformDigDirection();
+            MapLocation digLoc = myLocation.add(digDir);
+            if (rc.getDirtCarrying() == 0) { // dig
+                System.out.println("Trying to dig in direction " + digDir.toString());
+                tryDig(digDir);
+            }
+            else {
+                boolean plotComplete = true;
+                for (Direction d : directionsWithCenter) {
+                    MapLocation t = myLocation.add(d);
+                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && rc.senseElevation(t) < TERRAFORM_HEIGHT && 
+                        (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
+                        System.out.println("Dumping dirt in direction " + d.toString());
+                        if (tryDeposit(d)) {
+                            plotComplete = false;
+                        }
+                    }
+                }
+                if (plotComplete) {
+                    Direction moveDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
+                    if (!spiralClockwise) {
+                        moveDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+                    }
+                    if (!rc.onTheMap(myLocation.add(moveDir))) {
+                        spiralClockwise = !spiralClockwise;
+                        moveDir = moveDir.opposite();
+                    }
+                    path(myLocation.add(moveDir).add(moveDir).add(moveDir).add(moveDir).add(moveDir));
+                }
+            }
+        }
     }
 
-    public boolean checkIfValidPlot() throws GameActionException { // TODO: this is extremely naive
-        for (Direction d : directions) {
-            if (!rc.canMove(d)) {
+    public boolean isNotDepositSiteException(MapLocation t) {
+        for (MapLocation l : depositSiteExceptions) {
+            if (t.equals(l)) {
                 return false;
             }
         }
         return true;
+    }
+
+    public Direction getTerraformDigDirection() throws GameActionException {
+        /*
+         *  x - - x
+         *  6 7 8 -
+         *  3 4 5 -
+         *  x 1 2 x
+         */
+        int k = 3 * ((((myLocation.y - hqLocation.y) % 3) + 3) % 3) + ((((myLocation.x - hqLocation.x) % 3) + 3) % 3);
+        System.out.println("k = "+Integer.toString(k));
+        switch (k) {
+            case 0:
+                return Direction.CENTER;
+            case 1:
+                return Direction.WEST;
+            case 2:
+                return Direction.EAST;
+            case 3:
+                return Direction.SOUTH;
+            case 4:
+                return Direction.SOUTHWEST;
+            case 5:
+                return Direction.SOUTHEAST;
+            case 6:
+                return Direction.NORTH;
+            case 7:
+                return Direction.NORTHWEST;
+            case 8:
+                return Direction.NORTHEAST;
+            default:
+                return null;
+        }
     }
 
     public void aggro() throws GameActionException {
@@ -298,7 +373,7 @@ public class Landscaper extends Unit {
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && shouldLowerPile(hqLocation, d)) {
                             foundDigSite = true;
                             System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDig(myLocation.directionTo(hqLocation.add(d)));
@@ -327,7 +402,7 @@ public class Landscaper extends Unit {
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && shouldRaisePit(hqLocation, d)) {
                             foundDumpSite = true;
                             System.out.println("Dumping to pit in direction " + myLocation.directionTo(hqLocation.add(d)));
                             tryDeposit(myLocation.directionTo(hqLocation.add(d)));
@@ -385,7 +460,7 @@ public class Landscaper extends Unit {
                     Direction dumpDir = outerRingDeposit[outerRingIndex][0];
                     int minElev = 50000;
                     for (Direction d : outerRingDeposit[outerRingIndex]) {
-                        if (rc.senseElevation(myLocation.add(d)) < minElev) {
+                        if (rc.canSenseLocation(myLocation.add(d)) && rc.senseElevation(myLocation.add(d)) < minElev) {
                             dumpDir = d;
                             minElev = rc.senseElevation(myLocation.add(d));
                         }
@@ -395,6 +470,38 @@ public class Landscaper extends Unit {
                 }
             }
         }
+    }
+
+    boolean shouldLowerPile(MapLocation hqLocation, Direction d) throws GameActionException {
+        MapLocation a = hqLocation.add(d).add(d.rotateRight());
+        MapLocation b = hqLocation.add(d).add(d.rotateLeft());
+        MapLocation c = null;
+        if (!rc.canSenseLocation(a) || !rc.canSenseLocation(b) || !rc.canSenseLocation(hqLocation.add(d))) {
+            return false;
+        }
+        if (Math.abs(rc.senseElevation(a) - rc.senseElevation(hqLocation)) < Math.abs(rc.senseElevation(b) - rc.senseElevation(hqLocation))) {
+            c = a;
+        }
+        else {
+            c = b;
+        }
+        return rc.senseElevation(hqLocation.add(d)) > (int) (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c)));
+    }
+
+    boolean shouldRaisePit(MapLocation hqLocation, Direction d) throws GameActionException {
+        MapLocation a = hqLocation.add(d).add(d.rotateRight());
+        MapLocation b = hqLocation.add(d).add(d.rotateLeft());
+        MapLocation c = null;
+        if (!rc.canSenseLocation(a) || !rc.canSenseLocation(b)) {
+            return false;
+        }
+        if (Math.abs(rc.senseElevation(a) - rc.senseElevation(hqLocation)) < Math.abs(rc.senseElevation(b) - rc.senseElevation(hqLocation))) {
+            c = a;
+        }
+        else {
+            c = b;
+        }
+        return rc.senseElevation(hqLocation.add(d)) < (int) (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c)));
     }
 
     boolean tryDeposit(Direction dir) throws GameActionException {
@@ -505,12 +612,12 @@ public class Landscaper extends Unit {
         return lDir;
     }
 
-    public boolean readMessages() throws GameActionException {
+    public boolean readBirthMessage() throws GameActionException {
         int rn = rc.getRoundNum();
-        int prev1 = rn-5;
+        int prev1 = rn-6;
         for(int i=prev1; i<rn; i++) {
             if(i>0) {
-                if(findMessagesFromAllies(i)) {
+                if(findTerraformMessage(i)) {
                     return true;
                 }
             }
@@ -521,14 +628,14 @@ public class Landscaper extends Unit {
     //Find message from allies given a round number rn
     //Checks block of round number rn, loops through messages
     //Currently: Checks for haltProductionMessage from a Miner
-    public boolean findMessagesFromAllies(int rn) throws GameActionException {
+    public boolean findTerraformMessage(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==6) {
                     TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    if(t.type==1) {
+                    if(t.type==1 && t.id==rc.getID()%1000) {
                         //System.out.println("[i] YAY, I'm A TERRAFORMER!");
                         terraformer = true;
                         return true;
