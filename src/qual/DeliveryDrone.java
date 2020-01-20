@@ -20,6 +20,7 @@ public class DeliveryDrone extends Unit {
     MapLocation enemyLocation;
     boolean enemyVisited;
     MapLocation destination;
+    int whichEnemyLocation;
 
     boolean attackDrone;
     final int DEFEND_TURN;
@@ -80,6 +81,7 @@ public class DeliveryDrone extends Unit {
 //            DEFEND_TURN = 700-5;
 //        }
         tilesVisited[getTileNumber(enemyLocation)] = 1;
+        whichEnemyLocation = 0;
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
@@ -177,6 +179,23 @@ public class DeliveryDrone extends Unit {
                 nearestWaterLocation = updateNearestWaterLocation();
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 spiral(enemyLocation, true);
+                if (rc.canSenseLocation(enemyLocation)) {
+                    RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
+                    if (enemy == null || enemy.type != RobotType.HQ) {
+                        switch (whichEnemyLocation) {
+                            case 0:
+                                enemyLocation = new MapLocation(MAP_WIDTH, MAP_HEIGHT - destination.y);
+                                whichEnemyLocation++;
+                                break;
+                            case 1:
+                                enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT);
+                                whichEnemyLocation++;
+                                break;
+                            case 2:
+                                System.out.println("Critical Error!!");
+                        }
+                    }
+                }
 //                if (!enemyVisited) { // visit enemy first
 //                    if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
 //                        path(enemyLocation, true);
