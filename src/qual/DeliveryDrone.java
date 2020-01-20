@@ -141,7 +141,11 @@ public class DeliveryDrone extends Unit {
                         }
                     }
                 }
-                path(nearestWaterLocation, false); //TODO: Fix this and move safely
+                if (myLocation.distanceSquaredTo(hqLocation)<100) {
+                    path(nearestWaterLocation, false);
+                } else {
+                    path(nearestWaterLocation, true);
+                }
             }
             else {
 //                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
@@ -153,7 +157,11 @@ public class DeliveryDrone extends Unit {
                         return;
                     }
                 }
-                path(nearestWaterLocation, false);
+                if (myLocation.distanceSquaredTo(hqLocation)<100) {
+                    path(nearestWaterLocation, false);
+                } else {
+                    path(nearestWaterLocation, true);
+                }
                 nearestWaterLocation = updateNearestWaterLocation();
             }
         }
@@ -200,9 +208,10 @@ public class DeliveryDrone extends Unit {
                 }
             } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
                     || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
-                if (rc.getRoundNum() > ATTACK_TURN) // charge after ATTACK_TURN
+                if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
                     fuzzyMoveToLoc(nearest.location);
-                else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN) {
+                } else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100) {
+                    System.out.println("pathing recklessly");
                     path(nearest.location, false); // to nearest enemy.
                 } else {
                     path(nearest.location, true);
@@ -335,7 +344,8 @@ public class DeliveryDrone extends Unit {
                     break;
                 }
             }
-            if (safeSpot && newLoc.distanceSquaredTo(target) <= optimalDist) {
+            System.out.println(safeSpot + " " + newLoc.distanceSquaredTo(target) + " " + optimalDist + " " + newLoc.distanceSquaredTo(hqLocation));
+            if (safeSpot && newLoc.distanceSquaredTo(target) <= optimalDist && newLoc.distanceSquaredTo(hqLocation) > 2) {
                 optimalDir = dir;
                 optimalDist = newLoc.distanceSquaredTo(target);
             }
