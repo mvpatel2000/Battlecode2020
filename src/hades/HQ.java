@@ -33,10 +33,26 @@ public class HQ extends Building {
         refinery = new Refinery(rc);
         minerCount = 0;
 
-        initialScan();
-        if (tryBuild(RobotType.MINER, getBestMinerDirection())) {
+        Direction toCenter = myLocation.directionTo(new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2));
+        if (tryBuild(RobotType.MINER, toCenter)) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.rotateLeft())) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.rotateRight())) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.rotateLeft().rotateLeft())) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.rotateRight().rotateRight())) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.rotateLeft().rotateLeft().rotateLeft())) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.rotateRight().rotateRight().rotateRight())) {
+            minerCount++;
+        } else if (tryBuild(RobotType.MINER, toCenter.opposite())) {
             minerCount++;
         }
+
+        initialScan();
 
         accessibleSoupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2)), -1});
         accessibleSoupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
