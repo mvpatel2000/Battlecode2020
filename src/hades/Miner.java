@@ -125,13 +125,6 @@ public class Miner extends Unit {
         previousSoup = rc.getTeamSoup();
     }
 
-    //determines if location is on grid and not in landscaper slot
-    boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9)
-            return false;
-        return ((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
-    }
-
     //Returns true if should continue halting production
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
@@ -274,18 +267,18 @@ public class Miner extends Unit {
 //            if (!existsNetGun && rc.getRoundNum() > 500) {
 //                rc.buildRobot(RobotType.NET_GUN, dir);
 //            }
-            if (onBuildingGridSquare(myLocation.add(dir))
+            if (myLocation.add(dir).distanceSquaredTo(hqLocation) >= 25
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2)
                 tryBuild(RobotType.VAPORATOR, dir);
         }
     }
 
     public void harvest() throws GameActionException {
-
+        int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
 //        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
-        System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation + " " + destination);
+        System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation);
         //rc.setIndicatorDot(myLocation, (int)(rc.getSoupCarrying()*2.5), 0,0);
         //rc.setIndicatorLine(myLocation, destination, 0,150,255);
 
@@ -297,9 +290,8 @@ public class Miner extends Unit {
         MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
         boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
-        //TODO: Fix this check to make like dschool so it checks all dirs instead of just trying 1
-        if (rc.getTeamSoup()>220 && outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction
-                && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite()) && onBuildingGridSquare(myLocation.add(hqDir.opposite()))) {
+        if (rc.getTeamSoup()>220 && outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite())) {
+            //TODO: Add in fulfillment center
             fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
             if(fulfillmentCenterExists) {
                 BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -309,8 +301,7 @@ public class Miner extends Unit {
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
-        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)
-            && myLocation.distanceSquaredTo(hqLocation) < 25) {
+        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)) {
             dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
             if(dSchoolExists) {
                 BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
@@ -318,8 +309,6 @@ public class Miner extends Unit {
                 sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
             }
         }
-
-        int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
@@ -390,7 +379,7 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc) && onBuildingGridSquare(newLoc)
+                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc)
                         && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2) {
                     target = dir;
                     loc = newLoc;
@@ -403,7 +392,7 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                        && onBuildingGridSquare(newLoc) && newLoc.distanceSquaredTo(hqLocation) <= loc.distanceSquaredTo(hqLocation)) {
+                        && rc.senseElevation(newLoc) >= rc.senseElevation(loc)) {
                     target = dir;
                     loc = newLoc;
                 }
@@ -446,14 +435,13 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
-                if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)
-                        && dSchoolExists && onBuildingGridSquare(myLocation.add(dir))) {
+                if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir) && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     //send message if this is the first refinery built
                     if(!firstRefineryExists) {
                         BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                         b.writeTypeBuilt(3); //3 is refinery
-                        if(sendMessage(b.getMessage(), 1)) {
+                        if(sendMessage(b.getMessage(), 1)==true) {
                             firstRefineryExists = true;
                         }
                     }
