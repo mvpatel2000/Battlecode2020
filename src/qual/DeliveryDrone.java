@@ -42,7 +42,8 @@ public class DeliveryDrone extends Unit {
         }
         if (baseLocation == null)
             baseLocation = myLocation;
-        hqLocation = checkForLocationMessage();
+        checkForLocationMessage();
+        hqLocation = HEADQUARTERS_LOCATION;
         hqLocation = hqLocation != null ? hqLocation : baseLocation;
 
         tilesVisited = new int[numRows * numCols];

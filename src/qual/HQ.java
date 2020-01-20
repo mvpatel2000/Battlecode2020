@@ -26,7 +26,7 @@ public class HQ extends Building {
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
-
+        HEADQUARTERS_LOCATION = myLocation;
         writeLocationMessage();
         netgun = new NetGun(rc);
         refinery = new Refinery(rc);

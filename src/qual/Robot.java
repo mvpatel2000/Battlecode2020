@@ -32,6 +32,9 @@ public abstract class Robot {
     final int header;
     final int headerLen = 16;
     final int schemaLen = 3;
+
+    public MapLocation HEADQUARTERS_LOCATION = null;
+
     //discretized grid for communicating map information
     //if changing squareWidth and squareHeight, make sure to change
     //number of bits allocated to tile in HoldProductionMessage and MinePatchMessage and SoupMessage
@@ -182,7 +185,7 @@ public abstract class Robot {
      */
     //Returns MapLocation if it finds a LocationMessage from our HQ.
     //returns null if it doesn't.
-    public MapLocation checkForLocationMessage() throws GameActionException {
+    public void checkForLocationMessage() throws GameActionException {
         int rn = rc.getRoundNum();
         for(int i=1; i<=3; i++) {
             if(i<rn) {
@@ -192,13 +195,12 @@ public abstract class Robot {
                     if (allyMessage(msg[0])) {
                         if(getSchema(msg[0])==4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            return new MapLocation(l.xLoc, l.yLoc);
+                            HEADQUARTERS_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                         }
                     }
                 }
             }
         }
-        return null;
     }
 
      /**
