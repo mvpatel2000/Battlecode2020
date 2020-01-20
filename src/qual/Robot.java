@@ -16,6 +16,7 @@ public abstract class Robot {
 
     /* constant for each game */
     Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
+    Direction[] cardinal = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     Direction[] directionsWithCenter = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
     RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL, RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
     Team allyTeam;
@@ -25,10 +26,10 @@ public abstract class Robot {
     final int MAP_WIDTH;
     final int MAP_HEIGHT;
     final int HQ_SEARCH = 31;
-    final int messageModulus=2;
-    final int messageFrequency=5;
+    final int messageModulus = 2;
+    final int messageFrequency = 5;
     //for reading message headers
-    final int arbitraryConstant=57564; //make sure this is the same constant in Message.java
+    final int arbitraryConstant = 57564; //make sure this is the same constant in Message.java
     final int header;
     final int headerLen = 16;
     final int schemaLen = 3;
@@ -59,9 +60,9 @@ public abstract class Robot {
         myLocation = rc.getLocation();
         MAP_WIDTH = rc.getMapWidth();
         MAP_HEIGHT = rc.getMapHeight();
-        numRows = (MAP_HEIGHT+squareHeight-1)/squareHeight;
-        numCols = (MAP_WIDTH+squareWidth-1)/squareWidth;
-        header = arbitraryConstant*(teamNum+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
+        numRows = (MAP_HEIGHT + squareHeight - 1) / squareHeight;
+        numCols = (MAP_WIDTH + squareWidth - 1) / squareWidth;
+        header = arbitraryConstant * (teamNum + 1) * MAP_HEIGHT * MAP_WIDTH % ((1 << headerLen) - 1);
     }
 
     public Direction toward(MapLocation me, MapLocation dest) {
@@ -139,8 +140,9 @@ public abstract class Robot {
         }
     }
 
-
-
+    protected Direction[] getDirections() {
+        return directions;
+    }
 
     public abstract void run() throws GameActionException;
 
@@ -188,15 +190,15 @@ public abstract class Robot {
     //returns null if it doesn't.
     public void checkForLocationMessage() throws GameActionException {
         int rn = rc.getRoundNum();
-        for(int i=1; i<=3; i++) {
-            if(i<rn) {
+        for (int i = 1; i <= 3; i++) {
+            if (i < rn) {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
                     if (allyMessage(msg[0])) {
-                        if(getSchema(msg[0])==4) {
+                        if (getSchema(msg[0]) == 4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            if(l.unitType==0) {
+                            if (l.unitType == 0) {
                                 HEADQUARTERS_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                             }
                         }
@@ -206,17 +208,17 @@ public abstract class Robot {
         }
     }
 
-    public void initialCheckForEnemyHQLocationMessage()  throws GameActionException {
+    public void initialCheckForEnemyHQLocationMessage() throws GameActionException {
         int rn = rc.getRoundNum();
-        for(int i=100; i<105; i++) {
-            if(i<rn) {
+        for (int i = 100; i < 105; i++) {
+            if (i < rn) {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
                     if (allyMessage(msg[0])) {
-                        if(getSchema(msg[0])==4) {
+                        if (getSchema(msg[0]) == 4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            if(l.unitType==1) {
+                            if (l.unitType == 1) {
                                 ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                             }
                         }
@@ -226,17 +228,17 @@ public abstract class Robot {
         }
     }
 
-    public void checkForEnemyHQLocationMessage(int howfarback)  throws GameActionException {
+    public void checkForEnemyHQLocationMessage(int howfarback) throws GameActionException {
         int rn = rc.getRoundNum();
-        for(int i=rn-howfarback; i<rn; i++) {
-            if(i>0) {
+        for (int i = rn - howfarback; i < rn; i++) {
+            if (i > 0) {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
                     if (allyMessage(msg[0])) {
-                        if(getSchema(msg[0])==4) {
+                        if (getSchema(msg[0]) == 4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            if(l.unitType==1) {
+                            if (l.unitType == 1) {
                                 ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                             }
                         }
@@ -246,83 +248,84 @@ public abstract class Robot {
         }
     }
 
-    public void checkForEnemyHQLocationMessageSubroutine(int[] msg)  throws GameActionException {
+    public void checkForEnemyHQLocationMessageSubroutine(int[] msg) throws GameActionException {
         LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-        if(l.unitType==1) {
+        if (l.unitType == 1) {
             ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
         }
     }
-     /**
+
+    /**
      * Grid used for communication
      * discretization.
      */
-     MapLocation getCenterFromTileNumber(int tnum) throws GameActionException {
-         int col = tnum % numCols;
-         int row = tnum / numCols;
-         int centerx = Math.min(squareWidth*col + squareWidth/2, MAP_WIDTH-1);
-         int centery = Math.min(squareHeight*row + squareHeight/2, MAP_HEIGHT-1);
-         MapLocation centerLoc = new MapLocation(centerx, centery);
-         return centerLoc;
-     }
+    MapLocation getCenterFromTileNumber(int tnum) throws GameActionException {
+        int col = tnum % numCols;
+        int row = tnum / numCols;
+        int centerx = Math.min(squareWidth * col + squareWidth / 2, MAP_WIDTH - 1);
+        int centery = Math.min(squareHeight * row + squareHeight / 2, MAP_HEIGHT - 1);
+        MapLocation centerLoc = new MapLocation(centerx, centery);
+        return centerLoc;
+    }
 
-     MapLocation getGridCenter(MapLocation loc) throws GameActionException {
-         int centerx = loc.x/squareWidth;
-         int centery = loc.y/squareHeight;
-         MapLocation centerLoc = new MapLocation(
-                                Math.min(squareWidth*centerx + squareWidth/2, MAP_WIDTH-1),
-                                Math.min(squareHeight*centery + squareHeight/2, MAP_HEIGHT-1));
-         return centerLoc;
-     }
+    MapLocation getGridCenter(MapLocation loc) throws GameActionException {
+        int centerx = loc.x / squareWidth;
+        int centery = loc.y / squareHeight;
+        MapLocation centerLoc = new MapLocation(
+                Math.min(squareWidth * centerx + squareWidth / 2, MAP_WIDTH - 1),
+                Math.min(squareHeight * centery + squareHeight / 2, MAP_HEIGHT - 1));
+        return centerLoc;
+    }
 
-     MapLocation getGridCenterFromTileNumberNoBoundaries(int tnum) throws GameActionException {
-         int col = tnum % numCols;
-         int row = tnum / numCols;
-         int centerx = squareWidth*col + squareWidth/2;
-         int centery = squareHeight*row + squareHeight/2;
-         return new MapLocation(centerx, centery);
-     }
+    MapLocation getGridCenterFromTileNumberNoBoundaries(int tnum) throws GameActionException {
+        int col = tnum % numCols;
+        int row = tnum / numCols;
+        int centerx = squareWidth * col + squareWidth / 2;
+        int centery = squareHeight * row + squareHeight / 2;
+        return new MapLocation(centerx, centery);
+    }
 
-     MapLocation[] getAllCellsFromTileNumber(int tnum) throws GameActionException {
-         MapLocation[] allLocs = new MapLocation[squareWidth*squareHeight];
-         MapLocation center = getGridCenterFromTileNumberNoBoundaries(tnum);
-         for (int i=0; i<squareWidth; i++) {
-             for(int j=0; j<squareHeight; j++) {
-                 MapLocation newLoc = new MapLocation(
-                        Math.min(center.x-squareWidth/2+i, MAP_WIDTH-1),
-                        Math.min(center.y-squareHeight/2+j, MAP_HEIGHT-1));
-                 allLocs[i*squareWidth+j] = newLoc;
-             }
-         }
-         return allLocs;
-     }
+    MapLocation[] getAllCellsFromTileNumber(int tnum) throws GameActionException {
+        MapLocation[] allLocs = new MapLocation[squareWidth * squareHeight];
+        MapLocation center = getGridCenterFromTileNumberNoBoundaries(tnum);
+        for (int i = 0; i < squareWidth; i++) {
+            for (int j = 0; j < squareHeight; j++) {
+                MapLocation newLoc = new MapLocation(
+                        Math.min(center.x - squareWidth / 2 + i, MAP_WIDTH - 1),
+                        Math.min(center.y - squareHeight / 2 + j, MAP_HEIGHT - 1));
+                allLocs[i * squareWidth + j] = newLoc;
+            }
+        }
+        return allLocs;
+    }
 
-     //TODO: Better, easily invertible function
+    //TODO: Better, easily invertible function
     int soupToPower(int soupAmount) {
-         if(soupAmount==-1) {
-             return HQ_SEARCH;
-         }
-         return Math.min((soupAmount+199)/200, 30); //31 is used for HQ search
+        if (soupAmount == -1) {
+            return HQ_SEARCH;
+        }
+        return Math.min((soupAmount + 199) / 200, 30); //31 is used for HQ search
     }
 
     int powerToSoup(int powerAmount) {
-        return powerAmount*200;
+        return powerAmount * 200;
     }
 
     int getTileNumber(MapLocation loc) throws GameActionException {
         MapLocation centerLoc = getGridCenter(loc);
-        int xnum = (centerLoc.x - squareWidth/2)/squareWidth;
-        int ynum = (centerLoc.y - squareHeight/2)/squareHeight;
-        if(centerLoc.x == MAP_WIDTH-1) {
-            xnum = numCols-1;
+        int xnum = (centerLoc.x - squareWidth / 2) / squareWidth;
+        int ynum = (centerLoc.y - squareHeight / 2) / squareHeight;
+        if (centerLoc.x == MAP_WIDTH - 1) {
+            xnum = numCols - 1;
         }
-        if(centerLoc.y == MAP_HEIGHT-1) {
-            ynum = numRows-1;
+        if (centerLoc.y == MAP_HEIGHT - 1) {
+            ynum = numRows - 1;
         }
-        return ynum*(numCols) + xnum;
+        return ynum * (numCols) + xnum;
     }
 
     boolean sendMessage(int[] message, int bid) throws GameActionException {
-        if(message.length>GameConstants.NUMBER_OF_TRANSACTIONS_PER_BLOCK) {
+        if (message.length > GameConstants.NUMBER_OF_TRANSACTIONS_PER_BLOCK) {
             return false;
         }
         if (rc.canSubmitTransaction(message, bid)) {
@@ -335,12 +338,11 @@ public abstract class Robot {
 
     boolean tryBuildIfNotPresent(RobotType type, Direction dir) throws GameActionException {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
-            if(!existsNearbyAllyOfType(type)) {
+            if (!existsNearbyAllyOfType(type)) {
                 rc.buildRobot(type, dir);
             }
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
@@ -360,7 +362,7 @@ public abstract class Robot {
     }
 
     boolean allyMessage(int firstInt) throws GameActionException {
-        if(firstInt>>>(32-headerLen)==header) {
+        if (firstInt >>> (32 - headerLen) == header) {
             return true;
         } else {
             return false;
@@ -368,21 +370,21 @@ public abstract class Robot {
     }
 
     int getSchema(int firstInt) throws GameActionException {
-        return (firstInt<<headerLen)>>>(32-schemaLen);
+        return (firstInt << headerLen) >>> (32 - schemaLen);
     }
 
     boolean isAccessible(MapLocation target) throws GameActionException {
-         int lastElevation = rc.senseElevation(myLocation);
-         MapLocation ptr = myLocation;
-         while (ptr.distanceSquaredTo(target) > 2) { // adjacent to tile
-             if (!rc.canSenseLocation(ptr) || rc.senseFlooding(ptr))
-                 return false;
-             int elevation = rc.senseElevation(ptr);
-             if (Math.abs(elevation - lastElevation) > 3)
-                 return false;
-             lastElevation = elevation;
-             ptr = ptr.add(ptr.directionTo(target));
-         }
-         return true;
+        int lastElevation = rc.senseElevation(myLocation);
+        MapLocation ptr = myLocation;
+        while (ptr.distanceSquaredTo(target) > 2) { // adjacent to tile
+            if (!rc.canSenseLocation(ptr) || rc.senseFlooding(ptr))
+                return false;
+            int elevation = rc.senseElevation(ptr);
+            if (Math.abs(elevation - lastElevation) > 3)
+                return false;
+            lastElevation = elevation;
+            ptr = ptr.add(ptr.directionTo(target));
+        }
+        return true;
     }
 }

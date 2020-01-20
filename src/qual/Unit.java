@@ -47,7 +47,7 @@ public abstract class Unit extends Robot {
     }
 
     boolean tryMove() throws GameActionException {
-        for (Direction dir : directions)
+        for (Direction dir : getDirections())
             if (tryMove(dir))
                 return true;
         return false;
@@ -115,14 +115,15 @@ public abstract class Unit extends Robot {
         try {
             return rc.canSenseLocation(to)
                     && rc.senseNearbyRobots(to, 0, null).length == 0
-                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4;
+                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4
+                    && !rc.senseFlooding(to);
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    public void path(MapLocation target) {
+    public void path(MapLocation target) throws GameActionException {
         if (state.target == null || !state.target.equals(target))
             setDestination(target);
         navigate(1);
@@ -248,7 +249,7 @@ public abstract class Unit extends Robot {
         Direction best = toward(state.me, state.target);
         Direction possible = null;
         int possibleDist = Integer.MAX_VALUE;
-        for (Direction d : directions) {
+        for (Direction d : getDirections()) {
             int dist = state.me.add(d).distanceSquaredTo(state.target);
             if (dist < possibleDist && canMove(state.me, d)) {
                 possibleDist = dist;
@@ -307,7 +308,7 @@ public abstract class Unit extends Robot {
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
         int mindist = 50000;
         Direction bestdir = null;
-        for (Direction dir : directions) {
+        for (Direction dir : getDirections()) {
             if (rc.canMove(dir)) {
                 MapLocation newLoc = myLocation.add(dir);
                 int thisdist = newLoc.distanceSquaredTo(target);
