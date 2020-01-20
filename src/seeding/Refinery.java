@@ -6,6 +6,7 @@ public class Refinery extends Building {
 
     public Refinery(RobotController rc) throws GameActionException {
         super(rc);
+        checkForLocationMessage();
     }
 
     @Override

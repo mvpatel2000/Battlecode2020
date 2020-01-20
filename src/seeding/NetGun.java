@@ -6,6 +6,7 @@ public class NetGun extends Building {
 
     public NetGun(RobotController rc) throws GameActionException {
         super(rc);
+        checkForLocationMessage();
     }
 
     @Override

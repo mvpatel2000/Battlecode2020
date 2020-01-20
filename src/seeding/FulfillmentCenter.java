@@ -8,7 +8,6 @@ public class FulfillmentCenter extends Building {
     int defendDroneCount = 0;
     final double ATTACK_TO_DEFENSE_RATIO = .5;
 
-    MapLocation hqLocation = null;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -19,7 +18,7 @@ public class FulfillmentCenter extends Building {
 
     public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
-        hqLocation = checkForLocationMessage();
+        checkForLocationMessage();
     }
 
     @Override
@@ -47,7 +46,7 @@ public class FulfillmentCenter extends Building {
         boolean built = true;
         if (attackDroneCount > defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
             System.out.println("Building defense drone");
-            Direction toHQ = myLocation.directionTo(hqLocation);
+            Direction toHQ = myLocation.directionTo(HEADQUARTERS_LOCATION);
             if (tryBuild(RobotType.DELIVERY_DRONE, toHQ)) {
                 defendDroneCount++;
             } else if (tryBuild(RobotType.DELIVERY_DRONE, toHQ.rotateLeft())) {
@@ -60,7 +59,7 @@ public class FulfillmentCenter extends Building {
         }
         else {
             System.out.println("Building attack drone");
-            Direction awayHQ = myLocation.directionTo(hqLocation).opposite();
+            Direction awayHQ = myLocation.directionTo(HEADQUARTERS_LOCATION).opposite();
             if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ)) {
                 attackDroneCount++;
             } else if (tryBuild(RobotType.DELIVERY_DRONE, awayHQ.rotateLeft())) {

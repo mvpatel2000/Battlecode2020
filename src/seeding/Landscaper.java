@@ -18,7 +18,7 @@ public class Landscaper extends Unit {
     MapLocation plotCenter = null;
 
     // class variables used specifically by defensive landscapers:
-    MapLocation hqLocation = null;
+    MapLocation HEADQUARTERS_LOCATION = null;
     int wallPhase;
     MapLocation holdPositionLoc = null; // this is important; used in updateNearbyBots() to prevent circular reasoning
     boolean innerWaller = true;
@@ -92,7 +92,6 @@ public class Landscaper extends Unit {
         super(rc);
         System.out.println(myLocation);
         bornTurn = rc.getRoundNum();
-
         construct();
     }
 
@@ -113,24 +112,23 @@ public class Landscaper extends Unit {
         }
 
         // scan for HQ location
-        hqLocation = null;
         holdPositionLoc = null;
         wallPhase = 0;
-        hqLocation = checkForLocationMessage();
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 36; // arbitrary cutoff, but should be more than big enough.
+        checkForLocationMessage();
+        defensive = myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) <= 36; // arbitrary cutoff, but should be more than big enough.
         // TODO: check if i am a terraformer
         if (defensive) {
-            innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
-            System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
+            innerWallFillOrder = computeInnerWallFillOrder(HEADQUARTERS_LOCATION, baseLocation);
+            System.out.println("I am a defensive landscaper. Found our HQ at " + HEADQUARTERS_LOCATION.toString());
             updateHoldPositionLoc();
             //System.out.println("My hold position location: " + holdPositionLoc.toString());
         }
         else {
             System.out.println("I am far from my HQ");
             MapLocation[] enemyHQCandidateLocs = {
-                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, hqLocation.y),
-                new MapLocation(rc.getMapWidth() - hqLocation.x - 1, rc.getMapHeight() - hqLocation.y - 1),
-                new MapLocation(hqLocation.x, rc.getMapHeight() - hqLocation.y - 1)
+                new MapLocation(rc.getMapWidth() - HEADQUARTERS_LOCATION.x - 1, HEADQUARTERS_LOCATION.y),
+                new MapLocation(rc.getMapWidth() - HEADQUARTERS_LOCATION.x - 1, rc.getMapHeight() - HEADQUARTERS_LOCATION.y - 1),
+                new MapLocation(HEADQUARTERS_LOCATION.x, rc.getMapHeight() - HEADQUARTERS_LOCATION.y - 1)
             };
             for (MapLocation enemyHQCandidateLoc : enemyHQCandidateLocs) {
                 if (rc.canSenseLocation(enemyHQCandidateLoc)) {
@@ -255,8 +253,8 @@ public class Landscaper extends Unit {
     }
 
     public void defense() throws GameActionException {
-        Direction hqDir = myLocation.directionTo(hqLocation);
-        int hqDist = myLocation.distanceSquaredTo(hqLocation);
+        Direction hqDir = myLocation.directionTo(HEADQUARTERS_LOCATION);
+        int hqDist = myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION);
 
         // TODO: If we start exceeding bytecode limits, investigate ways to not do these two functions every turn.
         updateHoldPositionLoc();
@@ -293,15 +291,15 @@ public class Landscaper extends Unit {
                 }
                 else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
                     boolean foundDigSite = false;
-                    int hqElevation = rc.senseElevation(hqLocation);
+                    int hqElevation = rc.senseElevation(HEADQUARTERS_LOCATION);
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
-                        if (!rc.onTheMap(hqLocation.add(d))) {
+                        if (!rc.onTheMap(HEADQUARTERS_LOCATION.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) > 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && HEADQUARTERS_LOCATION.add(d).isAdjacentTo(myLocation) && !HEADQUARTERS_LOCATION.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(HEADQUARTERS_LOCATION.add(d)) && rc.senseElevation(HEADQUARTERS_LOCATION.add(d)) > rc.senseElevation(HEADQUARTERS_LOCATION)) {
                             foundDigSite = true;
-                            System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
-                            tryDig(myLocation.directionTo(hqLocation.add(d)));
+                            System.out.println("Digging from pile in direction " + myLocation.directionTo(HEADQUARTERS_LOCATION.add(d)));
+                            tryDig(myLocation.directionTo(HEADQUARTERS_LOCATION.add(d)));
                         }
                     }
                     if (!foundDigSite) {
@@ -322,15 +320,15 @@ public class Landscaper extends Unit {
                 }
                 else if (wallPhase == 0) { // inner wall not yet complete; deposit under yourself
                     boolean foundDumpSite = false;
-                    int hqElevation = rc.senseElevation(hqLocation);
+                    int hqElevation = rc.senseElevation(HEADQUARTERS_LOCATION);
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
-                        if (!rc.onTheMap(hqLocation.add(d))) {
+                        if (!rc.onTheMap(HEADQUARTERS_LOCATION.add(d))) {
                             continue;
                         }
-                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && rc.senseElevation(hqLocation.add(d)) < 0.5*(rc.senseElevation(hqLocation) + rc.senseElevation(hqLocation.add(d).add(d)))) {
+                        if (rc.getRoundNum() < forceInnerWallTakeoffAt && HEADQUARTERS_LOCATION.add(d).isAdjacentTo(myLocation) && !HEADQUARTERS_LOCATION.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(HEADQUARTERS_LOCATION.add(d)) && rc.senseElevation(HEADQUARTERS_LOCATION.add(d)) < rc.senseElevation(HEADQUARTERS_LOCATION)) {
                             foundDumpSite = true;
-                            System.out.println("Dumping to pit in direction " + myLocation.directionTo(hqLocation.add(d)));
-                            tryDeposit(myLocation.directionTo(hqLocation.add(d)));
+                            System.out.println("Dumping to trench in direction " + myLocation.directionTo(HEADQUARTERS_LOCATION.add(d)));
+                            tryDeposit(myLocation.directionTo(HEADQUARTERS_LOCATION.add(d)));
                         }
                     }
                     if (!foundDumpSite) {
@@ -447,11 +445,11 @@ public class Landscaper extends Unit {
             int numInnerWall = 0; // number of ALL ROBOTS in the inner wall (not counting current robot if applicable)
             int numInnerWallSpots = 0;
             for (Direction dir : directions) {
-                if (rc.onTheMap(hqLocation.add(dir))) {
+                if (rc.onTheMap(HEADQUARTERS_LOCATION.add(dir))) {
                     numInnerWallSpots++;
-                    if (nearbyBotsMap.containsKey(hqLocation.add(dir))) {
+                    if (nearbyBotsMap.containsKey(HEADQUARTERS_LOCATION.add(dir))) {
                         numInnerWall++;
-                        RobotInfo botInfo = nearbyBotsMap.get(hqLocation.add(dir));
+                        RobotInfo botInfo = nearbyBotsMap.get(HEADQUARTERS_LOCATION.add(dir));
                         if (botInfo.type.equals(RobotType.LANDSCAPER) && botInfo.team.equals(allyTeam)) {
                             numInnerWallOurs++;
                         }
@@ -545,7 +543,7 @@ public class Landscaper extends Unit {
             boolean enemyInWall = false;
             currentlyInInnerWall = false;
             for (Direction dir : innerWallFillOrder) {
-                MapLocation t = hqLocation.add(dir);
+                MapLocation t = HEADQUARTERS_LOCATION.add(dir);
                 if (!rc.onTheMap(t)) {
                     continue;
                 }
@@ -568,7 +566,7 @@ public class Landscaper extends Unit {
         if (wallPhase >= 2 || holdPositionLoc == null) {
             boolean amInOuterRing = false;
             for (int i = 0; i < 16; i++) {
-                if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation))  {
+                if (HEADQUARTERS_LOCATION.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation))  {
                     outerRingIndex = i;
                     System.out.println("I'm already in the outer ring.");
                     holdPositionLoc = myLocation;
@@ -579,7 +577,7 @@ public class Landscaper extends Unit {
             // if (rc.senseElevation(myLocation) < -5 || rc.senseElevation(myLocation) > 10) { // I am in a pit/hill, just stay
             //     holdPositionLoc = myLocation;
             //     for (int i = 0; i < 16; i++) { // update outerRingIndex
-            //         if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation)) {
+            //         if (HEADQUARTERS_LOCATION.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation)) {
             //             outerRingIndex = i;
             //         }
             //     }
@@ -587,11 +585,11 @@ public class Landscaper extends Unit {
             //     // I don't handle this for now.
             // }
             if (!amInOuterRing) {
-                holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
+                holdPositionLoc = HEADQUARTERS_LOCATION.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
                 while (!rc.onTheMap(holdPositionLoc) || nearbyBotsMap.containsKey(holdPositionLoc) || (rc.canSenseLocation(holdPositionLoc) && (rc.senseElevation(holdPositionLoc) < -5 || rc.senseElevation(holdPositionLoc) > 10))) {
                     // if the holdposition is off the map or occupied or is a pit/hill that we likely can't path to, then try the next holdposition in the ring
                     outerRingIndex = (outerRingIndex + 1) % 16;
-                    holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
+                    holdPositionLoc = HEADQUARTERS_LOCATION.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
                 }
             }
         }

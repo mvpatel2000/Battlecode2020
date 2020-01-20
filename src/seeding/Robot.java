@@ -25,6 +25,9 @@ public abstract class Robot {
     final int MAP_WIDTH;
     final int MAP_HEIGHT;
     final int HQ_SEARCH = 31;
+
+    MapLocation HEADQUARTERS_LOCATION = null;
+
     final int messageModulus=2;
     final int messageFrequency=5;
     //for reading message headers
@@ -182,7 +185,7 @@ public abstract class Robot {
      */
     //Returns MapLocation if it finds a LocationMessage from our HQ.
     //returns null if it doesn't.
-    public MapLocation checkForLocationMessage() throws GameActionException {
+    public void checkForLocationMessage() throws GameActionException {
         int rn = rc.getRoundNum();
         for(int i=1; i<=3; i++) {
             if(i<rn) {
@@ -192,13 +195,12 @@ public abstract class Robot {
                     if (allyMessage(msg[0])) {
                         if(getSchema(msg[0])==4) {
                             LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                            return new MapLocation(l.xLoc, l.yLoc);
+                            HEADQUARTERS_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                         }
                     }
                 }
             }
         }
-        return null;
     }
 
      /**
