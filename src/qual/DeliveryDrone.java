@@ -90,6 +90,25 @@ public class DeliveryDrone extends Unit {
 //            DEFEND_TURN = 700-5;
 //        }
         tilesVisited[getTileNumber(enemyLocation)] = 1;
+        int hqTileNum = getTileNumber(hqLocation);
+        tilesVisited[hqTileNum] = 1;
+        if (hqTileNum % numCols == 0) { // left border
+            tilesVisited[hqTileNum+1] = 1;
+        } else if (hqTileNum % numCols == numCols - 1) { // right border
+            tilesVisited[hqTileNum-1] = 1;
+        } else {
+            tilesVisited[hqTileNum-1] = 1;
+            tilesVisited[hqTileNum+1] = 1;
+        }
+        if (hqTileNum < numCols) { // bottom
+            tilesVisited[hqTileNum + numCols] = 1;
+        } else if (hqTileNum >= numCols*(numRows-1)) { // top
+            tilesVisited[hqTileNum - numCols] = 1;
+        } else {
+            tilesVisited[hqTileNum - numCols] = 1;
+            tilesVisited[hqTileNum + numCols] = 1;
+        }
+
         whichEnemyLocation = 0;
         nearestWaterLocation = updateNearestWaterLocation();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?

@@ -455,7 +455,8 @@ public class Miner extends Unit {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
                         && rc.senseElevation(newLoc) >= rc.senseElevation(loc) //&& onBuildingGridSquare(newLoc)
-                        && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2) {
+                        && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2
+                        && hqLocation.distanceSquaredTo(newLoc) != 5) {
                     target = dir;
                     loc = newLoc;
                 }
