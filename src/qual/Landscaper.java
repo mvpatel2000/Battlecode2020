@@ -309,7 +309,7 @@ public class Landscaper extends Unit {
 
     public boolean notTrappingAlly(Direction d) throws GameActionException {
         MapLocation t = myLocation.add(d);
-        if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(allyTeam)) {
+        if (nearbyBotsMap.containsKey(t) && !nearbyBotsMap.get(t).team.equals(enemyTeam)) {
             pauseDigAndWaitForAllyToPass++;
             return pauseDigAndWaitForAllyToPass >= 2;
         }
@@ -349,14 +349,41 @@ public class Landscaper extends Unit {
                     }
                     else {
                         System.out.println("Attempting to gather dirt in an emergency to kill the enemy building");
-                        if (tryDig(d.opposite())) { // TODO: should we allow gathering dirt from anywhere?
-                            return;
+                        if (myLocation.isAdjacentTo(hqLocation) && rc.canDigDirt(hqDir)) { // first priority: heal HQ
+                            System.out.println("Healing HQ");
+                            tryDig(hqDir);
+                        }
+                        else if (myLocation.isAdjacentTo(baseLocation) && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // second priority: heal d.school
+                            System.out.println("Healing d.school");
+                            tryDig(myLocation.directionTo(baseLocation));
+                        }
+                        else {
+                            for (MapLocation digLoc : depositSiteExceptions) {
+                                if (myLocation.isAdjacentTo(digLoc) &&
+                                    (!nearbyBotsMap.containsKey(digLoc)) ||
+                                        (nearbyBotsMap.containsKey(digLoc) && nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding())) {
+                                    System.out.println("Attempting to dig from pre-designated dig site " + digLoc.toString());
+                                    tryDig(myLocation.directionTo(digLoc));
+                                }
+                            }
+                            tryDig(d.opposite());
+                            for (Direction di : directions) {
+                                tryDig(di);
+                            }
                         }
                     }
                 }
             }
         }
-        if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc
+        if (!myLocation.equals(holdPositionLoc)) { // first priotiy: path to holdPositionLoc, dig in if needed
+            if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) > 3) {
+                tryDig(myLocation.directionTo(holdPositionLoc));
+                tryDeposit(Direction.CENTER);
+            }
+            if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) < -3) {
+                tryDig(Direction.CENTER);
+                tryDeposit(myLocation.directionTo(holdPositionLoc));
+            }
             System.out.println("Pathing towards my holdPositionLoc: " + holdPositionLoc.toString());
             path(holdPositionLoc);
         }
@@ -473,35 +500,17 @@ public class Landscaper extends Unit {
     }
 
     boolean shouldLowerPile(MapLocation hqLocation, Direction d) throws GameActionException {
-        MapLocation a = hqLocation.add(d).add(d.rotateRight());
-        MapLocation b = hqLocation.add(d).add(d.rotateLeft());
-        MapLocation c = null;
-        if (!rc.canSenseLocation(a) || !rc.canSenseLocation(b) || !rc.canSenseLocation(hqLocation.add(d))) {
-            return false;
+        if (baseLocation == null || !rc.canSenseLocation(baseLocation)) {
+            return rc.senseElevation(hqLocation.add(d)) > rc.senseElevation(hqLocation);
         }
-        if (Math.abs(rc.senseElevation(a) - rc.senseElevation(hqLocation)) < Math.abs(rc.senseElevation(b) - rc.senseElevation(hqLocation))) {
-            c = a;
-        }
-        else {
-            c = b;
-        }
-        return rc.senseElevation(hqLocation.add(d)) > (int) (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c)));
+        return rc.senseElevation(hqLocation.add(d)) > (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(baseLocation)));
     }
 
     boolean shouldRaisePit(MapLocation hqLocation, Direction d) throws GameActionException {
-        MapLocation a = hqLocation.add(d).add(d.rotateRight());
-        MapLocation b = hqLocation.add(d).add(d.rotateLeft());
-        MapLocation c = null;
-        if (!rc.canSenseLocation(a) || !rc.canSenseLocation(b)) {
-            return false;
+        if (baseLocation == null || !rc.canSenseLocation(baseLocation)) {
+            return rc.senseElevation(hqLocation.add(d)) < rc.senseElevation(hqLocation);
         }
-        if (Math.abs(rc.senseElevation(a) - rc.senseElevation(hqLocation)) < Math.abs(rc.senseElevation(b) - rc.senseElevation(hqLocation))) {
-            c = a;
-        }
-        else {
-            c = b;
-        }
-        return rc.senseElevation(hqLocation.add(d)) < (int) (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(c)));
+        return rc.senseElevation(hqLocation.add(d)) < (0.5 * (rc.senseElevation(hqLocation) + rc.senseElevation(baseLocation)));
     }
 
     boolean tryDeposit(Direction dir) throws GameActionException {
@@ -657,14 +666,14 @@ public class Landscaper extends Unit {
                     continue;
                 }
                 if (holdPositionLoc == null && !nearbyBotsMap.containsKey(t)) { // find the first empty spot in the fill order
-                    if (rc.canSenseLocation(t) && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 6 && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 6) {
+                    if (rc.canSenseLocation(t) && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 8 && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 8) {
                         holdPositionLoc = t;
                     }
                 }
                 if (t.equals(myLocation)) {
                     currentlyInInnerWall = true;
                 }
-                if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(enemyTeam)) {
+                if (nearbyBotsMap.containsKey(t) && nearbyBotsMap.get(t).team.equals(enemyTeam) && nearbyBotsMap.get(t).type.equals(RobotType.LANDSCAPER)) {
                     enemyInWall = true;
                 }
             }

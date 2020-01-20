@@ -33,13 +33,11 @@ public class HQ extends Building {
         refinery = new Refinery(rc);
         minerCount = 0;
 
-        for (Direction dir : directions) {
-            if (minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
-                minerCount++;
-            }
+        initialScan();
+        if (tryBuild(RobotType.MINER, getBestMinerDirection())) {
+            minerCount++;
         }
 
-        initialScan();
         accessibleSoupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH / 2, MAP_HEIGHT / 2)), -1});
         accessibleSoupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, MAP_HEIGHT - myLocation.y - 1)), -1});
         accessibleSoupsPerTile.add(new int[]{getTileNumber(new MapLocation(MAP_WIDTH - myLocation.x - 1, myLocation.y)), -1});
@@ -73,29 +71,27 @@ public class HQ extends Building {
                     soupSum += soupPerTile[1];
                 }
             }
-            for (Direction dir : directions) {
-                /*
-                if ((minerCount < 4 || (soupSum > 0 && rc.getRoundNum() >= 200 && minerCount < 10 && minerCooldown < 0)) && tryBuild(RobotType.MINER, dir)) {
-                    minerCount++;
-                    minerCooldown = 5;
-                }*/
-                if(minerCount < 4 && tryBuild(RobotType.MINER, dir)) {
-                    minerCount++;
-                    minerCooldown = 5;
-                } else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, dir)) {
-                    //System.out.println("I producing miners");
-                    //System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
-                    //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
-                    //System.out.println("[i] Producing extra miner");
-                    minerCount++;
-                } else {
-                    //System.out.println("[i] Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
-                    //System.out.println("[i] I have produced " + Integer.toString(minerCount));
-                    //System.out.println("I can't build miners");
-                    //System.out.println("SoupSum " + Integer.toString(soupSum));
-                    //System.out.println("MinerCount " + Integer.toString(minerCount));
-                    //System.out.println("SQRT(roundNum)/5 " + Math.sqrt(rc.getRoundNum())/5);
-                }
+            /*
+            if ((minerCount < 4 || (soupSum > 0 && rc.getRoundNum() >= 200 && minerCount < 10 && minerCooldown < 0)) && tryBuild(RobotType.MINER, dir)) {
+                minerCount++;
+                minerCooldown = 5;
+            }*/
+            if(minerCount < 4 && tryBuild(RobotType.MINER, getBestMinerDirection())) {
+                minerCount++;
+                minerCooldown = 5;
+            } else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
+                //System.out.println("I producing miners");
+                //System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
+                //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
+                //System.out.println("[i] Producing extra miner");
+                minerCount++;
+            } else {
+                //System.out.println("[i] Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
+                //System.out.println("[i] I have produced " + Integer.toString(minerCount));
+                //System.out.println("I can't build miners");
+                //System.out.println("SoupSum " + Integer.toString(soupSum));
+                //System.out.println("MinerCount " + Integer.toString(minerCount));
+                //System.out.println("SQRT(roundNum)/5 " + Math.sqrt(rc.getRoundNum())/5);
             }
         }
 
@@ -126,6 +122,28 @@ public class HQ extends Building {
         }
     }
 
+    Direction getBestMinerDirection() throws GameActionException {
+        Direction optimalDir = null;
+        int score = MAX_SQUARED_DISTANCE;
+        for (Direction dir : directions) {
+            if (!rc.canBuildRobot(RobotType.MINER, dir))
+                continue;
+            for (int[] soupTile : accessibleSoupsPerTile) {
+                int dist = getCenterFromTileNumber(soupTile[0]).distanceSquaredTo(myLocation.add(dir));
+                System.out.println(dir + " " + dist);
+                if (dist < score) {
+                    optimalDir = dir;
+                    score = dist;
+                }
+            }
+        }
+        if (optimalDir != null) {
+            return optimalDir;
+        }
+        return Direction.NORTH;
+    }
+
+
     // inserts into soup list in a sorted order, checks if tile is accessible
     void accessibleAddToSoupList(int tileNum, int soupThere) throws GameActionException {
         boolean added = false;
@@ -134,18 +152,15 @@ public class HQ extends Building {
                 //TODO: instead of inserting s.soupThere do the weighting calculation here and compare based on weighting?
                 if (tileNum == accessibleSoupsPerTile.get(j)[0]) {
                     added = true;
-                    //System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                     break;
                 } else if (accessibleSoupsPerTile.get(j)[1] < soupThere) {
                     accessibleSoupsPerTile.add(j, new int[]{tileNum, soupThere});
                     added = true;
-                    //System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                     break;
                 }
             }
             if (!added) {
                 accessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
-                //System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
             }
         }
         else {
@@ -174,18 +189,15 @@ public class HQ extends Building {
             //TODO: instead of inserting s.soupThere do the weighting calculation here and compare based on weighting?
             if (tileNum == accessibleSoupsPerTile.get(j)[0]) {
                 added = true;
-                //System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                 break;
             } else if (accessibleSoupsPerTile.get(j)[1] < soupThere) {
                 accessibleSoupsPerTile.add(j, new int[]{tileNum, soupThere});
                 added = true;
-                //System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
                 break;
             }
         }
         if (!added) {
             accessibleSoupsPerTile.add(new int[]{tileNum, soupThere});
-            //System.out.println("adding tile " + Integer.toString(tileNum) + " to soup list");
         }
     }
 
@@ -193,9 +205,6 @@ public class HQ extends Building {
         for (Iterator<int[]> itr = accessibleSoupsPerTile.iterator(); itr.hasNext();) {
             int[] soupPerTile = itr.next();
             if(soupPerTile[1] == -1 && ehql != null) {
-                //System.out.println("Removing soupLoc b/c I know Enemy HQ");
-                //System.out.println(soupPerTile[0]);
-                //System.out.println(getTileNumber(enemyHQLocation));
                 if(soupPerTile[0] != getTileNumber(enemyHQLocation)) {
                     itr.remove();
                 }
@@ -268,16 +277,14 @@ public class HQ extends Building {
     }
 
     void readMessages() throws GameActionException {
-        //System.out.println("reading messages...");
+        //System.out.println("[i] reading messages...");
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
         for (int i=0; i<msgs.length; i++) {
             int f = msgs[i].getMessage()[0];
             //sent from our team
             if(allyMessage(f)) {
                 //soup message
-                //System.out.println("found ally message...");
                 if(getSchema(f)==1) {
-                    //System.out.println("found soup message...");
                     SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (s.soupThere==0) {
                         //delete from arraylist of soups
