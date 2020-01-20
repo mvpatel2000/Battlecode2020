@@ -131,7 +131,8 @@ public class DesignSchool extends Building {
                 System.out.println("Ready to make inner wall landscaper");
 
                 // look for enemy d.school
-                enemyDSchoolLocation = null;
+                MapLocation enemyDSchoolLocation = null;
+                RobotInfo[] nearbyBots = rc.senseNearbyRobots();
                 for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
                     if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
                         enemyDSchoolLocation = r.getLocation();
