@@ -182,7 +182,7 @@ public class DeliveryDrone extends Unit {
                     safePath(destination);
                 }
                 nearestWaterLocation = updateNearestWaterLocation();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 100) { // drone attack-move
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200) { // drone attack-move
                 if (rc.getRoundNum() > ATTACK_TURN) {
                     fuzzyMoveToLoc(enemyLocation);
                 }
@@ -205,27 +205,63 @@ public class DeliveryDrone extends Unit {
     }
 
     public boolean safePath(MapLocation target) throws GameActionException {
-//        System.out.println("Pathing to: " + target);
-        MapLocation me = history.peekFirst();
-        if (me.equals(target)) {
-            return false;
+        RobotInfo[] enemyUnits = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam);
+        Direction optimalDir = null;
+        int optimalDist = myLocation.distanceSquaredTo(target);
+        for (Direction dir : cardinalDirections) {
+            System.out.println("Start: " + rc.getRoundNum() + " " + dir);
+            if (!rc.canMove(dir))
+                continue;
+            MapLocation newLoc = myLocation.add(dir);
+            boolean safeSpot = true;
+            for (RobotInfo enemyUnit : enemyUnits) {
+                System.out.println(enemyUnit.type + " " + newLoc + " " + enemyUnit.location.distanceSquaredTo(newLoc) + " " + GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                if ((enemyUnit.type == RobotType.NET_GUN || enemyUnit.type == RobotType.HQ)
+                        && newLoc.distanceSquaredTo(enemyUnit.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                    safeSpot = false;
+                    break;
+                }
+            }
+            if (safeSpot && newLoc.distanceSquaredTo(target) <= optimalDist) {
+                optimalDir = dir;
+                optimalDist = newLoc.distanceSquaredTo(target);
+            }
+            System.out.println("End: " + optimalDir + " " + optimalDist);
         }
-        RobotInfo[] guns = Arrays.stream(rc.senseNearbyRobots()).filter(robot ->
-                !robot.team.equals(allyTeam)
-                        && (robot.getType().equals(RobotType.HQ) || robot.getType().equals(RobotType.NET_GUN)))
-                .toArray(RobotInfo[]::new);
-        Direction best = Arrays.stream(cardinalDirections).filter(x -> {
-            MapLocation next = me.add(x);
-            return rc.canMove(x) && Arrays.stream(guns).noneMatch(robot ->
-                    robot.getLocation().distanceSquaredTo(next) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-                    && next.distanceSquaredTo(enemyLocation) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED;
-        }).min(Comparator.comparing(x ->
-                me.add(x).distanceSquaredTo(target))).orElse(null);
-        return pathHelper(target, best);
+        if (optimalDir != null) {
+            tryMove(optimalDir);
+            return true;
+        }
+        return false;
     }
 
     @Override
     public boolean path(MapLocation target) throws GameActionException {
+        RobotInfo[] enemyUnits = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam);
+        Direction optimalDir = null;
+        int optimalDist = myLocation.distanceSquaredTo(target);
+        for (Direction dir : directions) {
+            if (!rc.canMove(dir))
+                continue;
+            MapLocation newLoc = myLocation.add(dir);
+            for (RobotInfo enemy : enemyUnits) {
+                if ((enemy.type == RobotType.NET_GUN || enemy.type == RobotType.HQ)
+                        && newLoc.distanceSquaredTo(enemy.location) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+                    continue;
+            }
+            if (newLoc.distanceSquaredTo(target) <= optimalDist) {
+                optimalDir = dir;
+                optimalDist = newLoc.distanceSquaredTo(target);
+            }
+        }
+        if (optimalDir != null) {
+            tryMove(optimalDir);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean oldPath(MapLocation target) throws GameActionException {
 //        System.out.println("Pathing to: " + target);
         MapLocation me = history.peekFirst();
         if (me.equals(target)) {
