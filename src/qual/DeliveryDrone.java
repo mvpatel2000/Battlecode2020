@@ -70,7 +70,7 @@ public class DeliveryDrone extends Unit {
         }
 
         DEFEND_TURN = 1100;
-        ATTACK_TURN = 1700;
+        ATTACK_TURN = 2200;
 //        if (rc.canSenseLocation(hqLocation)) {
 //            switch (rc.senseElevation(hqLocation)) {
 //                case 5:
