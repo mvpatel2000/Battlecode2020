@@ -298,25 +298,24 @@ public class Miner extends Unit {
             refineryCheck();
         }
 
-        Direction hqDir = myLocation.directionTo(hqLocation);
-        MapLocation candidateBuildLoc = myLocation.add(hqDir.opposite());
-        boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 2 || (candidateBuildLoc.x - hqLocation.x) < -2 || (candidateBuildLoc.y - hqLocation.y) > 2 || (candidateBuildLoc.y - hqLocation.y) < -2;
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
         //TODO: Fix this check to make like dschool so it checks all dirs instead of just trying 1
-        if (rc.getTeamSoup()>220 && outsideOuterWall && !fulfillmentCenterExists && dSchoolExists && !holdProduction
-                && rc.canBuildRobot(RobotType.FULFILLMENT_CENTER, hqDir.opposite()) && onBuildingGridSquare(myLocation.add(hqDir.opposite()))) {
-            fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, hqDir.opposite());
-            if(fulfillmentCenterExists) {
-                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                b.writeTypeBuilt(1); //1 is Fulfillment Center
-                sendMessage(b.getMessage(), 1); //Find better bidding scheme
+        if (rc.getTeamSoup()>220 && !fulfillmentCenterExists && dSchoolExists && !holdProduction) {
+            Direction optimalDir = determineOptimalFulfillmentCenter();
+            if (optimalDir != null) {
+                fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, optimalDir);
+                if (fulfillmentCenterExists) {
+                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    b.writeTypeBuilt(1); //1 is Fulfillment Center
+                    sendMessage(b.getMessage(), 1); //Find better bidding scheme
+                }
             }
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
         if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
-            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
+            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
             if(dSchoolExists) {
                 BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                 b.writeTypeBuilt(2); //2 is d.school
@@ -371,7 +370,7 @@ public class Miner extends Unit {
             if (myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 200)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction) {
-                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection(hqDir));
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
                 if(dSchoolExists) {
                     BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                     b.writeTypeBuilt(2); //2 is d.school
@@ -388,7 +387,24 @@ public class Miner extends Unit {
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
     }
 
-    public Direction determineOptimalDSchoolDirection(Direction hqDir) throws GameActionException {
+    public Direction determineOptimalFulfillmentCenter() throws GameActionException {
+        Direction target = myLocation.directionTo(hqLocation).opposite();
+        MapLocation loc = myLocation.add(target);
+        for (Direction dir : directions) {
+            MapLocation newLoc = myLocation.add(dir);
+            if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
+                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc) && onBuildingGridSquare(newLoc)
+                    && hqLocation.distanceSquaredTo(newLoc) > 9) {
+                target = dir;
+                loc = newLoc;
+            }
+        }
+        if (loc.distanceSquaredTo(hqLocation) > 9)
+            return target;
+        return null;
+    }
+
+    public Direction determineOptimalDSchoolDirection() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) < 9) { // close to HQ, build highest elevation in outer ring
             Direction target = myLocation.directionTo(hqLocation).opposite();
             MapLocation loc = myLocation.add(target);
