@@ -350,7 +350,6 @@ public class Miner extends Unit {
 
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
-
                 Direction toBase = myLocation.directionTo(baseLocation);
                 if (rc.canDepositSoup(toBase)) {                              // deposit. Note: Second check is redundant?
                     rc.depositSoup(toBase, rc.getSoupCarrying());
@@ -363,7 +362,27 @@ public class Miner extends Unit {
                 }
             } else if (myLocation.distanceSquaredTo(hqLocation) < 3
                     && !destination.equals(hqLocation)) {                   // don't mine next to HQ
-                fuzzyMoveToLoc(myLocation.add(myLocation.directionTo(hqLocation).opposite()));
+                Direction idealDir = null;
+                for (Direction dir : directions) {
+                    MapLocation newLoc = myLocation.add(dir);
+                    if (rc.canMove(dir) && newLoc.distanceSquaredTo(hqLocation) > 2 && newLoc.distanceSquaredTo(destination) < 3) {
+                        idealDir = dir;
+                    }
+                }
+                if (idealDir == null && myLocation.distanceSquaredTo(hqLocation) == 1) { //adjacent to HQ, ok to move to diagonal to reposition
+                    for (Direction dir : directions) {
+                        MapLocation newLoc = myLocation.add(dir);
+                        if (rc.canMove(dir) && newLoc.distanceSquaredTo(hqLocation) > 1 && newLoc.distanceSquaredTo(destination) < 3) {
+                            idealDir = dir;
+                        }
+                    }
+                }
+                if (idealDir != null && rc.isReady() && rc.canMove(idealDir)) {
+                    rc.move(idealDir);
+                } else {
+                    fuzzyMoveToLoc(myLocation.add(myLocation.directionTo(hqLocation).opposite()));
+                }
+                destination = updateNearestSoupLocation();
             } else {                                                           // mining
                 Direction soupDir = myLocation.directionTo(destination);
                 if (rc.senseSoup(destination) == 0) {
