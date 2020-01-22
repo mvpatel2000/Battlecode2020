@@ -11,7 +11,7 @@ public class Message {
     final int MAP_HEIGHT;
     final int MAP_WIDTH;
     final int team;
-    final int arbitraryConstant = 57564;
+    final int arbitraryConstant = 94655; //make sure this is the same constant in Robot.java
 
     int headerLen = 16;
     final int header;
