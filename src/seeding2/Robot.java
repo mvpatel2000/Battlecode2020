@@ -1,4 +1,4 @@
-package hades;
+package qual;
 
 import battlecode.common.*;
 

@@ -1,4 +1,4 @@
-package hades;
+package qual;
 
 public class Message {
 
