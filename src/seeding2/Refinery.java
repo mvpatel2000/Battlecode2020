@@ -1,4 +1,4 @@
-package qual;
+package seeding2;
 
 import battlecode.common.*;
 

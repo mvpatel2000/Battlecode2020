@@ -1,4 +1,4 @@
-package qual;
+package seeding2;
 
 import java.util.*;
 import battlecode.common.*;

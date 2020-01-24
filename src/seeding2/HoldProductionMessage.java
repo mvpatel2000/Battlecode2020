@@ -1,4 +1,4 @@
-package qual;
+package seeding2;
 
 public class HoldProductionMessage extends Message {
 
