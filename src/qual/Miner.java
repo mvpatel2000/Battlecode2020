@@ -366,14 +366,11 @@ public class Miner extends Unit {
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
         if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
-            Direction optimalDir = determineOptimalDSchoolDirection();
-            if (optimalDir != null) {
-                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, optimalDir);
-                if (dSchoolExists) {
-                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    b.writeTypeBuilt(2); //2 is d.school
-                    sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                }
+            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
+            if(dSchoolExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(2); //2 is d.school
+                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
             }
         }
 
@@ -443,14 +440,11 @@ public class Miner extends Unit {
             if (myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
-                Direction optimalDir = determineOptimalDSchoolDirection();
-                if (optimalDir != null) {
-                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, optimalDir);
-                    if (dSchoolExists) {
-                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                        b.writeTypeBuilt(2); //2 is d.school
-                        sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                    }
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
+                if(dSchoolExists) {
+                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    b.writeTypeBuilt(2); //2 is d.school
+                    sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
                 }
             }
             if (turnsToBase >= 0)
@@ -483,12 +477,12 @@ public class Miner extends Unit {
     //TODO: This is not going to be on grid
     public Direction determineOptimalDSchoolDirection() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) < 9) { // close to HQ, build highest elevation in outer ring
-            Direction target = null;
-            MapLocation loc = null;
+            Direction target = myLocation.directionTo(hqLocation).opposite();
+            MapLocation loc = myLocation.add(target);
             for (Direction dir : directions) {
                 MapLocation newLoc = myLocation.add(dir);
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                        && (rc.senseElevation(newLoc) >= rc.senseElevation(loc) || loc == null) //&& onBuildingGridSquare(newLoc)
+                        && rc.senseElevation(newLoc) >= rc.senseElevation(loc) //&& onBuildingGridSquare(newLoc)
                         && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2
                         && hqLocation.distanceSquaredTo(newLoc) != 5) {
                     target = dir;
@@ -496,22 +490,20 @@ public class Miner extends Unit {
                 }
             }
             return target;
+        } else { // far away, just take highest elevation point
+            Direction target = myLocation.directionTo(hqLocation).rotateRight();
+            MapLocation loc = myLocation.add(target);
+            for (Direction dir : directions) {
+                MapLocation newLoc = myLocation.add(dir);
+                if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
+                        // && onBuildingGridSquare(newLoc)
+                        && newLoc.distanceSquaredTo(hqLocation) <= loc.distanceSquaredTo(hqLocation)) {
+                    target = dir;
+                    loc = newLoc;
+                }
+            }
+            return target;
         }
-        return null;
-//        else { // far away, just take highest elevation point
-//            Direction target = myLocation.directionTo(hqLocation).rotateRight();
-//            MapLocation loc = myLocation.add(target);
-//            for (Direction dir : directions) {
-//                MapLocation newLoc = myLocation.add(dir);
-//                if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-//                        // && onBuildingGridSquare(newLoc)
-//                        && newLoc.distanceSquaredTo(hqLocation) <= loc.distanceSquaredTo(hqLocation)) {
-//                    target = dir;
-//                    loc = newLoc;
-//                }
-//            }
-//            return target;
-//        }
     }
 
     // Updates base location and builds refinery if base is too far
