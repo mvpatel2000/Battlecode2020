@@ -464,7 +464,6 @@ public class Miner extends Unit {
                 }
                 destination = updateNearestSoupLocation();
             } else {                                                           // mining
-                Direction soupDir = myLocation.directionTo(destination);
                 if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
                     System.out.println("Last soup loc: "+lastSoupLocation);
                     refineryCheck();
@@ -472,18 +471,21 @@ public class Miner extends Unit {
                     turnsToBase++;
                 }
                 if (rc.senseSoup(destination) == 0) {
-                    System.out.println("I am at destination. Soup: " + rc.senseSoup(destination));
+                    System.out.println("Soup finished");
                     sendSoupMessageIfShould(destination, true);
-                    destination = updateNearestSoupLocation();
-                    if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
-                        refineryCheck();
-                        destination = baseLocation;
-                        turnsToBase++;
+                    if (!destination.equals(baseLocation)) {
+                        destination = updateNearestSoupLocation();
+                        System.out.println("reset destination:" + destination);
+                        if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
+                            refineryCheck();
+                            destination = baseLocation;
+                            turnsToBase++;
+                        }
                     }
                 }
-                else if (rc.isReady()) {                                      // mine
+                if (turnsToBase < 0 && rc.isReady() && myLocation.distanceSquaredTo(destination) <=2) {    // mine
                     sendSoupMessageIfShould(destination, false);
-                    rc.mineSoup(soupDir);
+                    rc.mineSoup(myLocation.directionTo(destination));
                 }
                 if (myLocation.distanceSquaredTo(destination) > 2) {
                     setPathTarget(destination);
