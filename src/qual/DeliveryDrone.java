@@ -11,26 +11,6 @@ public class DeliveryDrone extends Unit {
 
     final int[][] SPIRAL_ORDER = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2}, {0, 2}, {2, 0}, {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}, {-3, 0}, {0, -3}, {0, 3}, {3, 0}, {-3, -1}, {-3, 1}, {-1, -3}, {-1, 3}, {1, -3}, {1, 3}, {3, -1}, {3, 1}, {-3, -2}, {-3, 2}, {-2, -3}, {-2, 3}, {2, -3}, {2, 3}, {3, -2}, {3, 2}, {-4, 0}, {0, -4}, {0, 4}, {4, 0}, {-4, -1}, {-4, 1}, {-1, -4}, {-1, 4}, {1, -4}, {1, 4}, {4, -1}, {4, 1}, {-3, -3}, {-3, 3}, {3, -3}, {3, 3}, {-4, -2}, {-4, 2}, {-2, -4}, {-2, 4}, {2, -4}, {2, 4}, {4, -2}, {4, 2}, {-5, 0}, {-4, -3}, {-4, 3}, {-3, -4}, {-3, 4}, {0, -5}, {0, 5}, {3, -4}, {3, 4}, {4, -3}, {4, 3}, {5, 0}, {-5, -1}, {-5, 1}, {-1, -5}, {-1, 5}, {1, -5}, {1, 5}, {5, -1}, {5, 1}, {-5, -2}, {-5, 2}, {-2, -5}, {-2, 5}, {2, -5}, {2, 5}, {5, -2}, {5, 2}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4}, {-5, -3}, {-5, 3}, {-3, -5}, {-3, 5}, {3, -5}, {3, 5}, {5, -3}, {5, 3}};
     final Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-
-    Direction[][] outerRing = {
-        {Direction.NORTHWEST, Direction.NORTHWEST},
-        {Direction.NORTH, Direction.NORTHWEST},
-        {Direction.NORTH, Direction.NORTH},
-        {Direction.NORTH, Direction.NORTHEAST},
-        {Direction.NORTHEAST, Direction.NORTHEAST},
-        {Direction.EAST, Direction.NORTHEAST},
-        {Direction.EAST, Direction.EAST},
-        {Direction.EAST, Direction.SOUTHEAST},
-        {Direction.SOUTHEAST, Direction.SOUTHEAST},
-        {Direction.SOUTH, Direction.SOUTHEAST},
-        {Direction.SOUTH, Direction.SOUTH},
-        {Direction.SOUTH, Direction.SOUTHWEST},
-        {Direction.SOUTHWEST, Direction.SOUTHWEST},
-        {Direction.WEST, Direction.SOUTHWEST},
-        {Direction.WEST, Direction.WEST},
-        {Direction.WEST, Direction.NORTHWEST}
-    };
-
     int[] tilesVisited;
     int stuckCount;
 
@@ -43,7 +23,6 @@ public class DeliveryDrone extends Unit {
     int whichEnemyLocation;
 
     boolean hasSentEnemyLoc = false;
-    boolean movingCounter = false;
 
     boolean attackDrone;
     final int DEFEND_TURN;
@@ -206,9 +185,7 @@ public class DeliveryDrone extends Unit {
     private void handleDefend() throws GameActionException {
         destination = hqLocation;
         if (rc.getRoundNum() < DEFEND_TURN) {
-            //if(!moveLandscapersOntoInnerWall(hqLocation)) {
-                spiral(destination, false);
-            //}
+            spiral(destination, false);
         } else {
             int dx = Math.abs(destination.x - myLocation.x);
             int dy = Math.abs(destination.y - myLocation.y);
@@ -217,24 +194,6 @@ public class DeliveryDrone extends Unit {
         }
         nearestWaterLocation = updateNearestWaterLocation();
     }
-
-    /*
-    public moveLandscapersOntoInnerWall(MapLocation hqLoc) {
-        boolean landscaperMissing = false;
-        MapLocation landscaperLocation = NULL;
-        for(Direction[] x : directions) {
-            MapLocation m = rc.hqLoc.add(x);
-            if(rc.canSenseLocation(m)) {
-                if(rc.senseRobotAtLocation(m)!=NULL) {
-                    landscaperMissing = true;
-                    landscaperLocation =
-                }
-            }
-        }
-        for(Direction[] x : outerRing) {
-            if(hqLoc)
-        }
-    }*/
 
     private void handleAMove() throws GameActionException {
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
@@ -351,46 +310,12 @@ public class DeliveryDrone extends Unit {
     }
 
     public void spiral(MapLocation center, boolean safe) throws GameActionException {
-        if(movingCounter) {
-            System.out.println("Spiraling Counterclockwise");
-            counterClockwiseSpiral(center, safe);
-            return;
-        } else {
-            System.out.println("Spiraling Clockwise");
-            int dx = myLocation.x - center.x;
-            int dy = myLocation.y - center.y;
-            double cs = Math.cos(.5);
-            double sn = Math.sin(.5);
-            int x = (int) (dx * cs - dy * sn);
-            int y = (int) (dx * sn + dy * cs);
-            if(onBoundary(center.translate(x,y))) {
-                movingCounter = true;
-                return;
-            }
-            if (myLocation.distanceSquaredTo(center) > 35) {
-                System.out.println("Spiral is pushing me in");
-                path(center, safe);
-            } else if (myLocation.distanceSquaredTo(center) < 20) {
-                System.out.println("Spiral is pushing me out");
-                path(myLocation.add(center.directionTo(myLocation)), safe);
-            } else {
-                System.out.println("Spiraling to " + center.translate(x, y));
-                path(center.translate(x, y), safe);
-            }
-        }
-    }
-
-    public void counterClockwiseSpiral(MapLocation center, boolean safe) throws GameActionException {
         int dx = myLocation.x - center.x;
         int dy = myLocation.y - center.y;
-        double cs = Math.cos(-0.5);
-        double sn = Math.sin(-0.5);
+        double cs = Math.cos(.5);
+        double sn = Math.sin(.5);
         int x = (int) (dx * cs - dy * sn);
         int y = (int) (dx * sn + dy * cs);
-        if(onBoundary(center.translate(x,y))) {
-            movingCounter = false;
-            return;
-        }
         if (myLocation.distanceSquaredTo(center) > 35) {
             System.out.println("Spiral is pushing me in");
             path(center, safe);

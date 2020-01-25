@@ -37,8 +37,6 @@ public abstract class Robot {
     public MapLocation HEADQUARTERS_LOCATION = null;
     public MapLocation ENEMY_HQ_LOCATION = null;
 
-    boolean enemyAggression = false;
-
     //discretized grid for communicating map information
     //if changing squareWidth and squareHeight, make sure to change
     //number of bits allocated to tile in HoldProductionMessage and MinePatchMessage and SoupMessage
@@ -183,26 +181,11 @@ public abstract class Robot {
         }
     }
 
-    public boolean onBoundary(MapLocation t) {
-        return t.x == 0 || t.y == 0 || t.x == MAP_WIDTH-1 || t.y == MAP_HEIGHT-1;
-    }
-    
     /**
      * Communication methods.
      * Generally, most communication methods should go into the specific
      * robotType file. Put communication everyone will use here.
      */
-     void enemyAggressionCheck() throws GameActionException {
-         if(enemyAggression == false) {
-             enemyAggression = existsNearbyEnemy();
-             if(enemyAggression) {
-                 RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                 r.writeTypeOfCommit(2); //2 for enemy rush
-                 sendMessage(r.getMessage(), 1);
-             }
-         }
-     }
-
     //Returns MapLocation if it finds a LocationMessage from our HQ.
     //returns null if it doesn't.
     public void checkForLocationMessage() throws GameActionException {

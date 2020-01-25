@@ -77,8 +77,8 @@ public class HQ extends Building {
         }
         super.run();
         netgun.shoot();
-        boolean existsEnemy = existsNearbyEnemy();
         minerCooldown--;
+        boolean existsEnemy = existsNearbyEnemy();
         if(!holdProduction) {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
