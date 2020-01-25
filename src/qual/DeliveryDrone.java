@@ -7,7 +7,7 @@ import java.util.*;
 public class DeliveryDrone extends Unit {
 
     long[] waterChecked = new long[64]; // align to top right
-    List<MapLocation> waterLocations = new ArrayList<>();
+    WaterList waterLocations = new WaterList();
 
     final int[][] SPIRAL_ORDER = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2}, {0, 2}, {2, 0}, {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}, {-3, 0}, {0, -3}, {0, 3}, {3, 0}, {-3, -1}, {-3, 1}, {-1, -3}, {-1, 3}, {1, -3}, {1, 3}, {3, -1}, {3, 1}, {-3, -2}, {-3, 2}, {-2, -3}, {-2, 3}, {2, -3}, {2, 3}, {3, -2}, {3, 2}, {-4, 0}, {0, -4}, {0, 4}, {4, 0}, {-4, -1}, {-4, 1}, {-1, -4}, {-1, 4}, {1, -4}, {1, 4}, {4, -1}, {4, 1}, {-3, -3}, {-3, 3}, {3, -3}, {3, 3}, {-4, -2}, {-4, 2}, {-2, -4}, {-2, 4}, {2, -4}, {2, 4}, {4, -2}, {4, 2}, {-5, 0}, {-4, -3}, {-4, 3}, {-3, -4}, {-3, 4}, {0, -5}, {0, 5}, {3, -4}, {3, 4}, {4, -3}, {4, 3}, {5, 0}, {-5, -1}, {-5, 1}, {-1, -5}, {-1, 5}, {1, -5}, {1, 5}, {5, -1}, {5, 1}, {-5, -2}, {-5, 2}, {-2, -5}, {-2, 5}, {2, -5}, {2, 5}, {5, -2}, {5, 2}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4}, {-5, -3}, {-5, 3}, {-3, -5}, {-3, 5}, {3, -5}, {3, 5}, {5, -3}, {5, 3}};
     final Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
@@ -375,16 +375,16 @@ public class DeliveryDrone extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-        // System.out.println("start map scan "+Clock.getBytecodeNum());
+         System.out.println("start map scan "+Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x - 5, 0); x <= Math.min(myLocation.x + 5, MAP_WIDTH - 1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
-            for (int y : getLocationsToCheck((waterChecked[x] >> Math.max(myLocation.y - 5, 0)) & 1023)) {
+            for (int y : getLocationsToCheck(((waterChecked[x] >> Math.max(myLocation.y - 5, 0)) << Math.max(5-myLocation.y,0)) & 1023)) {
                 MapLocation newLoc = new MapLocation(x, myLocation.y + y - 5);
                 if (rc.canSenseLocation(newLoc)) {
                     if (rc.senseFlooding(newLoc)) {
                         waterLocations.add(newLoc);
                     }
-                    waterChecked[x] = waterChecked[x] | (1 << myLocation.y + y - 5);
+                    waterChecked[x] = waterChecked[x] | (1L << Math.min(Math.max(myLocation.y + y - 5, 0), MAP_HEIGHT - 1));
                 }
             }
         }
@@ -395,28 +395,11 @@ public class DeliveryDrone extends Unit {
                 return newLoc;
             }
         }
-        // System.out.println("end map scan "+Clock.getBytecodeNum());
+         System.out.println("end map scan "+Clock.getBytecodeNum());
 
-        // System.out.println("start find nearest "+Clock.getBytecodeNum());
-        int ctr = 0;
-        Iterator<MapLocation> soupIterator = waterLocations.iterator();
-        while (soupIterator.hasNext()) {
-            MapLocation soupLocation = soupIterator.next();
-            int soupDistance = myLocation.distanceSquaredTo(soupLocation);
-            if (rc.canSenseLocation(soupLocation) && !rc.senseFlooding(soupLocation)) {
-                soupIterator.remove();
-            } else if (soupDistance < distanceToNearest) {
-                nearest = soupLocation;
-                distanceToNearest = soupDistance;
-            }
-            ctr++;
-            if (ctr % 5 == 0) {
-                if (Clock.getBytecodesLeft() < 500) {
-                    break;
-                }
-            }
-        }
-        // System.out.println("end find nearest "+Clock.getBytecodeNum());
+         System.out.println("start find nearest "+Clock.getBytecodeNum());
+        nearest = waterLocations.findNearest();
+         System.out.println("end find nearest "+Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;
@@ -436,6 +419,78 @@ public class DeliveryDrone extends Unit {
             }
         }
         return enemyLocation; // explored entire map and no water seen??
+    }
+
+    private class WaterList {
+
+        private WaterLoc head;
+        private WaterLoc nearest;
+
+        public WaterList() {
+            head = new WaterLoc(null, null);
+            nearest = null;
+        }
+
+        public void add(MapLocation ml) {
+            head.next = new WaterLoc(ml, head.next);
+        }
+
+        public boolean isSurroundedByWater(MapLocation loc) throws GameActionException {
+            for (Direction dir : directions) {
+                if (rc.canSenseLocation(loc.add(dir)) && !rc.senseFlooding(loc.add(dir)))
+                    return false;
+            }
+            return true;
+        }
+
+        public void printAll() {
+            WaterLoc ptr = head;
+            while (ptr.next != null) {
+                System.out.println("List: " + ptr.mapLocation);
+                ptr = ptr.next;
+            }
+        }
+
+        public MapLocation findNearest() throws GameActionException {
+            int scanRadius = rc.getCurrentSensorRadiusSquared();
+            if (nearest != null && myLocation.distanceSquaredTo(nearest.mapLocation) <= 2
+                    && rc.canSenseLocation(nearest.mapLocation) &&
+                    rc.senseFlooding(nearest.mapLocation)) { // cache nearest
+                return nearest.mapLocation;
+            }
+            int nearestDist = Integer.MAX_VALUE;
+            nearest = null;
+            WaterLoc oldPtr = head;
+            WaterLoc ptr = head.next;
+            while (ptr != null) {
+                int distToPtr = ptr.mapLocation.distanceSquaredTo(myLocation);
+                MapLocation ptrLocation = ptr.mapLocation;
+
+                int waterDistance = myLocation.distanceSquaredTo(ptrLocation);
+                if (rc.canSenseLocation(ptrLocation) && !rc.senseFlooding(ptrLocation)) {
+                    oldPtr.next = oldPtr.next.next;
+                } else if (waterDistance < nearestDist) {
+                    nearest = ptr;
+                    nearestDist = waterDistance;
+                    if (distToPtr <= 2) {
+                        break;
+                    }
+                }
+                oldPtr = ptr;
+                ptr = ptr.next;
+            }
+            return nearest != null ? nearest.mapLocation : null;
+        }
+
+        private class WaterLoc {
+            public WaterLoc next;
+            public MapLocation mapLocation;
+
+            public WaterLoc(MapLocation ml, WaterLoc n) {
+                mapLocation = ml;
+                next = n;
+            }
+        }
     }
 
     public int[] getLocationsToCheck(long mask) {
