@@ -2,9 +2,7 @@ package qual;
 
 import battlecode.common.*;
 
-import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public abstract class Unit extends Robot {
 
@@ -13,6 +11,7 @@ public abstract class Unit extends Robot {
     protected boolean hasHistory;
     protected int stuck;
     protected PathState state;
+    List<RobotInfo> drones;
 
     public static int HISTORY_SIZE = 30;
 
@@ -20,6 +19,7 @@ public abstract class Unit extends Robot {
         super(rc);
         stuck = 0;
         clearHistory();
+        drones = new ArrayList<>();
     }
 
     public void clearHistory() {
@@ -34,8 +34,16 @@ public abstract class Unit extends Robot {
         state = new PathState(myLocation, null, null, null, Integer.MAX_VALUE);
     }
 
+    protected void updateDrones() {
+        drones.clear();
+        Arrays.stream(rc.senseNearbyRobots())
+                    .filter(x -> !x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE))
+                    .forEach(drones::add);
+    }
+
     @Override
     public void run() throws GameActionException {
+        updateDrones();
         myLocation = rc.getLocation();
         MapLocation me = myLocation;
         state.me = me;
@@ -100,7 +108,9 @@ public abstract class Unit extends Robot {
     protected boolean canMove(Direction in) {
         MapLocation me = myLocation.add(in);
         try {
-            return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me);
+            return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me)
+                        && (drones.stream().anyMatch(x -> x.getLocation().distanceSquaredTo(myLocation) < 3)
+                            || drones.stream().noneMatch(x -> x.getLocation().distanceSquaredTo(me) < 3));
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
@@ -116,7 +126,9 @@ public abstract class Unit extends Robot {
             return rc.canSenseLocation(to)
                     && rc.senseNearbyRobots(to, 0, null).length == 0
                     && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4
-                    && !rc.senseFlooding(to);
+                    && !rc.senseFlooding(to)
+                    && (drones.stream().anyMatch(x -> x.getLocation().distanceSquaredTo(from) < 3)
+                        || drones.stream().noneMatch(x -> x.getLocation().distanceSquaredTo(to) < 3));
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;

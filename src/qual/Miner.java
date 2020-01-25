@@ -68,6 +68,10 @@ public class Miner extends Unit {
                 target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, rc.getMapHeight() - hq.y - 1));
                 target.add(new MapLocation(rc.getMapWidth() - hq.x - 1, hq.y));
             }
+            if (target.get(0).equals(target.get(1)) || target.get(1).equals(target.get(2))) {
+                target.remove(0);
+                target.remove(2);
+            }
             setDestination(target.get(0));
         }
 
@@ -280,7 +284,8 @@ public class Miner extends Unit {
         if (timeout++ > TIMEOUT_TIME && locAt(TIMEOUT_TIME).distanceSquaredTo(target.get(0)) <= myLocation.distanceSquaredTo(target.get(0)) && rc.getRoundNum() > 20) {
             timeout = 0;
             if (target.size() > 1) {
-                target.remove(0);
+                MapLocation curr =target.remove(0);
+                target.add(curr);
                 setDestination(target.get(0));
             }
         }
@@ -288,7 +293,8 @@ public class Miner extends Unit {
                 || (rc.canSenseLocation(target.get(0)) // or can sense there and no HQ there^M
                 && !(seen.length > 0
                 && seen[0].getType().equals(RobotType.HQ)))) {
-            target.remove(0);
+            MapLocation curr =target.remove(0);
+            target.add(curr);
             setDestination(target.get(0));
         }
 
