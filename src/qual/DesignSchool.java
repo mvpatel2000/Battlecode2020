@@ -204,7 +204,7 @@ public class DesignSchool extends Building {
                 if (rc.getRoundNum() - startOuterWallAt < 200 && rc.getTeamSoup() < 400) {
                     return;
                 }
-                Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+                Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
                         numLandscapersMade++;
