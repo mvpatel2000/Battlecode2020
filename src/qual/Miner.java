@@ -499,6 +499,7 @@ public class Miner extends Unit {
                 turnsToBase++;
             setPathTarget(destination);
             navigate();
+
             if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
             }
