@@ -15,7 +15,8 @@ public class DesignSchool extends Building {
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
     int numTerraformersMade = 0; // set to 0 to enable
-    int INNER_WALL_PAUSE_AT = 5;
+    int NUM_TERRAFORMERS_TOTAL = 4;
+    int INNER_WALL_PAUSE_AT = 4;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -181,7 +182,7 @@ public class DesignSchool extends Building {
                     }
                 }
             }
-            if (numLandscapersMade == 8 && numTerraformersMade < 4) {
+            if (numLandscapersMade == 8 && numTerraformersMade < NUM_TERRAFORMERS_TOTAL) {
                 Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {

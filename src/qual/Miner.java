@@ -12,7 +12,7 @@ public class Miner extends Unit {
     long[] soupChecked; // align to top right
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
-    boolean readMessage;
+    boolean readMessage = false;
     public static int SPECULATION = 3;
 
     MapLocation destination;
@@ -23,6 +23,7 @@ public class Miner extends Unit {
     int[] tilesVisited;
 
     boolean dSchoolExists;
+    boolean goingToBuildDSchool = false;
     boolean fulfillmentCenterExists;
     boolean firstRefineryExists;
 
@@ -37,7 +38,7 @@ public class Miner extends Unit {
     boolean hasSentEnemyLoc = false;
     int timeout = 0;
 
-    boolean returnToLattice = false;
+    boolean terraformer = false;
 
     //For halting production and resuming it.
     boolean rushHold = false;
@@ -56,10 +57,11 @@ public class Miner extends Unit {
         }
         aggro = rc.getRoundNum() == 2;
         aggro = false; // uncomment to disable aggro
-
-        // returnToLattice = rc.getRoundNum() < 10;
-        returnToLattice = false;
         aggroDone = false;
+
+        terraformer = rc.getRoundNum() < 10;
+        // terraformer = false;
+
         if (aggro) {
             target = new ArrayList<>();
             MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->
@@ -113,54 +115,59 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        flee();
 
-        if (returnToLattice && rc.getRoundNum() > 300) {
-            path(hqLocation);
-        }
-        else {
-            if (holdProduction || rushHold) {
-                checkIfContinueHold();
+        findMessageFromAllies(rc.getRoundNum()-1);
+
+        if (goingToBuildDSchool) {
+            if (dSchoolExists) {
+                goingToBuildDSchool = false;
             }
-
-            if (aggro) {
-                handleAggro();
+            else {
+                handleBuildDSchool();
                 return;
             }
-            //readMessage = false;
-            //if (rc.getRoundNum() % messageFrequency == 4) {
-            //    updateActiveLocations();
-            //    readMessage = true;
-            //}
-            findMessageFromAllies(rc.getRoundNum()-1);
+        }
 
-            tilesVisited[getTileNumber(myLocation)] = 1;
+        flee();
 
-            readMessage = false;
-            if (rc.getRoundNum() % messageFrequency == 4) {
-                updateActiveLocations();
-                readMessage = true;
-            }
+        if (terraformer && rc.getRoundNum() > 300) {
+            terraform();
+            return;
+        }
 
-            checkBuildBuildings();
+        if (holdProduction || rushHold) {
+            checkIfContinueHold();
+        }
 
-            if (!dSchoolExists || !fulfillmentCenterExists) {
-                RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-                for (RobotInfo robot : nearbyRobots) {
-                    switch (robot.getType()) {
-                        case DESIGN_SCHOOL:
-                            dSchoolExists = true;
-                            break;
-                        case FULFILLMENT_CENTER:
-                            fulfillmentCenterExists = true;
-                            break;
-                    }
+        if (aggro) {
+            handleAggro();
+            return;
+        }
+
+        tilesVisited[getTileNumber(myLocation)] = 1;
+
+        checkBuildBuildings();
+
+        if (!dSchoolExists || !fulfillmentCenterExists) {
+            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+            for (RobotInfo robot : nearbyRobots) {
+                switch (robot.getType()) {
+                    case DESIGN_SCHOOL:
+                        dSchoolExists = true;
+                        break;
+                    case FULFILLMENT_CENTER:
+                        fulfillmentCenterExists = true;
+                        break;
                 }
             }
-
-            harvest();
-            previousSoup = rc.getTeamSoup();
         }
+
+        harvest();
+        previousSoup = rc.getTeamSoup();
+    }
+
+    public void terraform() throws GameActionException {
+        path(hqLocation.add(Direction.NORTHWEST).add(Direction.NORTHWEST));
     }
 
     /**
@@ -411,12 +418,7 @@ public class Miner extends Unit {
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
         if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
-            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
-            if(dSchoolExists) {
-                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                b.writeTypeBuilt(2); //2 is d.school
-                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-            }
+            handleBuildDSchool();
         }
 
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
@@ -485,12 +487,7 @@ public class Miner extends Unit {
             if (myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
-                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
-                if(dSchoolExists) {
-                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    b.writeTypeBuilt(2); //2 is d.school
-                    sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                }
+                handleBuildDSchool();
             }
             if (turnsToBase >= 0)
                 turnsToBase++;
@@ -500,6 +497,30 @@ public class Miner extends Unit {
             }
         }
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
+    }
+
+    public void handleBuildDSchool() throws GameActionException {
+        MapLocation closestDSchoolBuildLoc = hqLocation;
+        int dist = Integer.MAX_VALUE;
+        for (Direction d : directions) {
+            MapLocation t = hqLocation.add(d).add(d);
+            if (myLocation.distanceSquaredTo(t) < dist && (!rc.canSenseLocation(t) || !rc.isLocationOccupied(t))) {
+                dist = myLocation.distanceSquaredTo(t);
+                closestDSchoolBuildLoc = t;
+            }
+        }
+        if (myLocation.isAdjacentTo(closestDSchoolBuildLoc)) {
+            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, myLocation.directionTo(closestDSchoolBuildLoc));
+            if(dSchoolExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(2); //2 is d.school
+                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+                goingToBuildDSchool = false;
+            }
+        }
+        else {
+            path(closestDSchoolBuildLoc);
+        }
     }
 
     public Direction determineOptimalFulfillmentCenter() throws GameActionException {
@@ -521,6 +542,11 @@ public class Miner extends Unit {
 
     //TODO: This is not going to be on grid
     public Direction determineOptimalDSchoolDirection() throws GameActionException {
+        // for (Direction d : directions) {
+        //     MapLocation t = hqLocation.add(d).add(d);
+        //     if (rc.canSenseLocation(t) && )
+        // }
+
         if (myLocation.distanceSquaredTo(hqLocation) < 9) { // close to HQ, build highest elevation in outer ring
             Direction target = myLocation.directionTo(hqLocation).opposite();
             MapLocation loc = myLocation.add(target);

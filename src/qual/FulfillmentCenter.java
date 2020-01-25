@@ -30,7 +30,7 @@ public class FulfillmentCenter extends Building {
 
         super.run();
         if(!holdProduction) {
-            if ((rc.getTeamSoup() >= Math.min(150 + 15 * (attackDroneCount + defendDroneCount), 200))
+            if ((rc.getTeamSoup() >= Math.min(135 + 15 * (attackDroneCount + defendDroneCount), 200))
                     && ((attackDroneCount + defendDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
                 buildDrone();
         }
@@ -45,7 +45,7 @@ public class FulfillmentCenter extends Building {
 
     private void buildDrone() throws GameActionException {
         boolean built = true;
-        if (attackDroneCount > defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
+        if (attackDroneCount >= defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
             System.out.println("Building defense drone");
             Direction toHQ = myLocation.directionTo(hqLocation);
             if (tryBuild(RobotType.DELIVERY_DRONE, toHQ)) {
