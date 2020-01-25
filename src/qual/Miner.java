@@ -10,8 +10,6 @@ public class Miner extends Unit {
     final static int TIMEOUT_TIME = 20;
 
     long[] soupChecked; // align to top right
-    List<Integer> soupPriorities = new ArrayList<Integer>();
-    List<MapLocation> soupLocations = new ArrayList<MapLocation>();
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage;
@@ -572,9 +570,7 @@ public class Miner extends Unit {
                 MapLocation newLoc = new MapLocation(x, myLocation.y + y - 5);
                 if (rc.canSenseLocation(newLoc)) {
                     if (rc.senseSoup(newLoc) > 0) {
-                        soupLocations.add(newLoc);
                         soupListLocations.add(newLoc, 1);
-                        soupPriorities.add(1); //TODO: Fix priority?
                     }
                     soupChecked[x] = soupChecked[x] | (1L << Math.min(Math.max(myLocation.y + y - 5, 0), MAP_HEIGHT - 1));
                 }
@@ -654,8 +650,6 @@ public class Miner extends Unit {
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
                             //rc.setIndicatorDot(cLoc, 235, 128, 114);
-                            soupLocations.add(cLoc);
-                            soupPriorities.add(thisWeight);
                             System.out.println("Add check: " + cLoc + " " + ((soupChecked[cLoc.x] >> cLoc.y) & 1));
                             if ((soupChecked[cLoc.x] >> cLoc.y & 1) == 0) {
                                 System.out.println("Adding!");
