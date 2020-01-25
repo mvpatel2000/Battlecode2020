@@ -580,8 +580,8 @@ public class Miner extends Unit {
 
 //        System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         MapLocation nearest = soupListLocations.findNearest();
-        soupListLocations.printAll();
-        System.out.println("nearest: " + nearest);
+//        soupListLocations.printAll();
+//        System.out.println("nearest: " + nearest);
 //        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
 
         if (nearest != null) {
@@ -786,7 +786,6 @@ public class Miner extends Unit {
                     (rc.senseSoup(nearest.mapLocation) != 0 && !isSurroundedByWater(nearest.mapLocation))) { // cache nearest
                 return nearest.mapLocation;
             }
-            System.out.println("Cache failed");
             int nearestDist = Integer.MAX_VALUE;
             nearest = null;
             SoupLoc oldPtr = head;
@@ -795,17 +794,12 @@ public class Miner extends Unit {
                 int distToPtr = ptr.mapLocation.distanceSquaredTo(myLocation);
                 MapLocation ptrLocation = ptr.mapLocation;
                 if (distToPtr < nearestDist) {
-                    System.out.println("New optimal!" + ptrLocation + " " + nearest);
-                    if (rc.canSenseLocation(ptrLocation))
-                        System.out.println("Soup count: " + ptrLocation + " " + rc.senseSoup(ptrLocation));
                     if (distToPtr < scanRadius && (rc.senseSoup(ptrLocation) == 0 || isSurroundedByWater(ptrLocation))) {
-                        System.out.println("Deleting: " + ptrLocation);
                         oldPtr.next = oldPtr.next.next;
                         if (ptr.priority == HQ_SEARCH) {
                             sendSoupMessageIfShould(ptrLocation, true);
                         }
                     } else {
-                        System.out.println("Updating optimal: " + ptrLocation);
                         nearest = ptr;
                         nearestDist = distToPtr;
                         if (distToPtr <= 2) {
