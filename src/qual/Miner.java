@@ -177,7 +177,9 @@ public class Miner extends Unit {
                 .filter(d -> canMove(d) && getNearbyDrones().stream()
                     .noneMatch(x -> x.getLocation().distanceSquaredTo(myLocation.add(d)) < 3))
                 .findAny().orElse(null);
+        //System.out.println(Arrays.asList(adjacentDrones));
         if (escape != null) {
+            //System.out.println("can escape");
             go(escape);
             return true;
         }

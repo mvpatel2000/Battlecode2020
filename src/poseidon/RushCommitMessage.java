@@ -1,4 +1,4 @@
-package qual;
+package poseidon;
 
 public class RushCommitMessage extends Message {
 
