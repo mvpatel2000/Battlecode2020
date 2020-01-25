@@ -54,7 +54,7 @@ public class Miner extends Unit {
             enemyHQLocation = ENEMY_HQ_LOCATION;
         }
         aggro = rc.getRoundNum() == 2;
-        // aggro = false; // uncomment to disable aggro
+        aggro = false; // uncomment to disable aggro
         aggroDone = false;
         if (aggro) {
             target = new ArrayList<>();
@@ -105,48 +105,55 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        if (holdProduction || rushHold) {
-            checkIfContinueHold();
+
+        if (rc.getRoundNum() > 300) { // TODO: FOR VINJAI TESTING
+            path(hqLocation);
         }
+        else {
 
-        if (aggro) {
-            handleAggro();
-            return;
-        }
+            if (holdProduction || rushHold) {
+                checkIfContinueHold();
+            }
 
-        tilesVisited[getTileNumber(myLocation)] = 1;
+            if (aggro) {
+                handleAggro();
+                return;
+            }
 
-        readMessage = false;
-        if (rc.getRoundNum() % messageFrequency == 4) {
-            updateActiveLocations();
-            readMessage = true;
-        }
+            tilesVisited[getTileNumber(myLocation)] = 1;
 
-        checkBuildBuildings();
+            readMessage = false;
+            if (rc.getRoundNum() % messageFrequency == 4) {
+                updateActiveLocations();
+                readMessage = true;
+            }
 
-        if (!dSchoolExists || !fulfillmentCenterExists) {
-            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-            for (RobotInfo robot : nearbyRobots) {
-                switch (robot.getType()) {
-                    case DESIGN_SCHOOL:
-                        dSchoolExists = true;
-                        break;
-                    case FULFILLMENT_CENTER:
-                        fulfillmentCenterExists = true;
-                        break;
+            checkBuildBuildings();
+
+            if (!dSchoolExists || !fulfillmentCenterExists) {
+                RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+                for (RobotInfo robot : nearbyRobots) {
+                    switch (robot.getType()) {
+                        case DESIGN_SCHOOL:
+                            dSchoolExists = true;
+                            break;
+                        case FULFILLMENT_CENTER:
+                            fulfillmentCenterExists = true;
+                            break;
+                    }
                 }
             }
-        }
 
-        harvest();
-        previousSoup = rc.getTeamSoup();
+            harvest();
+            previousSoup = rc.getTeamSoup();
+        }
     }
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
         if (location.distanceSquaredTo(hqLocation) < 9)
             return false;
-        return true; //((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
+        return ((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
     }
 
     //Returns true if should continue halting production

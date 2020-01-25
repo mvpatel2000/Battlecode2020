@@ -48,8 +48,9 @@ public abstract class Unit extends Robot {
 
     boolean tryMove() throws GameActionException {
         for (Direction dir : getDirections())
-            if (tryMove(dir))
+            if (tryMove(dir)) {
                 return true;
+            }
         return false;
         // MapLocation loc = rc.getLocation();
         // if (loc.x < 10 && loc.x < loc.y)
