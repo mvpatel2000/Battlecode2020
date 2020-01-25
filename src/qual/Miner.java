@@ -12,6 +12,7 @@ public class Miner extends Unit {
     long[] soupChecked; // align to top right
     List<Integer> soupPriorities = new ArrayList<Integer>();
     List<MapLocation> soupLocations = new ArrayList<MapLocation>();
+    SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage;
     public static int SPECULATION = 3;
@@ -563,21 +564,15 @@ public class Miner extends Unit {
     // Returns location of nearest soup
     //TODO: Replace with linked list. Make this F A S T
     public MapLocation updateNearestSoupLocation() throws GameActionException {
-        int distanceToNearest = MAX_SQUARED_DISTANCE;
-        MapLocation nearest = null;
-        if (destination != null && lastSoupLocation != null && !(rc.canSenseLocation(destination) && (rc.senseSoup(destination) == 0 || rc.senseFlooding(destination)))) {
-            nearest = destination;
-            distanceToNearest = myLocation.distanceSquaredTo(nearest);
-        }
-
 //        System.out.println("start map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x - 5, 0); x <= Math.min(myLocation.x + 5, MAP_WIDTH - 1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
-            for (int y : getLocationsToCheck((soupChecked[x] >> Math.min(Math.max(myLocation.y - 5, 0), MAP_HEIGHT - 1)) & 1023)) {
+            for (int y : getLocationsToCheck(((soupChecked[x] >> Math.max(myLocation.y - 5, 0)) << Math.max(5-myLocation.y,0)) & 1023)) {
                 MapLocation newLoc = new MapLocation(x, myLocation.y + y - 5);
                 if (rc.canSenseLocation(newLoc)) {
                     if (rc.senseSoup(newLoc) > 0) {
                         soupLocations.add(newLoc);
+                        soupListLocations.add(newLoc, 1);
                         soupPriorities.add(1); //TODO: Fix priority?
                     }
                     soupChecked[x] = soupChecked[x] | (1L << Math.min(Math.max(myLocation.y + y - 5, 0), MAP_HEIGHT - 1));
@@ -587,41 +582,8 @@ public class Miner extends Unit {
 //        System.out.println("end map scan "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
 
 //        System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-        Iterator<MapLocation> soupIterator = soupLocations.iterator();
-        Iterator<Integer> priorityIterator = soupPriorities.iterator();
-        int scanRadius = rc.getCurrentSensorRadiusSquared();
-        while (soupIterator.hasNext()) {
-            MapLocation soupLocation = soupIterator.next();
-            int soupPriority = priorityIterator.next();
-            int soupDistance = myLocation.distanceSquaredTo(soupLocation);
-            if (soupLocation.equals(hqLocation) && myLocation.distanceSquaredTo(hqLocation) < 3) {
-                soupDistance = -1;
-            }
-            if (soupDistance < distanceToNearest) {
-                // Note: Uses soupDistance comparison instead of rc.canSenseLocation since location guarenteed to be on map
-                if (soupDistance < scanRadius && (rc.senseSoup(soupLocation) == 0 || isSurroundedByWater(soupLocation))) {
-                    if (soupPriority == HQ_SEARCH) { // This is an HQ location. I should get close, then delete if no soup
-                        if (soupDistance < 25) { // Ad hoc threshold. Make sure to scan the entire tile.
-                            soupIterator.remove();
-                            priorityIterator.remove();
-                            sendSoupMessageIfShould(soupLocation, true);
-                        } else {
-                            nearest = soupLocation;
-                            distanceToNearest = soupDistance;
-                        }
-                    } else {
-                        soupIterator.remove();
-                        priorityIterator.remove();
-                    }
-                } else {
-                    nearest = soupLocation;
-                    distanceToNearest = soupDistance;
-                }
-            }
-        }
+        MapLocation nearest = soupListLocations.findNearest();
 //        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-
-        System.out.println(nearest + " " + distanceToNearest);
 
         if (nearest != null) {
             lastSoupLocation = nearest;
@@ -630,13 +592,13 @@ public class Miner extends Unit {
         return getNearestUnexploredTile();
     }
 
-    public boolean isSurroundedByWater(MapLocation loc) throws GameActionException {
-        for (Direction dir : directions) {
-            if (rc.canSenseLocation(loc.add(dir)) && !rc.senseFlooding(loc.add(dir)))
-                return false;
-        }
-        return true;
-    }
+//    public boolean isSurroundedByWater(MapLocation loc) throws GameActionException {
+//        for (Direction dir : directions) {
+//            if (rc.canSenseLocation(loc.add(dir)) && !rc.senseFlooding(loc.add(dir)))
+//                return false;
+//        }
+//        return true;
+//    }
 
     //TODO: Optimize this. Scan outward with switch statements? Replace int[] for tiles with bits?
     //TODO: Explore in better way, mark off tiles when you see them, not visit!
@@ -669,7 +631,7 @@ public class Miner extends Unit {
     //it's probably not a significant bytecode saving.
     public void findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-        System.out.println("reading messages from " + Integer.toString(rn) + " round.");
+//        System.out.println("reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
@@ -692,6 +654,11 @@ public class Miner extends Unit {
                             //rc.setIndicatorDot(cLoc, 235, 128, 114);
                             soupLocations.add(cLoc);
                             soupPriorities.add(thisWeight);
+                            System.out.println("Add check: " + cLoc + " " + ((soupChecked[cLoc.x] >> cLoc.y) & 1));
+                            if ((soupChecked[cLoc.x] >> cLoc.y & 1) == 0) {
+                                System.out.println("Adding!");
+                                soupListLocations.add(cLoc, thisWeight);
+                            }
                         }
                         oldPatch = thisPatch;
                     }
@@ -786,6 +753,84 @@ public class Miner extends Unit {
         s.writeTile(tnum);
         s.writeSoupAmount(soupAmount);
         sendMessage(s.getMessage(), 1);
+    }
+
+    private class SoupList {
+
+        private SoupLoc head;
+        private SoupLoc nearest;
+
+        public SoupList() {
+            head = new SoupLoc(null, null,0);
+            nearest = null;
+        }
+
+        public void add(MapLocation ml, int priority) {
+            rc.setIndicatorDot(ml, 0,255,0);
+            head.next = new SoupLoc(ml, head.next, priority);
+        }
+
+        public boolean isSurroundedByWater(MapLocation loc) throws GameActionException {
+            for (Direction dir : directions) {
+                if (rc.canSenseLocation(loc.add(dir)) && !rc.senseFlooding(loc.add(dir)))
+                    return false;
+            }
+            return true;
+        }
+
+        public void printAll() {
+            SoupLoc ptr = head;
+            while (ptr.next != null) {
+                System.out.println("List: " + ptr.mapLocation);
+                ptr = ptr.next;
+            }
+        }
+
+        public MapLocation findNearest() throws GameActionException {
+            int scanRadius = rc.getCurrentSensorRadiusSquared();
+            if (nearest != null && myLocation.distanceSquaredTo(nearest.mapLocation) <= 2
+                && rc.canSenseLocation(nearest.mapLocation) &&
+                    (rc.senseSoup(nearest.mapLocation) != 0 || isSurroundedByWater(nearest.mapLocation))) { // cache nearest
+                return nearest.mapLocation;
+            }
+            int nearestDist = Integer.MAX_VALUE;
+            nearest = null;
+            SoupLoc oldPtr = head;
+            SoupLoc ptr = head.next;
+            while (ptr != null) {
+                int distToPtr = ptr.mapLocation.distanceSquaredTo(myLocation);
+                MapLocation ptrLocation = ptr.mapLocation;
+                if (distToPtr < nearestDist) {
+                    if (nearestDist < scanRadius && (rc.senseSoup(ptrLocation) == 0 || isSurroundedByWater(ptrLocation))) {
+                        oldPtr.next = oldPtr.next.next;
+                        if (ptr.priority == HQ_SEARCH) {
+                            sendSoupMessageIfShould(ptrLocation, true);
+                        }
+                    } else {
+                        nearest = ptr;
+                        nearestDist = distToPtr;
+                    }
+                }
+                if (distToPtr <= 2) {
+                    break;
+                }
+                oldPtr = ptr;
+                ptr = ptr.next;
+            }
+            return nearest != null ? nearest.mapLocation : null;
+        }
+
+        private class SoupLoc {
+            public SoupLoc next;
+            public MapLocation mapLocation;
+            public int priority;
+
+            public SoupLoc(MapLocation ml, SoupLoc n, int p) {
+                mapLocation = ml;
+                next = n;
+                priority = p;
+            }
+        }
     }
 
     public int[] getLocationsToCheck(long mask) {
