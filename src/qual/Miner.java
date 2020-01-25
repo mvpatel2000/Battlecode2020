@@ -53,7 +53,7 @@ public class Miner extends Unit {
             enemyHQLocation = ENEMY_HQ_LOCATION;
         }
         aggro = rc.getRoundNum() == 2;
-        // aggro = false; // uncomment to disable aggro
+        aggro = false; // uncomment to disable aggro
         aggroDone = false;
         if (aggro) {
             target = new ArrayList<>();
@@ -586,6 +586,8 @@ public class Miner extends Unit {
 
 //        System.out.println("start find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
         MapLocation nearest = soupListLocations.findNearest();
+//        soupListLocations.printAll();
+//        System.out.println("nearest: " + nearest);
 //        System.out.println("end find nearest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
 
         if (nearest != null) {
@@ -787,7 +789,7 @@ public class Miner extends Unit {
             int scanRadius = rc.getCurrentSensorRadiusSquared();
             if (nearest != null && myLocation.distanceSquaredTo(nearest.mapLocation) <= 2
                 && rc.canSenseLocation(nearest.mapLocation) &&
-                    (rc.senseSoup(nearest.mapLocation) != 0 || isSurroundedByWater(nearest.mapLocation))) { // cache nearest
+                    (rc.senseSoup(nearest.mapLocation) != 0 && !isSurroundedByWater(nearest.mapLocation))) { // cache nearest
                 return nearest.mapLocation;
             }
             int nearestDist = Integer.MAX_VALUE;
@@ -798,7 +800,7 @@ public class Miner extends Unit {
                 int distToPtr = ptr.mapLocation.distanceSquaredTo(myLocation);
                 MapLocation ptrLocation = ptr.mapLocation;
                 if (distToPtr < nearestDist) {
-                    if (nearestDist < scanRadius && (rc.senseSoup(ptrLocation) == 0 || isSurroundedByWater(ptrLocation))) {
+                    if (distToPtr < scanRadius && (rc.senseSoup(ptrLocation) == 0 || isSurroundedByWater(ptrLocation))) {
                         oldPtr.next = oldPtr.next.next;
                         if (ptr.priority == HQ_SEARCH) {
                             sendSoupMessageIfShould(ptrLocation, true);
@@ -806,14 +808,18 @@ public class Miner extends Unit {
                     } else {
                         nearest = ptr;
                         nearestDist = distToPtr;
+                        if (distToPtr <= 2) {
+                            break;
+                        }
                     }
-                }
-                if (distToPtr <= 2) {
-                    break;
                 }
                 oldPtr = ptr;
                 ptr = ptr.next;
             }
+            if(nearest!= null)
+                System.out.println("Returning " + nearest.mapLocation);
+            else
+                System.out.println("Returning null");
             return nearest != null ? nearest.mapLocation : null;
         }
 
