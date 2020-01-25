@@ -37,8 +37,9 @@ public abstract class Unit extends Robot {
     protected void updateDrones() {
         drones.clear();
         Arrays.stream(rc.senseNearbyRobots())
-                    .filter(x -> !x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE))
-                    .forEach(drones::add);
+                .filter(x -> !x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE))
+                .filter(x -> !x.isCurrentlyHoldingUnit())
+                .forEach(drones::add);
     }
 
     @Override
@@ -52,6 +53,10 @@ public abstract class Unit extends Robot {
         MapLocation loc = history.pollLast();
         historySet.merge(loc, -1, Integer::sum);
         hasHistory = true;
+    }
+
+    protected List<RobotInfo> getNearbyDrones() {
+        return drones;
     }
 
     boolean tryMove() throws GameActionException {
@@ -109,8 +114,7 @@ public abstract class Unit extends Robot {
         MapLocation me = myLocation.add(in);
         try {
             return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me)
-                        && (drones.stream().anyMatch(x -> x.getLocation().distanceSquaredTo(myLocation) < 3)
-                            || drones.stream().noneMatch(x -> x.getLocation().distanceSquaredTo(me) < 3));
+                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().distanceSquaredTo(me) < 3);
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
@@ -127,8 +131,7 @@ public abstract class Unit extends Robot {
                     && rc.senseNearbyRobots(to, 0, null).length == 0
                     && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4
                     && !rc.senseFlooding(to)
-                    && (drones.stream().anyMatch(x -> x.getLocation().distanceSquaredTo(from) < 3)
-                        || drones.stream().noneMatch(x -> x.getLocation().distanceSquaredTo(to) < 3));
+                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().distanceSquaredTo(to) < 3);
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;

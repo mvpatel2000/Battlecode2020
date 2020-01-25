@@ -108,6 +108,9 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
+
+        flee();
+
         if (holdProduction || rushHold) {
             checkIfContinueHold();
         }
@@ -144,6 +147,23 @@ public class Miner extends Unit {
 
         harvest();
         previousSoup = rc.getTeamSoup();
+    }
+
+    /**
+     * Flees from adjacent drone if it exists.
+     */
+    public void flee() throws GameActionException {
+        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
+                                        x.getLocation().distanceSquaredTo(myLocation) < 3).toArray(RobotInfo[]::new);
+        if (adjacentDrones.length == 0)
+            return;
+        Direction escape = Arrays.stream(directions)
+                .filter(this::canMove)
+                .filter(d -> getNearbyDrones().stream()
+                    .noneMatch(x -> x.getLocation().distanceSquaredTo(myLocation.add(d)) < 3))
+                .findAny().orElse(null);
+        if (escape != null)
+            go(escape);
     }
 
     //determines if location is on grid and not in landscaper slot
