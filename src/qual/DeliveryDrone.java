@@ -30,7 +30,7 @@ public class DeliveryDrone extends Unit {
 
     boolean carryingEnemy;
     boolean carryingAlly;
-    boolean enemySwarmDefense;
+    boolean giveUpOnAMove;
     boolean carryingCow;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
@@ -65,7 +65,7 @@ public class DeliveryDrone extends Unit {
         carryingEnemy = false;
         carryingCow = false;
         carryingAlly = false;
-        enemySwarmDefense = false;
+        giveUpOnAMove = false;
 
         attackDrone = false;
         Direction toBase = myLocation.directionTo(baseLocation);
@@ -92,9 +92,11 @@ public class DeliveryDrone extends Unit {
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
         EnemyInfo enemyInfo = new EnemyInfo().invoke();
+        RobotInfo[] nearby = enemyInfo.getNearby();
         RobotInfo nearest = enemyInfo.getNearest();
         int distToNearest = enemyInfo.getDistToNearest();
         int droneCount = enemyInfo.getDroneCount();
+
 
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
         if (carryingEnemy) { // go to water and drop
@@ -104,7 +106,7 @@ public class DeliveryDrone extends Unit {
                 return;
         } else {
             if (droneCount > 6)
-                enemySwarmDefense = true;
+                giveUpOnAMove = true;
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
                 attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
@@ -115,7 +117,8 @@ public class DeliveryDrone extends Unit {
                 chaseEnemy(nearest);
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !enemySwarmDefense) { // drone attack-move
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove) { // drone attack-move
+                checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
                 handleDefend();
@@ -125,6 +128,15 @@ public class DeliveryDrone extends Unit {
         //Check every 100 turns for enemy location message sent in the previous 5 turns.
         //until you've read it and set the variable.
         checkEnemyLocMessage();
+    }
+
+    private void checkIfDoneWithAMove(RobotInfo[] nearby) throws GameActionException {
+        if (ENEMY_HQ_LOCATION != null && rc.canSenseLocation(ENEMY_HQ_LOCATION)) {
+            if (Arrays.stream(nearby).noneMatch(x -> !x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER)) {
+                giveUpOnAMove = true;
+                handleDefend();
+            }
+        }
     }
 
     private void dropToward(MapLocation location) throws GameActionException {
@@ -196,6 +208,8 @@ public class DeliveryDrone extends Unit {
     }
 
     private void handleAMove() throws GameActionException {
+        if (giveUpOnAMove)
+            return;
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
             RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
             if (enemy == null || enemy.type != RobotType.HQ) {
@@ -2551,6 +2565,7 @@ public class DeliveryDrone extends Unit {
         private RobotInfo nearest;
         private int distToNearest;
         private int droneCount;
+        private RobotInfo[] nearby;
 
         public RobotInfo getNearest() {
             return nearest;
@@ -2566,6 +2581,7 @@ public class DeliveryDrone extends Unit {
 
         public EnemyInfo invoke() throws GameActionException {
             RobotInfo[] enemyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
+            nearby = enemyRobots;
             nearest = null;
             distToNearest = MAX_SQUARED_DISTANCE;
             droneCount = 0;
@@ -2606,6 +2622,10 @@ public class DeliveryDrone extends Unit {
                 }
             }
             return this;
+        }
+
+        public RobotInfo[] getNearby() {
+            return nearby;
         }
     }
 }
