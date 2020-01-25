@@ -301,8 +301,7 @@ public class Miner extends Unit {
             l.writeInformation(ml.x, ml.y, 1);
             if(sendMessage(l.getMessage(), 1)) {
                 hasSentEnemyLoc = true;
-                System.out.println("[i] SENDING ENEMY HQ LOCATION");
-                System.out.println(ml);
+                System.out.println("[i] SENDING ENEMY HQ LOCATION " + ml);
             }
         }
         if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
@@ -429,6 +428,7 @@ public class Miner extends Unit {
 
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
+        System.out.println("Dist2Dest " + distanceToDestination);
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
                 Direction toBase = myLocation.directionTo(baseLocation);
@@ -439,9 +439,8 @@ public class Miner extends Unit {
                     // build d.school near base when leaving base for far away soup or past round 250
                     destination = updateNearestSoupLocation();
                     turnsToBase = -1;
-                    clearHistory();
                 }
-            } else if (myLocation.distanceSquaredTo(hqLocation) < 3
+            } else if (rc.getRoundNum() > 50 && myLocation.distanceSquaredTo(hqLocation) < 3
                     && !destination.equals(hqLocation)) {                   // don't mine next to HQ
                 Direction idealDir = null;
                 for (Direction dir : directions) {
@@ -465,27 +464,32 @@ public class Miner extends Unit {
                 }
                 destination = updateNearestSoupLocation();
             } else {                                                           // mining
-                Direction soupDir = myLocation.directionTo(destination);
-                if (rc.senseSoup(destination) == 0) {
-                    System.out.println("I am at destination. Soup: " + rc.senseSoup(destination));
-                    sendSoupMessageIfShould(destination, true);
-                    destination = updateNearestSoupLocation();
-                    if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
-                        refineryCheck();
-                        destination = baseLocation;
-                        turnsToBase++;
-                        clearHistory();
-                    }
-                } else if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
-                    System.out.print("Last soup loc: ");
-                    System.out.println(lastSoupLocation);
+                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
+                    System.out.println("Last soup loc: "+lastSoupLocation);
                     refineryCheck();
                     destination = baseLocation;
                     turnsToBase++;
-                    clearHistory();
-                } else if (rc.isReady()) {                                      // mine
+                }
+                if (rc.senseSoup(destination) == 0) {
+                    System.out.println("Soup finished");
+                    sendSoupMessageIfShould(destination, true);
+                    if (!destination.equals(baseLocation)) {
+                        destination = updateNearestSoupLocation();
+                        System.out.println("reset destination:" + destination);
+                        if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
+                            refineryCheck();
+                            destination = baseLocation;
+                            turnsToBase++;
+                        }
+                    }
+                }
+                if (turnsToBase < 0 && rc.isReady() && myLocation.distanceSquaredTo(destination) <=2) {    // mine
                     sendSoupMessageIfShould(destination, false);
-                    rc.mineSoup(soupDir);
+                    rc.mineSoup(myLocation.directionTo(destination));
+                }
+                if (myLocation.distanceSquaredTo(destination) > 2) {
+                    setPathTarget(destination);
+                    navigate();
                 }
             }
         } else {                                                                // in transit
@@ -493,16 +497,18 @@ public class Miner extends Unit {
             if (myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
+                System.out.println("Handling dschool!");
                 handleBuildDSchool();
             }
             if (turnsToBase >= 0)
                 turnsToBase++;
-            setPathTarget(destination);
-            navigate();
 
             if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
             }
+            System.out.println("Far pathing: " + destination);
+            setPathTarget(destination);
+            navigate();
         }
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
     }
@@ -731,9 +737,7 @@ public class Miner extends Unit {
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
                             //rc.setIndicatorDot(cLoc, 235, 128, 114);
-                            System.out.println("Add check: " + cLoc + " " + ((soupChecked[cLoc.x] >> cLoc.y) & 1));
                             if ((soupChecked[cLoc.x] >> cLoc.y & 1) == 0) {
-                                System.out.println("Adding!");
                                 soupListLocations.add(cLoc, thisWeight);
                             }
                         }
@@ -762,8 +766,7 @@ public class Miner extends Unit {
                     checkForEnemyHQLocationMessageSubroutine(msg);
                     if(ENEMY_HQ_LOCATION != null) {
                         enemyHQLocation = ENEMY_HQ_LOCATION;
-                        System.out.println("[i] I know ENEMY HQ");
-                        System.out.println(enemyHQLocation);
+                        System.out.println("[i] I know ENEMY HQ " + enemyHQLocation);
                     }
                 } else if(getSchema(msg[0])==7) {
                     if(!hasSentRushCommit) {
@@ -889,10 +892,6 @@ public class Miner extends Unit {
                 oldPtr = ptr;
                 ptr = ptr.next;
             }
-            if(nearest!= null)
-                System.out.println("Returning " + nearest.mapLocation);
-            else
-                System.out.println("Returning null");
             return nearest != null ? nearest.mapLocation : null;
         }
 

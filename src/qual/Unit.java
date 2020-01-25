@@ -170,14 +170,16 @@ public abstract class Unit extends Robot {
     }
 
     public Direction navigate(int speculation, boolean action) {
+//        System.out.println("Start pathing to: " + state.target);
         if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
-            setDestination(state.target);
+            MapLocation target = state.target;
             clearHistory();
+            setDestination(target);
         }
         if (rc.getCooldownTurns() >= 1) {
             return Direction.CENTER;
         }
-        System.out.println("Pathing to: " + state.target);
+//        System.out.println("Pathing to: " + state.target);
         try {
             List<PathState> path = speculativePath(state, speculation);
             PathState next = null;
@@ -360,9 +362,9 @@ public abstract class Unit extends Robot {
 
         if (bestdir == null) {
             return false;
-        } else {
-            tryMove(bestdir);
         }
+        tryMove(bestdir);
+        myLocation = rc.getLocation();
         return true;
     }
 }
