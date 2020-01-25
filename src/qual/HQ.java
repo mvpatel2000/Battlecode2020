@@ -82,8 +82,8 @@ public class HQ extends Building {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
                 if (soupPerTile[1] > 0) {
-                    System.out.println("[i] " + Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
-                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 224, 124, 42);
+                    //System.out.println("[i] " + Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
+                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 176, 0, 32);
                     soupSum += soupPerTile[1];
                 }
             }

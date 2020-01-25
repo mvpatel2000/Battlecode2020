@@ -681,7 +681,7 @@ public class Miner extends Unit {
                     for (int j = 0; j < p.MAX_PATCHES; j++) {
                         int thisPatch = p.readPatch(j);
                         int thisWeight = p.readWeight(j);
-                        System.out.println(thisPatch);
+                        //System.out.println(thisPatch);
                         if (thisPatch == oldPatch) {
                             break;
                         }
