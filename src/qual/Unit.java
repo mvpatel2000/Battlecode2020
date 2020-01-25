@@ -36,10 +36,10 @@ public abstract class Unit extends Robot {
 
     protected void updateDrones() {
         drones.clear();
-        Arrays.stream(rc.senseNearbyRobots())
-                .filter(x -> !x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE))
-                .filter(x -> !x.isCurrentlyHoldingUnit())
-                .forEach(drones::add);
+        for (RobotInfo x : rc.senseNearbyRobots()) {
+            if (!x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE) && !x.isCurrentlyHoldingUnit())
+                drones.add(x);
+        }
     }
 
     @Override
