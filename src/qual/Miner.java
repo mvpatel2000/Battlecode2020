@@ -469,7 +469,7 @@ public class Miner extends Unit {
                     destination = baseLocation;
                     turnsToBase++;
                 }
-                if (rc.senseSoup(destination) == 0) {
+                if (rc.canSenseLocation(destination) && rc.senseSoup(destination) == 0) { // TODO: does not report empty tile if fills up on soup in same turn
                     System.out.println("Soup finished");
                     sendSoupMessageIfShould(destination, true);
                     if (turnsToBase < 0) {
@@ -507,7 +507,9 @@ public class Miner extends Unit {
             }
             System.out.println("Far pathing: " + destination);
             setPathTarget(destination);
+            System.out.println("Start nav " + rc.getRoundNum() + " " + Clock.getBytecodeNum());
             navigate();
+            System.out.println("end nav " + rc.getRoundNum() + " " + Clock.getBytecodeNum());
         }
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
     }
