@@ -301,8 +301,7 @@ public class Miner extends Unit {
             l.writeInformation(ml.x, ml.y, 1);
             if(sendMessage(l.getMessage(), 1)) {
                 hasSentEnemyLoc = true;
-                System.out.println("[i] SENDING ENEMY HQ LOCATION");
-                System.out.println(ml);
+                System.out.println("[i] SENDING ENEMY HQ LOCATION " + ml);
             }
         }
         if ((hasSentHalt == hasBuiltHaltedNetGun) && seen.length > 0 && seen[0].getType().equals(RobotType.HQ)
@@ -731,9 +730,7 @@ public class Miner extends Unit {
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
                             //rc.setIndicatorDot(cLoc, 235, 128, 114);
-                            System.out.println("Add check: " + cLoc + " " + ((soupChecked[cLoc.x] >> cLoc.y) & 1));
                             if ((soupChecked[cLoc.x] >> cLoc.y & 1) == 0) {
-                                System.out.println("Adding!");
                                 soupListLocations.add(cLoc, thisWeight);
                             }
                         }
@@ -762,8 +759,7 @@ public class Miner extends Unit {
                     checkForEnemyHQLocationMessageSubroutine(msg);
                     if(ENEMY_HQ_LOCATION != null) {
                         enemyHQLocation = ENEMY_HQ_LOCATION;
-                        System.out.println("[i] I know ENEMY HQ");
-                        System.out.println(enemyHQLocation);
+                        System.out.println("[i] I know ENEMY HQ " + enemyHQLocation);
                     }
                 } else if(getSchema(msg[0])==7) {
                     if(!hasSentRushCommit) {
@@ -889,10 +885,6 @@ public class Miner extends Unit {
                 oldPtr = ptr;
                 ptr = ptr.next;
             }
-            if(nearest!= null)
-                System.out.println("Returning " + nearest.mapLocation);
-            else
-                System.out.println("Returning null");
             return nearest != null ? nearest.mapLocation : null;
         }
 
