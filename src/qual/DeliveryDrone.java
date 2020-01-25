@@ -31,6 +31,7 @@ public class DeliveryDrone extends Unit {
     boolean carryingEnemy;
     boolean carryingAlly;
     boolean enemySwarmDefense;
+    boolean carryingCow;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -62,6 +63,7 @@ public class DeliveryDrone extends Unit {
         enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
         enemyVisited = false;
         carryingEnemy = false;
+        carryingCow = false;
         carryingAlly = false;
         enemySwarmDefense = false;
 
@@ -89,14 +91,18 @@ public class DeliveryDrone extends Unit {
         updateVisitedTiles(myLocation);
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
+        EnemyInfo enemyInfo = new EnemyInfo().invoke();
+        RobotInfo nearest = enemyInfo.getNearest();
+        int distToNearest = enemyInfo.getDistToNearest();
+        int droneCount = enemyInfo.getDroneCount();
+
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
         if (carryingEnemy) { // go to water and drop
-            if (goToWaterAndDrop()) return;
+            if (carryingCow && nearest != null && !nearest.getType().equals(RobotType.COW))
+                dropToward(nearest.getLocation());
+            else if (goToWaterAndDrop())
+                return;
         } else {
-            EnemyInfo enemyInfo = new EnemyInfo().invoke();
-            RobotInfo nearest = enemyInfo.getNearest();
-            int distToNearest = enemyInfo.getDistToNearest();
-            int droneCount = enemyInfo.getDroneCount();
             if (droneCount > 6)
                 enemySwarmDefense = true;
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
@@ -121,6 +127,20 @@ public class DeliveryDrone extends Unit {
         checkEnemyLocMessage();
     }
 
+    private void dropToward(MapLocation location) throws GameActionException {
+        if (!rc.isReady())
+            return;
+        Direction dir = Arrays.stream(directions)
+                .filter(x -> rc.canDropUnit(x))
+                .min(Comparator.comparingInt(d -> myLocation.add(d).distanceSquaredTo(location)))
+                .orElse(null);
+        if (dir != null) {
+            rc.dropUnit(dir);
+            carryingEnemy = false;
+            carryingCow = false;
+        }
+    }
+
     private void checkEnemyLocMessage() throws GameActionException {
         if (rc.getRoundNum() % 100 == 4 && enemyLocation != ENEMY_HQ_LOCATION) {
             checkForEnemyHQLocationMessage(5);
@@ -134,6 +154,9 @@ public class DeliveryDrone extends Unit {
     private void tryPickUp(RobotInfo nearest) throws GameActionException {
         if (rc.isReady()) {
             rc.pickUpUnit(nearest.getID());
+            if (rc.senseRobot(nearest.getID()).getType().equals(RobotType.COW)) {
+                carryingCow = true;
+            }
             carryingEnemy = true;
         }
     }
@@ -248,6 +271,7 @@ public class DeliveryDrone extends Unit {
                         rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
                     rc.dropUnit(dir);
                     carryingEnemy = false;
+                    carryingCow = false;
                     return true;
                 }
             }
@@ -271,6 +295,7 @@ public class DeliveryDrone extends Unit {
                         rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
                     rc.dropUnit(dir);
                     carryingEnemy = false;
+                    carryingCow = false;
                     return true;
                 }
             }
@@ -2511,9 +2536,16 @@ public class DeliveryDrone extends Unit {
                     continue;
                 int distToEnemy = myLocation.distanceSquaredTo(enemyRobot.location);
                 // consider nearest, prioritizing enemy landscapers over all
-                if (distToEnemy < distToNearest || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)) {
-                    nearest = enemyRobot;
-                    distToNearest = distToEnemy;
+                if (distToEnemy < distToNearest
+                        || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
+                        || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
+                    if (nearest == null
+                            || nearest.type == RobotType.COW
+                            || (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
+                            || enemyRobot.type == RobotType.LANDSCAPER) {
+                        nearest = enemyRobot;
+                        distToNearest = distToEnemy;
+                    }
                 }
             }
             return this;
