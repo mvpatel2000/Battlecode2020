@@ -213,7 +213,7 @@ public abstract class Unit extends Robot {
                 break;
             for (LinkedList<PathState> st : states) {
                 PathState next = bugPath(st.getLast(), branch);
-                if (branch[0]) {
+                if (branch[0] && i < depth - 1) {
                     PathState tmp = st.getLast().clone();
                     tmp.follow = next.follow == Hand.Left ? Hand.Right : Hand.Left;
                     PathState alternate = bugPath(tmp, null);
