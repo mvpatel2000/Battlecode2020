@@ -428,7 +428,6 @@ public class Miner extends Unit {
 
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-        System.out.println("Dist2Dest " + distanceToDestination);
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
                 Direction toBase = myLocation.directionTo(baseLocation);
@@ -473,7 +472,7 @@ public class Miner extends Unit {
                 if (rc.senseSoup(destination) == 0) {
                     System.out.println("Soup finished");
                     sendSoupMessageIfShould(destination, true);
-                    if (!destination.equals(baseLocation)) {
+                    if (turnsToBase < 0) {
                         destination = updateNearestSoupLocation();
                         System.out.println("reset destination:" + destination);
                         if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
