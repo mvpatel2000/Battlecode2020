@@ -14,6 +14,7 @@ public abstract class Unit extends Robot {
     List<RobotInfo> drones;
 
     public static int HISTORY_SIZE = 30;
+    private MapLocation pathStart;
 
     public Unit(RobotController rc) throws GameActionException {
         super(rc);
@@ -157,6 +158,7 @@ public abstract class Unit extends Robot {
 
     public void setDestination(MapLocation loc) {
         state = new PathState(myLocation, loc, null, null, Integer.MAX_VALUE);
+        pathStart = myLocation;
     }
 
     public void navigate() {
@@ -168,8 +170,9 @@ public abstract class Unit extends Robot {
     }
 
     public Direction navigate(int speculation, boolean action) {
-        if (historySet.getOrDefault(myLocation, 0) >= 3) {
+        if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
             setDestination(state.target);
+            clearHistory();
         }
         if (rc.getCooldownTurns() >= 1) {
             return Direction.CENTER;
