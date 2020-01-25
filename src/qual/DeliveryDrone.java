@@ -134,7 +134,7 @@ public class DeliveryDrone extends Unit {
     }
 
     private void checkIfDoneWithAMove(RobotInfo[] nearby) throws GameActionException {
-        if (ENEMY_HQ_LOCATION != null && rc.canSenseLocation(ENEMY_HQ_LOCATION)) {
+        if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
             if (Arrays.stream(nearby).noneMatch(x -> !x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER)) {
                 giveUpOnAMove = true;
                 handleDefend();
@@ -366,7 +366,7 @@ public class DeliveryDrone extends Unit {
                 && rc.senseNearbyRobots(to, 0, null).length == 0
                 && (trapped || nearbyNetGuns.stream().noneMatch(y ->
                         y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-                ) && (ENEMY_HQ_LOCATION == null || ENEMY_HQ_LOCATION.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                ) && (enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
     protected Direction[] getDirections() {
