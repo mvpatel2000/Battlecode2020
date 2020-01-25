@@ -13,6 +13,7 @@ public class DeliveryDrone extends Unit {
     final Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     int[] tilesVisited;
     int stuckCount;
+    List<RobotInfo> nearbyNetGuns;
 
     MapLocation nearestWaterLocation;
     MapLocation baseLocation;
@@ -32,6 +33,7 @@ public class DeliveryDrone extends Unit {
     boolean carryingAlly;
     boolean giveUpOnAMove;
     boolean carryingCow;
+    private boolean trapped;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -66,6 +68,7 @@ public class DeliveryDrone extends Unit {
         carryingCow = false;
         carryingAlly = false;
         giveUpOnAMove = false;
+        nearbyNetGuns = new ArrayList<>();
 
         attackDrone = false;
         Direction toBase = myLocation.directionTo(baseLocation);
@@ -343,6 +346,14 @@ public class DeliveryDrone extends Unit {
     }
 
     protected void updateDrones() {
+        nearbyNetGuns.clear();
+        Arrays.stream(rc.senseNearbyRobots())
+                .filter(x -> !x.getTeam().equals(allyTeam) &&
+                        (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ)))
+                .forEach(nearbyNetGuns::add);
+        trapped = Arrays.stream(directionsWithCenter).allMatch(x -> nearbyNetGuns.stream().anyMatch(y ->
+                    y.getLocation().distanceSquaredTo(myLocation.add(x))
+                            <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED));
     }
 
     protected boolean canMove(Direction in) {
@@ -353,11 +364,9 @@ public class DeliveryDrone extends Unit {
         MapLocation to = from.add(in);
         return rc.canSenseLocation(to)
                 && rc.senseNearbyRobots(to, 0, null).length == 0
-                && Arrays.stream(rc.senseNearbyRobots())
-                    .filter(x -> !x.getTeam().equals(allyTeam) &&
-                            (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ)))
-                    .noneMatch(y -> y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-                && (ENEMY_HQ_LOCATION == null || ENEMY_HQ_LOCATION.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                && (trapped || nearbyNetGuns.stream().noneMatch(y ->
+                        y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+                ) && (ENEMY_HQ_LOCATION == null || ENEMY_HQ_LOCATION.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
     protected Direction[] getDirections() {
