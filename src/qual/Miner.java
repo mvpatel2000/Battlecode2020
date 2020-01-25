@@ -37,6 +37,8 @@ public class Miner extends Unit {
     boolean hasSentEnemyLoc = false;
     int timeout = 0;
 
+    boolean returnToLattice = false;
+
     //For halting production and resuming it.
     boolean rushHold = false;
     boolean holdProduction = false;
@@ -54,6 +56,9 @@ public class Miner extends Unit {
         }
         aggro = rc.getRoundNum() == 2;
         aggro = false; // uncomment to disable aggro
+
+        // returnToLattice = rc.getRoundNum() < 10;
+        returnToLattice = false;
         aggroDone = false;
         if (aggro) {
             target = new ArrayList<>();
@@ -110,47 +115,52 @@ public class Miner extends Unit {
         super.run();
         flee();
 
-        if (holdProduction || rushHold) {
-            checkIfContinueHold();
+        if (returnToLattice && rc.getRoundNum() > 300) {
+            path(hqLocation);
         }
+        else {
+            if (holdProduction || rushHold) {
+                checkIfContinueHold();
+            }
 
-        if (aggro) {
-            handleAggro();
-            return;
-        }
-        //readMessage = false;
-        //if (rc.getRoundNum() % messageFrequency == 4) {
-        //    updateActiveLocations();
-        //    readMessage = true;
-        //}
-        findMessageFromAllies(rc.getRoundNum()-1);
+            if (aggro) {
+                handleAggro();
+                return;
+            }
+            //readMessage = false;
+            //if (rc.getRoundNum() % messageFrequency == 4) {
+            //    updateActiveLocations();
+            //    readMessage = true;
+            //}
+            findMessageFromAllies(rc.getRoundNum()-1);
 
-        tilesVisited[getTileNumber(myLocation)] = 1;
+            tilesVisited[getTileNumber(myLocation)] = 1;
 
-        readMessage = false;
-        if (rc.getRoundNum() % messageFrequency == 4) {
-            updateActiveLocations();
-            readMessage = true;
-        }
+            readMessage = false;
+            if (rc.getRoundNum() % messageFrequency == 4) {
+                updateActiveLocations();
+                readMessage = true;
+            }
 
-        checkBuildBuildings();
+            checkBuildBuildings();
 
-        if (!dSchoolExists || !fulfillmentCenterExists) {
-            RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-            for (RobotInfo robot : nearbyRobots) {
-                switch (robot.getType()) {
-                    case DESIGN_SCHOOL:
-                        dSchoolExists = true;
-                        break;
-                    case FULFILLMENT_CENTER:
-                        fulfillmentCenterExists = true;
-                        break;
+            if (!dSchoolExists || !fulfillmentCenterExists) {
+                RobotInfo[] nearbyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+                for (RobotInfo robot : nearbyRobots) {
+                    switch (robot.getType()) {
+                        case DESIGN_SCHOOL:
+                            dSchoolExists = true;
+                            break;
+                        case FULFILLMENT_CENTER:
+                            fulfillmentCenterExists = true;
+                            break;
+                    }
                 }
             }
-        }
 
-        harvest();
-        previousSoup = rc.getTeamSoup();
+            harvest();
+            previousSoup = rc.getTeamSoup();
+        }
     }
 
     /**

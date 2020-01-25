@@ -14,7 +14,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
-    int numTerraformersMade = 100; // set to 0 to enable
+    int numTerraformersMade = 0; // set to 0 to enable
     int INNER_WALL_PAUSE_AT = 5;
 
     //For halting production and resuming it.
