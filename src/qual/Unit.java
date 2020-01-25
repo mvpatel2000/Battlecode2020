@@ -144,8 +144,12 @@ public abstract class Unit extends Robot {
     }
 
     public void navigate(int speculation) {
+        Direction d = navigate(speculation, true);
+    }
+
+    public Direction navigate(int speculation, boolean action) {
         if (rc.getCooldownTurns() >= 1) {
-            return;
+            return Direction.CENTER;
         }
         System.out.println("Pathing to: " + state.target);
         try {
@@ -161,9 +165,15 @@ public abstract class Unit extends Robot {
             }
             if (next != null)
                 state = next;
-            go(toward(myLocation, state.me));
+
+            Direction moveDir = toward(myLocation, state.me);
+            if (action) {
+                go(moveDir);
+            }
+            return moveDir;
         } catch (GameActionException e) {
             e.printStackTrace();
+            return Direction.CENTER;
         }
     }
 

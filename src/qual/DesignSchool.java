@@ -14,7 +14,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
-    int numTerraformersMade = 1000; // set to 0 to enable
+    int numTerraformersMade = 0; // set to 0 to enable
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -132,7 +132,7 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (numLandscapersMade == 5 && numTerraformersMade == 0) { // build terraformer
+            if (numLandscapersMade == 3 && numTerraformersMade == 0) { // build terraformer
                 Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
@@ -146,7 +146,7 @@ public class DesignSchool extends Building {
                     }
                 }
             }
-            if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if ((numLandscapersMade < 3 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
 
                 // look for enemy d.school
@@ -199,7 +199,7 @@ public class DesignSchool extends Building {
                 if (startOuterWallAt == 0) {
                     startOuterWallAt = rc.getRoundNum();
                 }
-                if (rc.getRoundNum() - startOuterWallAt < 80 && rc.getTeamSoup() < 400) {
+                if (rc.getRoundNum() - startOuterWallAt < 200 && rc.getTeamSoup() < 400) {
                     return;
                 }
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
