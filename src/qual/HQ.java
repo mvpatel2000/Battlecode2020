@@ -78,12 +78,13 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         minerCooldown--;
+        boolean existsEnemy = existsNearbyEnemy();
         if(!holdProduction) {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
                 if (soupPerTile[1] > 0) {
-                    System.out.println("[i] " + Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
-                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 224, 124, 42);
+                    //System.out.println("[i] " + Integer.toString(soupPerTile[1]) + " soup at tile " + Integer.toString(soupPerTile[0]));
+                    rc.setIndicatorDot(getCenterFromTileNumber(soupPerTile[0]), 176, 0, 32);
                     soupSum += soupPerTile[1];
                 }
             }
@@ -92,7 +93,7 @@ public class HQ extends Building {
                 minerCount++;
                 minerCooldown = 5;
             }*/
-            if(minerCount < 4 && tryBuild(RobotType.MINER, getBestMinerDirection())) {
+            if((minerCount < 4 || (minerCount < 5 && !existsEnemy)) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
                 minerCount++;
                 minerCooldown = 5;
             } else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, getBestMinerDirection())) {

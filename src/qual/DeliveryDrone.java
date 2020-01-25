@@ -73,41 +73,9 @@ public class DeliveryDrone extends Unit {
 
         DEFEND_TURN = 1100;
         ATTACK_TURN = 2200;
-//        if (rc.canSenseLocation(hqLocation)) {
-//            switch (rc.senseElevation(hqLocation)) {
-//                case 5:
-//                    DEFEND_TURN = 1210-5;
-//                    break;
-//                case 4:
-//                    DEFEND_TURN = 930-5;
-//                    break;
-//                default:
-//                    DEFEND_TURN = 700-5;
-//                    break;
-//            }
-//        }
-//        else {
-//            DEFEND_TURN = 700-5;
-//        }
+
         tilesVisited[getTileNumber(enemyLocation)] = 1;
-        int hqTileNum = getTileNumber(hqLocation);
-        tilesVisited[hqTileNum] = 1;
-        if (hqTileNum % numCols == 0) { // left border
-            tilesVisited[hqTileNum + 1] = 1;
-        } else if (hqTileNum % numCols == numCols - 1) { // right border
-            tilesVisited[hqTileNum - 1] = 1;
-        } else {
-            tilesVisited[hqTileNum - 1] = 1;
-            tilesVisited[hqTileNum + 1] = 1;
-        }
-        if (hqTileNum < numCols) { // bottom
-            tilesVisited[hqTileNum + numCols] = 1;
-        } else if (hqTileNum >= numCols * (numRows - 1)) { // top
-            tilesVisited[hqTileNum - numCols] = 1;
-        } else {
-            tilesVisited[hqTileNum - numCols] = 1;
-            tilesVisited[hqTileNum + numCols] = 1;
-        }
+        updateVisitedTiles(hqLocation);
 
         whichEnemyLocation = 0;
         nearestWaterLocation = updateNearestWaterLocation();
@@ -118,6 +86,59 @@ public class DeliveryDrone extends Unit {
     public void run() throws GameActionException {
         super.run();
 
+        updateVisitedTiles(myLocation);
+
+        //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
+        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
+        if (carryingEnemy) { // go to water and drop
+            if (goToWaterAndDrop()) return;
+        } else {
+            EnemyInfo enemyInfo = new EnemyInfo().invoke();
+            RobotInfo nearest = enemyInfo.getNearest();
+            int distToNearest = enemyInfo.getDistToNearest();
+            int droneCount = enemyInfo.getDroneCount();
+            if (droneCount > 6)
+                enemySwarmDefense = true;
+            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
+                attackDrone = false;
+            System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
+            if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
+                tryPickUp(nearest);
+            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
+                    || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
+                chaseEnemy(nearest);
+            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
+                handleAttack();
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !enemySwarmDefense) { // drone attack-move
+                handleAMove();
+            } else { // defend drone / go back to base
+                handleDefend();
+            }
+        }
+
+        //Check every 100 turns for enemy location message sent in the previous 5 turns.
+        //until you've read it and set the variable.
+        checkEnemyLocMessage();
+    }
+
+    private void checkEnemyLocMessage() throws GameActionException {
+        if (rc.getRoundNum() % 100 == 4 && enemyLocation != ENEMY_HQ_LOCATION) {
+            checkForEnemyHQLocationMessage(5);
+            if (ENEMY_HQ_LOCATION != null) {
+                enemyLocation = ENEMY_HQ_LOCATION;
+                rc.setIndicatorDot(enemyLocation, 255, 83, 126);
+            }
+        }
+    }
+
+    private void tryPickUp(RobotInfo nearest) throws GameActionException {
+        if (rc.isReady()) {
+            rc.pickUpUnit(nearest.getID());
+            carryingEnemy = true;
+        }
+    }
+
+    private void updateVisitedTiles(MapLocation myLocation) throws GameActionException {
         int myTileNum = getTileNumber(myLocation);
         tilesVisited[myTileNum] = 1;
         if (myTileNum % numCols == 0) { // left border
@@ -136,193 +157,128 @@ public class DeliveryDrone extends Unit {
             tilesVisited[myTileNum - numCols] = 1;
             tilesVisited[myTileNum + numCols] = 1;
         }
+    }
 
-        //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
-        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
-        if (carryingEnemy) { // go to water and drop
-            rc.setIndicatorLine(myLocation, nearestWaterLocation, 255, 0, 255);
-            int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
-            if (distanceToDestination <= 2) { // drop
+    private void handleDefend() throws GameActionException {
+        destination = hqLocation;
+        if (rc.getRoundNum() < DEFEND_TURN) {
+            spiral(destination, false);
+        } else {
+            path(destination, false);
+        }
+        nearestWaterLocation = updateNearestWaterLocation();
+    }
+
+    private void handleAMove() throws GameActionException {
+        if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
+            RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
+            if (enemy == null || enemy.type != RobotType.HQ) {
+                switch (whichEnemyLocation) {
+                    case 0:
+                        enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
+                        whichEnemyLocation++;
+                        break;
+                    case 1:
+                        enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
+                        whichEnemyLocation++;
+                        break;
+                    case 2:
+                        System.out.println("Critical Error!! Somehow checked all HQ locations and didn't find anything.");
+                }
+            }
+        }
+        if (rc.getRoundNum() > ATTACK_TURN) {
+            fuzzyMoveToLoc(enemyLocation);
+        } else if (rc.getRoundNum() > ATTACK_TURN - 25) {
+            path(enemyLocation, true);
+        } else if (rc.getRoundNum() > ATTACK_TURN - 200) {
+            spiral(enemyLocation, true);
+        }
+    }
+
+    private void chaseEnemy(RobotInfo nearest) throws GameActionException {
+        if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
+            fuzzyMoveToLoc(nearest.location);
+        } else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100) {
+            System.out.println("pathing recklessly");
+            path(nearest.location, false); // to nearest enemy.
+        } else {
+            path(nearest.location, true);
+        }
+        nearestWaterLocation = updateNearestWaterLocation();
+    }
+
+    private void handleAttack() throws GameActionException {
+        if (myLocation.distanceSquaredTo(hqLocation) < 50) {
+            spiral(enemyLocation, false);
+        } else {
+            spiral(enemyLocation, true);
+        }
+        rc.setIndicatorLine(myLocation, enemyLocation, 100, 0, 0);
+        if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
+            RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
+            if (enemy == null || enemy.type != RobotType.HQ) {
+                switch (whichEnemyLocation) {
+                    case 0:
+                        enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
+                        whichEnemyLocation++;
+                        break;
+                    case 1:
+                        enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
+                        whichEnemyLocation++;
+                        break;
+                    case 2:
+                        System.out.println("Critical Error!! Somehow checked all HQ locations and didn't find anything.");
+                }
+            }
+        }
+        nearestWaterLocation = updateNearestWaterLocation();
+    }
+
+    private boolean goToWaterAndDrop() throws GameActionException {
+        rc.setIndicatorLine(myLocation, nearestWaterLocation, 255, 0, 255);
+        int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
+        if (distanceToDestination <= 2) { // drop
 //                System.out.println("Drop this guy " + rc.isReady());
-                for (Direction dir : directions) { // drop anywhere wet
-                    if (rc.isReady() && rc.canDropUnit(dir) &&
-                            rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
-                        rc.dropUnit(dir);
-                        carryingEnemy = false;
-                        return;
+            for (Direction dir : directions) { // drop anywhere wet
+                if (rc.isReady() && rc.canDropUnit(dir) &&
+                        rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
+                    rc.dropUnit(dir);
+                    carryingEnemy = false;
+                    return true;
+                }
+            }
+            nearestWaterLocation = updateNearestWaterLocation(); // Adjacent to explore zone
+            if (myLocation.equals(nearestWaterLocation)) {
+                for (Direction dir : directions) { // you're on the water
+                    if (rc.isReady() && rc.canMove(dir)) {
+                        rc.move(dir);
                     }
                 }
-                nearestWaterLocation = updateNearestWaterLocation(); // Adjacent to explore zone
-                if (myLocation.equals(nearestWaterLocation)) {
-                    for (Direction dir : directions) { // you're on the water
-                        if (rc.isReady() && rc.canMove(dir)) {
-                            rc.move(dir);
-                        }
-                    }
-                }
-                if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                    path(nearestWaterLocation, false);
-                } else {
-                    path(nearestWaterLocation, true);
-                }
+            }
+            if (myLocation.distanceSquaredTo(hqLocation) < 100) {
+                path(nearestWaterLocation, false);
             } else {
-//                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
-                for (Direction dir : directions) { // drop anywhere wet
-                    if (rc.isReady() && rc.canDropUnit(dir) &&
-                            rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
-                        rc.dropUnit(dir);
-                        carryingEnemy = false;
-                        return;
-                    }
-                }
-                if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                    path(nearestWaterLocation, false);
-                } else {
-                    path(nearestWaterLocation, true);
-                }
-                nearestWaterLocation = updateNearestWaterLocation();
+                path(nearestWaterLocation, true);
             }
         } else {
-            RobotInfo[] enemyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
-            RobotInfo nearest = null;
-            int distToNearest = MAX_SQUARED_DISTANCE;
-            int droneCount = 0;
-            for (RobotInfo enemyRobot : enemyRobots) {
-                if (enemyRobot.team != allyTeam && enemyRobot.type == RobotType.HQ && !hasSentEnemyLoc) {
-                    if (enemyLocation != ENEMY_HQ_LOCATION) {
-                        ENEMY_HQ_LOCATION = enemyRobot.getLocation();
-                        enemyLocation = ENEMY_HQ_LOCATION;
-                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                        l.writeInformation(enemyLocation.x, enemyLocation.y, 1);
-                        if (sendMessage(l.getMessage(), 1)) {
-                            hasSentEnemyLoc = true;
-                            System.out.println("[i] SENDING ENEMY HQ LOCATION");
-                            //System.out.println(enemyLocation);
-                        }
-                    }
-                }
-                if (enemyRobot.team == enemyTeam && enemyRobot.type == RobotType.DELIVERY_DRONE)
-                    droneCount++;
-                if (enemyRobot.team == allyTeam || enemyRobot.type == RobotType.DELIVERY_DRONE
-                        || enemyRobot.type == RobotType.FULFILLMENT_CENTER || enemyRobot.type == RobotType.HQ
-                        || enemyRobot.type == RobotType.NET_GUN || enemyRobot.type == RobotType.REFINERY
-                        || enemyRobot.type == RobotType.DESIGN_SCHOOL || enemyRobot.type == RobotType.VAPORATOR)
-                    continue;
-                int distToEnemy = myLocation.distanceSquaredTo(enemyRobot.location);
-                // consider nearest, prioritizing enemy landscapers over all
-                if (distToEnemy < distToNearest || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)) {
-                    nearest = enemyRobot;
-                    distToNearest = distToEnemy;
+//                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
+            for (Direction dir : directions) { // drop anywhere wet
+                if (rc.isReady() && rc.canDropUnit(dir) &&
+                        rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
+                    rc.dropUnit(dir);
+                    carryingEnemy = false;
+                    return true;
                 }
             }
-            if (droneCount > 6)
-                enemySwarmDefense = true;
-            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
-                attackDrone = false;
-            System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
-            if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
-                if (rc.isReady()) {
-                    rc.pickUpUnit(nearest.getID());
-                    carryingEnemy = true;
-                }
-            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
-                    || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
-                if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
-                    fuzzyMoveToLoc(nearest.location);
-                } else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100) {
-                    System.out.println("pathing recklessly");
-                    path(nearest.location, false); // to nearest enemy.
-                } else {
-                    path(nearest.location, true);
-                }
-                nearestWaterLocation = updateNearestWaterLocation();
-            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
-                if (myLocation.distanceSquaredTo(hqLocation) < 50) {
-                    spiral(enemyLocation, false);
-                } else {
-                    spiral(enemyLocation, true);
-                }
-                rc.setIndicatorLine(myLocation, enemyLocation, 100, 0, 0);
-                if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
-                    RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
-                    if (enemy == null || enemy.type != RobotType.HQ) {
-                        switch (whichEnemyLocation) {
-                            case 0:
-                                enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
-                                whichEnemyLocation++;
-                                break;
-                            case 1:
-                                enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
-                                whichEnemyLocation++;
-                                break;
-                            case 2:
-                                System.out.println("Critical Error!! Somehow checked all HQ locations and didn't find anything.");
-                        }
-                    }
-                }
-//                if (!enemyVisited) { // visit enemy first
-//                    if (myLocation.distanceSquaredTo(enemyLocation) > 100) {
-//                        path(enemyLocation, true);
-//                    } else {
-//                        enemyVisited = true;
-//                        destination = getNearestUnexploredTile();
-//                    }
-//                } else { // explore around the map
-//                    if (myLocation.distanceSquaredTo(destination) <= 4 || stuckCount > 8) {
-//                        tilesVisited[getTileNumber(destination)] = 1;
-//                        destination = getNearestUnexploredTile();
-//                        stuckCount = 0;
-//                    } else {
-//                        stuckCount++;
-//                    }
-//                    path(destination, true);
-//                }
-                nearestWaterLocation = updateNearestWaterLocation();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !enemySwarmDefense) { // drone attack-move
-                if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
-                    RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
-                    if (enemy == null || enemy.type != RobotType.HQ) {
-                        switch (whichEnemyLocation) {
-                            case 0:
-                                enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
-                                whichEnemyLocation++;
-                                break;
-                            case 1:
-                                enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
-                                whichEnemyLocation++;
-                                break;
-                            case 2:
-                                System.out.println("Critical Error!! Somehow checked all HQ locations and didn't find anything.");
-                        }
-                    }
-                }
-                if (rc.getRoundNum() > ATTACK_TURN) {
-                    fuzzyMoveToLoc(enemyLocation);
-                } else if (rc.getRoundNum() > ATTACK_TURN - 25) {
-                    path(enemyLocation, true);
-                } else if (rc.getRoundNum() > ATTACK_TURN - 200) {
-                    spiral(enemyLocation, true);
-                }
-            } else { // defend drone / go back to base
-                destination = hqLocation;
-                if (rc.getRoundNum() < DEFEND_TURN) {
-                    spiral(destination, false);
-                } else {
-                    path(destination, false);
-                }
-                nearestWaterLocation = updateNearestWaterLocation();
+            if (myLocation.distanceSquaredTo(hqLocation) < 100) {
+                path(nearestWaterLocation, false);
+            } else {
+                path(nearestWaterLocation, true);
             }
+            nearestWaterLocation = updateNearestWaterLocation();
         }
-
-        //Check every 100 turns for enemy location message sent in the previous 5 turns.
-        //until you've read it and set the variable.
-        if (rc.getRoundNum() % 100 == 4 && enemyLocation != ENEMY_HQ_LOCATION) {
-            checkForEnemyHQLocationMessage(5);
-            if (ENEMY_HQ_LOCATION != null) {
-                enemyLocation = ENEMY_HQ_LOCATION;
-                rc.setIndicatorDot(enemyLocation, 255, 83, 126);
-            }
-        }
+        return false;
     }
 
     public void spiral(MapLocation center, boolean safe) throws GameActionException {
@@ -342,6 +298,9 @@ public class DeliveryDrone extends Unit {
             System.out.println("Spiraling to " + center.translate(x, y));
             path(center.translate(x, y), safe);
         }
+    }
+
+    protected void updateDrones() {
     }
 
     protected boolean canMove(Direction in) {
@@ -2501,5 +2460,59 @@ public class DeliveryDrone extends Unit {
                 return new int[]{};
         }
         return new int[]{};
+    }
+
+    private class EnemyInfo {
+        private RobotInfo nearest;
+        private int distToNearest;
+        private int droneCount;
+
+        public RobotInfo getNearest() {
+            return nearest;
+        }
+
+        public int getDistToNearest() {
+            return distToNearest;
+        }
+
+        public int getDroneCount() {
+            return droneCount;
+        }
+
+        public EnemyInfo invoke() throws GameActionException {
+            RobotInfo[] enemyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
+            nearest = null;
+            distToNearest = MAX_SQUARED_DISTANCE;
+            droneCount = 0;
+            for (RobotInfo enemyRobot : enemyRobots) {
+                if (enemyRobot.team != allyTeam && enemyRobot.type == RobotType.HQ && !hasSentEnemyLoc) {
+                    if (enemyLocation != ENEMY_HQ_LOCATION) {
+                        ENEMY_HQ_LOCATION = enemyRobot.getLocation();
+                        enemyLocation = ENEMY_HQ_LOCATION;
+                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        l.writeInformation(enemyLocation.x, enemyLocation.y, 1);
+                        if (sendMessage(l.getMessage(), 1)) {
+                            hasSentEnemyLoc = true;
+                            System.out.println("[i] SENDING ENEMY HQ LOCATION");
+                            //System.out.println(enemyLocation);
+                        }
+                    }
+                }
+                if (enemyRobot.team == enemyTeam && enemyRobot.type == RobotType.DELIVERY_DRONE)
+                    droneCount++;
+                if (enemyRobot.team == allyTeam || enemyRobot.type == RobotType.DELIVERY_DRONE
+                        || enemyRobot.type == RobotType.FULFILLMENT_CENTER || enemyRobot.type == RobotType.HQ
+                        || enemyRobot.type == RobotType.NET_GUN || enemyRobot.type == RobotType.REFINERY
+                        || enemyRobot.type == RobotType.DESIGN_SCHOOL || enemyRobot.type == RobotType.VAPORATOR)
+                    continue;
+                int distToEnemy = myLocation.distanceSquaredTo(enemyRobot.location);
+                // consider nearest, prioritizing enemy landscapers over all
+                if (distToEnemy < distToNearest || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)) {
+                    nearest = enemyRobot;
+                    distToNearest = distToEnemy;
+                }
+            }
+            return this;
+        }
     }
 }
