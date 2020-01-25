@@ -1,4 +1,4 @@
-package qual;
+package poseidon;
 
 import battlecode.common.*;
 
@@ -232,8 +232,8 @@ public class DesignSchool extends Building {
     }
 
     public boolean sendTerraformMessage(int i) throws GameActionException {
-        System.out.println("[i] Sending terraform message");
-        System.out.println("[i] ID: " + Integer.toString(i%1000));
+        //System.out.println("[i] Sending terraform message");
+        //System.out.println("[i] ID: " + Integer.toString(i%1000));
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
@@ -259,7 +259,7 @@ public class DesignSchool extends Building {
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.println("[i] HOLDING PRODUCTION!");
+                    //System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                 } else if(getSchema(msg[0])==4 && trueEnemyHQLocation==null) {
@@ -282,14 +282,14 @@ public class DesignSchool extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("[i] UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("[i] UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }

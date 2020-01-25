@@ -1,4 +1,4 @@
-package qual;
+package poseidon;
 
 import battlecode.common.*;
 
@@ -51,7 +51,7 @@ public class DeliveryDrone extends Unit {
         initialCheckForEnemyHQLocationMessage();
         if (ENEMY_HQ_LOCATION != null) {
             enemyLocation = ENEMY_HQ_LOCATION;
-            System.out.println("[i] I know enemy HQ");
+            //System.out.println("[i] I know enemy HQ");
         }
         hqLocation = HEADQUARTERS_LOCATION;
         hqLocation = hqLocation != null ? hqLocation : baseLocation;
@@ -146,7 +146,7 @@ public class DeliveryDrone extends Unit {
             checkForEnemyHQLocationMessage(5);
             if (ENEMY_HQ_LOCATION != null) {
                 enemyLocation = ENEMY_HQ_LOCATION;
-                rc.setIndicatorDot(enemyLocation, 255, 83, 126);
+                //rc.setIndicatorDot(enemyLocation, 255, 83, 126);
             }
         }
     }
@@ -240,7 +240,7 @@ public class DeliveryDrone extends Unit {
         } else {
             spiral(enemyLocation, true);
         }
-        rc.setIndicatorLine(myLocation, enemyLocation, 100, 0, 0);
+        //rc.setIndicatorLine(myLocation, enemyLocation, 100, 0, 0);
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
             RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
             if (enemy == null || enemy.type != RobotType.HQ) {
@@ -262,7 +262,7 @@ public class DeliveryDrone extends Unit {
     }
 
     private boolean goToWaterAndDrop() throws GameActionException {
-        rc.setIndicatorLine(myLocation, nearestWaterLocation, 255, 0, 255);
+        //rc.setIndicatorLine(myLocation, nearestWaterLocation, 255, 0, 255);
         int distanceToDestination = myLocation.distanceSquaredTo(nearestWaterLocation);
         if (distanceToDestination <= 2) { // drop
 //                System.out.println("Drop this guy " + rc.isReady());
@@ -430,7 +430,7 @@ public class DeliveryDrone extends Unit {
         for (int[] shift : SPIRAL_ORDER) {
             int newTile = currentTile + shift[0] + numCols * shift[1];
             if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0) {
-                rc.setIndicatorDot(getCenterFromTileNumber(newTile), 255, 0, 255);
+                //rc.setIndicatorDot(getCenterFromTileNumber(newTile), 255, 0, 255);
                 return getCenterFromTileNumber(newTile);
             }
         }
@@ -2522,7 +2522,7 @@ public class DeliveryDrone extends Unit {
                         l.writeInformation(enemyLocation.x, enemyLocation.y, 1);
                         if (sendMessage(l.getMessage(), 1)) {
                             hasSentEnemyLoc = true;
-                            System.out.println("[i] SENDING ENEMY HQ LOCATION");
+                            //System.out.println("[i] SENDING ENEMY HQ LOCATION");
                             //System.out.println(enemyLocation);
                         }
                     }
