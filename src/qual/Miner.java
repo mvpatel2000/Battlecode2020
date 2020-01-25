@@ -161,6 +161,7 @@ public class Miner extends Unit {
                                         x.getLocation().distanceSquaredTo(myLocation) < 3).toArray(RobotInfo[]::new);
         if (adjacentDrones.length == 0)
             return;
+        dummyFn();
         Direction escape = Arrays.stream(directions)
                 .filter(this::canMove)
                 .filter(d -> getNearbyDrones().stream()
@@ -168,6 +169,10 @@ public class Miner extends Unit {
                 .findAny().orElse(null);
         if (escape != null)
             go(escape);
+    }
+
+    private void dummyFn() {
+        System.out.println("delete this");
     }
 
     //determines if location is on grid and not in landscaper slot
