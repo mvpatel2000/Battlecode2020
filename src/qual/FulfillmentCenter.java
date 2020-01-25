@@ -45,7 +45,7 @@ public class FulfillmentCenter extends Building {
 
     private void buildDrone() throws GameActionException {
         boolean built = true;
-        if (attackDroneCount > defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
+        if (attackDroneCount >= defendDroneCount * ATTACK_TO_DEFENSE_RATIO) {
             System.out.println("Building defense drone");
             Direction toHQ = myLocation.directionTo(hqLocation);
             if (tryBuild(RobotType.DELIVERY_DRONE, toHQ)) {
