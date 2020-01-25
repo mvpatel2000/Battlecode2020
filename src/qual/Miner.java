@@ -428,7 +428,6 @@ public class Miner extends Unit {
 
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
 
-        System.out.println("Dist2Dest " + distanceToDestination);
         if (distanceToDestination <= 2) {                                     // at destination
             if (turnsToBase >= 0) {                                           // at base
                 Direction toBase = myLocation.directionTo(baseLocation);
@@ -470,10 +469,10 @@ public class Miner extends Unit {
                     destination = baseLocation;
                     turnsToBase++;
                 }
-                if (rc.senseSoup(destination) == 0) {
+                if (rc.canSenseLocation(destination) && rc.senseSoup(destination) == 0) { // TODO: does not report empty tile if fills up on soup in same turn
                     System.out.println("Soup finished");
                     sendSoupMessageIfShould(destination, true);
-                    if (!destination.equals(baseLocation)) {
+                    if (turnsToBase < 0) {
                         destination = updateNearestSoupLocation();
                         System.out.println("reset destination:" + destination);
                         if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
@@ -508,7 +507,9 @@ public class Miner extends Unit {
             }
             System.out.println("Far pathing: " + destination);
             setPathTarget(destination);
+            System.out.println("Start nav " + rc.getRoundNum() + " " + Clock.getBytecodeNum());
             navigate();
+            System.out.println("end nav " + rc.getRoundNum() + " " + Clock.getBytecodeNum());
         }
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
     }
