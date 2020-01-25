@@ -764,7 +764,6 @@ public class Miner extends Unit {
         }
 
         public void add(MapLocation ml, int priority) {
-            rc.setIndicatorDot(ml, 0,255,0);
             head.next = new SoupLoc(ml, head.next, priority);
         }
 
