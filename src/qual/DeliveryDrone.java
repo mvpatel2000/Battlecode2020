@@ -164,7 +164,10 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
         } else {
-            path(destination, false);
+            int dx = Math.abs(destination.x - myLocation.x);
+            int dy = Math.abs(destination.y - myLocation.y);
+            if (!(dx <= 3 && dy == 3 || dx == 3 && dy <= 3))
+                path(destination, false);
         }
         nearestWaterLocation = updateNearestWaterLocation();
     }
@@ -311,9 +314,10 @@ public class DeliveryDrone extends Unit {
         MapLocation to = from.add(in);
         return rc.canSenseLocation(to)
                 && rc.senseNearbyRobots(to, 0, null).length == 0
-                && Arrays.stream(rc.senseNearbyRobots()).filter(x -> !x.getTeam().equals(allyTeam)
-                && (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))).noneMatch(y -> y.getLocation().distanceSquaredTo(to) <=
-                GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                && Arrays.stream(rc.senseNearbyRobots())
+                    .filter(x -> !x.getTeam().equals(allyTeam))
+                    .filter(x -> x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+                    .noneMatch(y -> y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
     protected Direction[] getDirections() {

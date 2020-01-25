@@ -159,10 +159,13 @@ public abstract class Unit extends Robot {
     }
 
     public void navigate(int speculation) {
-        Direction d = navigate(speculation, true);
+        navigate(speculation, true);
     }
 
     public Direction navigate(int speculation, boolean action) {
+        if (historySet.getOrDefault(myLocation, 0) >= 3) {
+            setDestination(state.target);
+        }
         if (rc.getCooldownTurns() >= 1) {
             return Direction.CENTER;
         }
