@@ -465,6 +465,12 @@ public class Miner extends Unit {
                 destination = updateNearestSoupLocation();
             } else {                                                           // mining
                 Direction soupDir = myLocation.directionTo(destination);
+                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
+                    System.out.println("Last soup loc: "+lastSoupLocation);
+                    refineryCheck();
+                    destination = baseLocation;
+                    turnsToBase++;
+                }
                 if (rc.senseSoup(destination) == 0) {
                     System.out.println("I am at destination. Soup: " + rc.senseSoup(destination));
                     sendSoupMessageIfShould(destination, true);
@@ -475,13 +481,7 @@ public class Miner extends Unit {
                         turnsToBase++;
                     }
                 }
-                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
-                    System.out.println("Last soup loc: "+lastSoupLocation);
-                    refineryCheck();
-                    destination = baseLocation;
-                    turnsToBase++;
-                }
-                if (rc.isReady()) {                                      // mine
+                else if (rc.isReady()) {                                      // mine
                     sendSoupMessageIfShould(destination, false);
                     rc.mineSoup(soupDir);
                 }
