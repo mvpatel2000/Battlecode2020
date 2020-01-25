@@ -1,4 +1,4 @@
-package qual;
+package poseidon;
 
 import battlecode.common.*;
 
@@ -12,7 +12,7 @@ public class Miner extends Unit {
     long[] soupChecked; // align to top right
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
-    boolean readMessage = false;
+    boolean readMessage;
     public static int SPECULATION = 3;
 
     MapLocation destination;
@@ -23,7 +23,6 @@ public class Miner extends Unit {
     int[] tilesVisited;
 
     boolean dSchoolExists;
-    boolean goingToBuildDSchool = false;
     boolean fulfillmentCenterExists;
     boolean firstRefineryExists;
 
@@ -37,8 +36,6 @@ public class Miner extends Unit {
     boolean hasBuiltHaltedNetGun = false;
     boolean hasSentEnemyLoc = false;
     int timeout = 0;
-
-    boolean terraformer = false;
 
     //For halting production and resuming it.
     boolean rushHold = false;
@@ -58,10 +55,6 @@ public class Miner extends Unit {
         aggro = rc.getRoundNum() == 2;
         aggro = false; // uncomment to disable aggro
         aggroDone = false;
-
-        terraformer = rc.getRoundNum() < 10;
-        // terraformer = false;
-
         if (aggro) {
             target = new ArrayList<>();
             MapLocation hq = Arrays.stream(rc.senseNearbyRobots()).filter(x ->
@@ -116,26 +109,7 @@ public class Miner extends Unit {
     public void run() throws GameActionException {
         super.run();
 
-        findMessageFromAllies(rc.getRoundNum()-1);
-
-        if (goingToBuildDSchool) {
-            if (dSchoolExists) {
-                goingToBuildDSchool = false;
-            }
-            else {
-                handleBuildDSchool();
-                return;
-            }
-        }
-
-        if (flee()) {
-            return;
-        }
-
-        if (terraformer && rc.getRoundNum() > 300) {
-            terraform();
-            return;
-        }
+        flee();
 
         if (holdProduction || rushHold) {
             checkIfContinueHold();
@@ -147,6 +121,13 @@ public class Miner extends Unit {
         }
 
         tilesVisited[getTileNumber(myLocation)] = 1;
+
+        //readMessage = false;
+        //if (rc.getRoundNum() % messageFrequency == 4) {
+        //    updateActiveLocations();
+        //    readMessage = true;
+        //}
+        findMessageFromAllies(rc.getRoundNum()-1);
 
         checkBuildBuildings();
 
@@ -168,38 +149,28 @@ public class Miner extends Unit {
         previousSoup = rc.getTeamSoup();
     }
 
-    public void terraform() throws GameActionException {
-        path(hqLocation.add(Direction.NORTHWEST).add(Direction.NORTHWEST));
-    }
-
     /**
      * Flees from adjacent drone if it exists.
      */
-    public boolean flee() throws GameActionException {
+    public void flee() throws GameActionException {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
                                         x.getLocation().distanceSquaredTo(myLocation) < 3).toArray(RobotInfo[]::new);
-
         if (adjacentDrones.length == 0)
-            return false;
+            return;
         Direction escape = Arrays.stream(directions)
-                .filter(d -> canMove(d) && getNearbyDrones().stream()
+                .filter(this::canMove)
+                .filter(d -> getNearbyDrones().stream()
                     .noneMatch(x -> x.getLocation().distanceSquaredTo(myLocation.add(d)) < 3))
                 .findAny().orElse(null);
-        //System.out.println(Arrays.asList(adjacentDrones));
-        if (escape != null) {
-            //System.out.println("can escape");
+        if (escape != null)
             go(escape);
-            return true;
-        }
-        return false;
     }
-
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
         if (location.distanceSquaredTo(hqLocation) < 9)
             return false;
-        return ((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
+        return true; //((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
     }
 
     //Returns true if should continue halting production
@@ -208,21 +179,21 @@ public class Miner extends Unit {
         //resume production after 10 turns, at most
         if(holdProduction) {
             if (rc.getRoundNum() - turnAtProductionHalt > 30) {
-                System.out.println("[i] UNHOLDING PRODUCTION!");
+                //System.out.println("[i] UNHOLDING PRODUCTION!");
                 holdProduction = false;
                 return false;
             }
             //-200 soup in one turn good approximation for building net gun
             //so we resume earlier than 10 turns if this happens
             if (previousSoup - rc.getTeamSoup() > 200) {
-                System.out.println("[i] UNHOLDING PRODUCTION!");
+                //System.out.println("[i] UNHOLDING PRODUCTION!");
                 holdProduction = false;
                 return false;
             }
         }
         if(rushHold) {
             if(rc.getRoundNum() - turnAtRushHalt > 100) {
-                System.out.println("[i] NO LONGER RUSH HALTING!");
+                //System.out.println("[i] NO LONGER RUSH HALTING!");
                 rushHold = false;
                 return false;
             }
@@ -303,7 +274,7 @@ public class Miner extends Unit {
             l.writeInformation(ml.x, ml.y, 1);
             if(sendMessage(l.getMessage(), 1)) {
                 hasSentEnemyLoc = true;
-                System.out.println("[i] SENDING ENEMY HQ LOCATION");
+                //System.out.println("[i] SENDING ENEMY HQ LOCATION");
                 System.out.println(ml);
             }
         }
@@ -319,7 +290,7 @@ public class Miner extends Unit {
                             RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                             r.writeTypeOfCommit(1);
                             if(sendMessage(r.getMessage(), 1)) {
-                                System.out.println("[i] Sending Rush Commit!!");
+                                //System.out.println("[i] Sending Rush Commit!!");
                                 hasSentRushCommit = true;
                             }
                         }
@@ -397,8 +368,8 @@ public class Miner extends Unit {
 //        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation + " " + destination);
-        rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
-        rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
+        //rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
+        //rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
 
         if (dSchoolExists) {
             refineryCheck();
@@ -421,7 +392,12 @@ public class Miner extends Unit {
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
         if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
-            handleBuildDSchool();
+            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
+            if(dSchoolExists) {
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                b.writeTypeBuilt(2); //2 is d.school
+                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+            }
         }
 
         int distanceToDestination = myLocation.distanceSquaredTo(destination);
@@ -490,7 +466,12 @@ public class Miner extends Unit {
             if (myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
-                handleBuildDSchool();
+                dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, determineOptimalDSchoolDirection());
+                if(dSchoolExists) {
+                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    b.writeTypeBuilt(2); //2 is d.school
+                    sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
+                }
             }
             if (turnsToBase >= 0)
                 turnsToBase++;
@@ -500,30 +481,6 @@ public class Miner extends Unit {
             }
         }
 //        System.out.println("end harvest "+rc.getRoundNum() + " " +Clock.getBytecodeNum());
-    }
-
-    public void handleBuildDSchool() throws GameActionException {
-        MapLocation closestDSchoolBuildLoc = hqLocation;
-        int dist = Integer.MAX_VALUE;
-        for (Direction d : directions) {
-            MapLocation t = hqLocation.add(d).add(d);
-            if (myLocation.distanceSquaredTo(t) < dist && (!rc.canSenseLocation(t) || !rc.isLocationOccupied(t))) {
-                dist = myLocation.distanceSquaredTo(t);
-                closestDSchoolBuildLoc = t;
-            }
-        }
-        if (myLocation.isAdjacentTo(closestDSchoolBuildLoc)) {
-            dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, myLocation.directionTo(closestDSchoolBuildLoc));
-            if(dSchoolExists) {
-                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
-                b.writeTypeBuilt(2); //2 is d.school
-                sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                goingToBuildDSchool = false;
-            }
-        }
-        else {
-            path(closestDSchoolBuildLoc);
-        }
     }
 
     public Direction determineOptimalFulfillmentCenter() throws GameActionException {
@@ -545,11 +502,6 @@ public class Miner extends Unit {
 
     //TODO: This is not going to be on grid
     public Direction determineOptimalDSchoolDirection() throws GameActionException {
-        // for (Direction d : directions) {
-        //     MapLocation t = hqLocation.add(d).add(d);
-        //     if (rc.canSenseLocation(t) && )
-        // }
-
         if (myLocation.distanceSquaredTo(hqLocation) < 9) { // close to HQ, build highest elevation in outer ring
             Direction target = myLocation.directionTo(hqLocation).opposite();
             MapLocation loc = myLocation.add(target);
@@ -601,9 +553,9 @@ public class Miner extends Unit {
             }
         }
         if (distToBase > 64) {
-            rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
+            //rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
         } else {
-            rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
+            //rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
         }
         // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
         if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
@@ -683,7 +635,7 @@ public class Miner extends Unit {
             if (newTile >= 0 && newTile < numRows * numCols && tilesVisited[newTile] == 0) {
                 MapLocation newTileLocation = getCenterFromTileNumber(newTile);
                 if (myLocation.distanceSquaredTo(newTileLocation) >= scanRadius || !rc.senseFlooding(newTileLocation)) {
-                    //rc.setIndicatorDot(newTileLocation, 255, 0,0);
+                    ////rc.setIndicatorDot(newTileLocation, 255, 0,0);
                     return newTileLocation;
                 }
             }
@@ -725,7 +677,7 @@ public class Miner extends Unit {
                             MapLocation cLoc = getCenterFromTileNumber(thisPatch);
                             //System.out.print("HQ told me about this new soup tile: ");
                             //System.out.println(p.patches[j]);
-                            //rc.setIndicatorDot(cLoc, 235, 128, 114);
+                            ////rc.setIndicatorDot(cLoc, 235, 128, 114);
                             System.out.println("Add check: " + cLoc + " " + ((soupChecked[cLoc.x] >> cLoc.y) & 1));
                             if ((soupChecked[cLoc.x] >> cLoc.y & 1) == 0) {
                                 System.out.println("Adding!");
@@ -738,10 +690,10 @@ public class Miner extends Unit {
                     //don't actually do anything if you are the miner that sent the halt
                     //you shouldn't halt production, we need you to build the net gun.
                     if (!hasSentHalt) {
-                        System.out.println("[i] HOLDING PRODUCTION!");
+                        //System.out.println("[i] HOLDING PRODUCTION!");
                         holdProduction = true;
                         turnAtProductionHalt = rc.getRoundNum();
-                        //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
+                        ////rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
                 } else if ((!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists) && getSchema(msg[0]) == 5) {
                     //drone has been built.
@@ -757,12 +709,12 @@ public class Miner extends Unit {
                     checkForEnemyHQLocationMessageSubroutine(msg);
                     if(ENEMY_HQ_LOCATION != null) {
                         enemyHQLocation = ENEMY_HQ_LOCATION;
-                        System.out.println("[i] I know ENEMY HQ");
+                        //System.out.println("[i] I know ENEMY HQ");
                         System.out.println(enemyHQLocation);
                     }
                 } else if(getSchema(msg[0])==7) {
                     if(!hasSentRushCommit) {
-                        System.out.println("[i] Commiting to Rush!");
+                        //System.out.println("[i] Commiting to Rush!");
                         rushHold = true;
                         turnAtRushHalt = rc.getRoundNum();
                     }
@@ -812,10 +764,10 @@ public class Miner extends Unit {
         int tnum = getTileNumber(destination);
 //        if (soupAmount>0) {
 //            System.out.println("Telling HQ about Soup at tile: " + Integer.toString(tnum));
-//            rc.setIndicatorDot(getCenterFromTileNumber(tnum), 255, 255, 0);
+//            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 255, 255, 0);
 //        } else {
 //            System.out.println("Telling HQ about NO SOUP at tile: " + Integer.toString(tnum));
-//            rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
+//            //rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
 //        }
         SoupMessage s = new SoupMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
         s.writeTile(tnum);

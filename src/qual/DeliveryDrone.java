@@ -11,6 +11,26 @@ public class DeliveryDrone extends Unit {
 
     final int[][] SPIRAL_ORDER = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2}, {0, 2}, {2, 0}, {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}, {-3, 0}, {0, -3}, {0, 3}, {3, 0}, {-3, -1}, {-3, 1}, {-1, -3}, {-1, 3}, {1, -3}, {1, 3}, {3, -1}, {3, 1}, {-3, -2}, {-3, 2}, {-2, -3}, {-2, 3}, {2, -3}, {2, 3}, {3, -2}, {3, 2}, {-4, 0}, {0, -4}, {0, 4}, {4, 0}, {-4, -1}, {-4, 1}, {-1, -4}, {-1, 4}, {1, -4}, {1, 4}, {4, -1}, {4, 1}, {-3, -3}, {-3, 3}, {3, -3}, {3, 3}, {-4, -2}, {-4, 2}, {-2, -4}, {-2, 4}, {2, -4}, {2, 4}, {4, -2}, {4, 2}, {-5, 0}, {-4, -3}, {-4, 3}, {-3, -4}, {-3, 4}, {0, -5}, {0, 5}, {3, -4}, {3, 4}, {4, -3}, {4, 3}, {5, 0}, {-5, -1}, {-5, 1}, {-1, -5}, {-1, 5}, {1, -5}, {1, 5}, {5, -1}, {5, 1}, {-5, -2}, {-5, 2}, {-2, -5}, {-2, 5}, {2, -5}, {2, 5}, {5, -2}, {5, 2}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4}, {-5, -3}, {-5, 3}, {-3, -5}, {-3, 5}, {3, -5}, {3, 5}, {5, -3}, {5, 3}};
     final Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+
+    Direction[][] outerRing = {
+        {Direction.NORTHWEST, Direction.NORTHWEST},
+        {Direction.NORTH, Direction.NORTHWEST},
+        {Direction.NORTH, Direction.NORTH},
+        {Direction.NORTH, Direction.NORTHEAST},
+        {Direction.NORTHEAST, Direction.NORTHEAST},
+        {Direction.EAST, Direction.NORTHEAST},
+        {Direction.EAST, Direction.EAST},
+        {Direction.EAST, Direction.SOUTHEAST},
+        {Direction.SOUTHEAST, Direction.SOUTHEAST},
+        {Direction.SOUTH, Direction.SOUTHEAST},
+        {Direction.SOUTH, Direction.SOUTH},
+        {Direction.SOUTH, Direction.SOUTHWEST},
+        {Direction.SOUTHWEST, Direction.SOUTHWEST},
+        {Direction.WEST, Direction.SOUTHWEST},
+        {Direction.WEST, Direction.WEST},
+        {Direction.WEST, Direction.NORTHWEST}
+    };
+
     int[] tilesVisited;
     int stuckCount;
 
@@ -23,6 +43,7 @@ public class DeliveryDrone extends Unit {
     int whichEnemyLocation;
 
     boolean hasSentEnemyLoc = false;
+    boolean movingCounter = false;
 
     boolean attackDrone;
     final int DEFEND_TURN;
@@ -31,6 +52,7 @@ public class DeliveryDrone extends Unit {
     boolean carryingEnemy;
     boolean carryingAlly;
     boolean enemySwarmDefense;
+    boolean carryingCow;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -62,6 +84,7 @@ public class DeliveryDrone extends Unit {
         enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
         enemyVisited = false;
         carryingEnemy = false;
+        carryingCow = false;
         carryingAlly = false;
         enemySwarmDefense = false;
 
@@ -89,14 +112,18 @@ public class DeliveryDrone extends Unit {
         updateVisitedTiles(myLocation);
 
         //TODO: Issue. Currently this does not handle water tiles becoming flooded, which should become closer drop points
+        EnemyInfo enemyInfo = new EnemyInfo().invoke();
+        RobotInfo nearest = enemyInfo.getNearest();
+        int distToNearest = enemyInfo.getDistToNearest();
+        int droneCount = enemyInfo.getDroneCount();
+
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
         if (carryingEnemy) { // go to water and drop
-            if (goToWaterAndDrop()) return;
+            if (carryingCow && nearest != null && !nearest.getType().equals(RobotType.COW))
+                dropToward(nearest.getLocation());
+            else if (goToWaterAndDrop())
+                return;
         } else {
-            EnemyInfo enemyInfo = new EnemyInfo().invoke();
-            RobotInfo nearest = enemyInfo.getNearest();
-            int distToNearest = enemyInfo.getDistToNearest();
-            int droneCount = enemyInfo.getDroneCount();
             if (droneCount > 6)
                 enemySwarmDefense = true;
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
@@ -121,6 +148,20 @@ public class DeliveryDrone extends Unit {
         checkEnemyLocMessage();
     }
 
+    private void dropToward(MapLocation location) throws GameActionException {
+        if (!rc.isReady())
+            return;
+        Direction dir = Arrays.stream(directions)
+                .filter(x -> rc.canDropUnit(x))
+                .min(Comparator.comparingInt(d -> myLocation.add(d).distanceSquaredTo(location)))
+                .orElse(null);
+        if (dir != null) {
+            rc.dropUnit(dir);
+            carryingEnemy = false;
+            carryingCow = false;
+        }
+    }
+
     private void checkEnemyLocMessage() throws GameActionException {
         if (rc.getRoundNum() % 100 == 4 && enemyLocation != ENEMY_HQ_LOCATION) {
             checkForEnemyHQLocationMessage(5);
@@ -134,6 +175,9 @@ public class DeliveryDrone extends Unit {
     private void tryPickUp(RobotInfo nearest) throws GameActionException {
         if (rc.isReady()) {
             rc.pickUpUnit(nearest.getID());
+            if (rc.senseRobot(nearest.getID()).getType().equals(RobotType.COW)) {
+                carryingCow = true;
+            }
             carryingEnemy = true;
         }
     }
@@ -162,7 +206,9 @@ public class DeliveryDrone extends Unit {
     private void handleDefend() throws GameActionException {
         destination = hqLocation;
         if (rc.getRoundNum() < DEFEND_TURN) {
-            spiral(destination, false);
+            //if(!moveLandscapersOntoInnerWall(hqLocation)) {
+                spiral(destination, false);
+            //}
         } else {
             int dx = Math.abs(destination.x - myLocation.x);
             int dy = Math.abs(destination.y - myLocation.y);
@@ -171,6 +217,24 @@ public class DeliveryDrone extends Unit {
         }
         nearestWaterLocation = updateNearestWaterLocation();
     }
+
+    /*
+    public moveLandscapersOntoInnerWall(MapLocation hqLoc) {
+        boolean landscaperMissing = false;
+        MapLocation landscaperLocation = NULL;
+        for(Direction[] x : directions) {
+            MapLocation m = rc.hqLoc.add(x);
+            if(rc.canSenseLocation(m)) {
+                if(rc.senseRobotAtLocation(m)!=NULL) {
+                    landscaperMissing = true;
+                    landscaperLocation =
+                }
+            }
+        }
+        for(Direction[] x : outerRing) {
+            if(hqLoc)
+        }
+    }*/
 
     private void handleAMove() throws GameActionException {
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
@@ -248,6 +312,7 @@ public class DeliveryDrone extends Unit {
                         rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
                     rc.dropUnit(dir);
                     carryingEnemy = false;
+                    carryingCow = false;
                     return true;
                 }
             }
@@ -271,6 +336,7 @@ public class DeliveryDrone extends Unit {
                         rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
                     rc.dropUnit(dir);
                     carryingEnemy = false;
+                    carryingCow = false;
                     return true;
                 }
             }
@@ -285,12 +351,46 @@ public class DeliveryDrone extends Unit {
     }
 
     public void spiral(MapLocation center, boolean safe) throws GameActionException {
+        if(movingCounter) {
+            System.out.println("Spiraling Counterclockwise");
+            counterClockwiseSpiral(center, safe);
+            return;
+        } else {
+            System.out.println("Spiraling Clockwise");
+            int dx = myLocation.x - center.x;
+            int dy = myLocation.y - center.y;
+            double cs = Math.cos(.5);
+            double sn = Math.sin(.5);
+            int x = (int) (dx * cs - dy * sn);
+            int y = (int) (dx * sn + dy * cs);
+            if(onBoundary(center.translate(x,y))) {
+                movingCounter = true;
+                return;
+            }
+            if (myLocation.distanceSquaredTo(center) > 35) {
+                System.out.println("Spiral is pushing me in");
+                path(center, safe);
+            } else if (myLocation.distanceSquaredTo(center) < 20) {
+                System.out.println("Spiral is pushing me out");
+                path(myLocation.add(center.directionTo(myLocation)), safe);
+            } else {
+                System.out.println("Spiraling to " + center.translate(x, y));
+                path(center.translate(x, y), safe);
+            }
+        }
+    }
+
+    public void counterClockwiseSpiral(MapLocation center, boolean safe) throws GameActionException {
         int dx = myLocation.x - center.x;
         int dy = myLocation.y - center.y;
-        double cs = Math.cos(.5);
-        double sn = Math.sin(.5);
+        double cs = Math.cos(-0.5);
+        double sn = Math.sin(-0.5);
         int x = (int) (dx * cs - dy * sn);
         int y = (int) (dx * sn + dy * cs);
+        if(onBoundary(center.translate(x,y))) {
+            movingCounter = false;
+            return;
+        }
         if (myLocation.distanceSquaredTo(center) > 35) {
             System.out.println("Spiral is pushing me in");
             path(center, safe);
@@ -315,8 +415,8 @@ public class DeliveryDrone extends Unit {
         return rc.canSenseLocation(to)
                 && rc.senseNearbyRobots(to, 0, null).length == 0
                 && Arrays.stream(rc.senseNearbyRobots())
-                    .filter(x -> !x.getTeam().equals(allyTeam))
-                    .filter(x -> x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+                    .filter(x -> !x.getTeam().equals(allyTeam) &&
+                            (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ)))
                     .noneMatch(y -> y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
@@ -2511,9 +2611,16 @@ public class DeliveryDrone extends Unit {
                     continue;
                 int distToEnemy = myLocation.distanceSquaredTo(enemyRobot.location);
                 // consider nearest, prioritizing enemy landscapers over all
-                if (distToEnemy < distToNearest || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)) {
-                    nearest = enemyRobot;
-                    distToNearest = distToEnemy;
+                if (distToEnemy < distToNearest
+                        || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
+                        || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
+                    if (nearest == null
+                            || nearest.type == RobotType.COW
+                            || (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
+                            || enemyRobot.type == RobotType.LANDSCAPER) {
+                        nearest = enemyRobot;
+                        distToNearest = distToEnemy;
+                    }
                 }
             }
             return this;

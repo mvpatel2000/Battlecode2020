@@ -1,4 +1,4 @@
-package qual;
+package poseidon;
 
 import battlecode.common.*;
 
@@ -183,10 +183,6 @@ public abstract class Robot {
         }
     }
 
-    public boolean onBoundary(MapLocation t) {
-        return t.x == 0 || t.y == 0 || t.x == MAP_WIDTH-1 || t.y == MAP_HEIGHT-1;
-    }
-    
     /**
      * Communication methods.
      * Generally, most communication methods should go into the specific

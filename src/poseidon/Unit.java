@@ -1,4 +1,4 @@
-package qual;
+package poseidon;
 
 import battlecode.common.*;
 
@@ -36,10 +36,10 @@ public abstract class Unit extends Robot {
 
     protected void updateDrones() {
         drones.clear();
-        for (RobotInfo x : rc.senseNearbyRobots()) {
-            if (!x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE) && !x.isCurrentlyHoldingUnit())
-                drones.add(x);
-        }
+        Arrays.stream(rc.senseNearbyRobots())
+                .filter(x -> !x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE))
+                .filter(x -> !x.isCurrentlyHoldingUnit())
+                .forEach(drones::add);
     }
 
     @Override
@@ -61,9 +61,8 @@ public abstract class Unit extends Robot {
 
     boolean tryMove() throws GameActionException {
         for (Direction dir : getDirections())
-            if (tryMove(dir)) {
+            if (tryMove(dir))
                 return true;
-            }
         return false;
         // MapLocation loc = rc.getLocation();
         // if (loc.x < 10 && loc.x < loc.y)
@@ -160,13 +159,10 @@ public abstract class Unit extends Robot {
     }
 
     public void navigate(int speculation) {
-        navigate(speculation, true);
+        Direction d = navigate(speculation, true);
     }
 
     public Direction navigate(int speculation, boolean action) {
-        if (historySet.getOrDefault(myLocation, 0) >= 3) {
-            setDestination(state.target);
-        }
         if (rc.getCooldownTurns() >= 1) {
             return Direction.CENTER;
         }
@@ -176,7 +172,7 @@ public abstract class Unit extends Robot {
             PathState next = null;
             for (PathState p : path) {
                 System.out.println(p.me);
-                rc.setIndicatorDot(p.me, 60, 60, 60);
+                //rc.setIndicatorDot(p.me, 60, 60, 60);
                 Direction tmp = toward(myLocation, p.me);
                 if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
                     next = p;
