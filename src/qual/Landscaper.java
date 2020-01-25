@@ -211,23 +211,9 @@ public class Landscaper extends Unit {
                 moveInDirection(myLocation.directionTo(new MapLocation((int) (MAP_WIDTH/2), (int) (MAP_HEIGHT/2))));
             }
             else {
-<<<<<<< HEAD
                 if (rc.getDirtCarrying() == 0) { // dig
                     System.out.println("Trying to dig in direction " + digDir.toString());
                     tryDig(digDir);
-=======
-                boolean plotComplete = true;
-                for (Direction d : directionsWithCenter) {
-                    MapLocation t = myLocation.add(d);
-                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDepositHeight(rc.senseElevation(t)) && 
-                        (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
-                        System.out.println("Dumping dirt in direction " + d.toString());
-                        if (tryDeposit(d)) {
-                            plotComplete = false;
-                            lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
-                        }
-                    }
->>>>>>> parent of 0cdf26b... add spiral change direction, doesn't fully work
                 }
                 else {
                     boolean plotComplete = true;
