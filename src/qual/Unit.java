@@ -34,6 +34,10 @@ public abstract class Unit extends Robot {
         state = new PathState(myLocation, null, null, null, Integer.MAX_VALUE);
     }
 
+    public void setPathTarget(MapLocation t) {
+        state.setTarget(t);
+    }
+
     protected void updateDrones() {
         drones.clear();
         for (RobotInfo x : rc.senseNearbyRobots()) {
@@ -250,6 +254,10 @@ public abstract class Unit extends Robot {
             } catch (CloneNotSupportedException e) {
                 return null;
             }
+        }
+
+        public void setTarget(MapLocation t) {
+            target = t;
         }
 
         public String toString() {
