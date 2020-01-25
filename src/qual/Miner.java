@@ -116,11 +116,12 @@ public class Miner extends Unit {
 
         tilesVisited[getTileNumber(myLocation)] = 1;
 
-        readMessage = false;
-        if (rc.getRoundNum() % messageFrequency == 4) {
-            updateActiveLocations();
-            readMessage = true;
-        }
+        //readMessage = false;
+        //if (rc.getRoundNum() % messageFrequency == 4) {
+        //    updateActiveLocations();
+        //    readMessage = true;
+        //}
+        findMessageFromAllies(rc.getRoundNum()-1);
 
         checkBuildBuildings();
 
@@ -680,6 +681,7 @@ public class Miner extends Unit {
                     for (int j = 0; j < p.MAX_PATCHES; j++) {
                         int thisPatch = p.readPatch(j);
                         int thisWeight = p.readWeight(j);
+                        System.out.println(thisPatch);
                         if (thisPatch == oldPatch) {
                             break;
                         }
@@ -695,8 +697,7 @@ public class Miner extends Unit {
                         }
                         oldPatch = thisPatch;
                     }
-                }
-                if (getSchema(msg[0]) == 3) {
+                } else if (getSchema(msg[0]) == 3) {
                     //don't actually do anything if you are the miner that sent the halt
                     //you shouldn't halt production, we need you to build the net gun.
                     if (!hasSentHalt) {
@@ -705,8 +706,7 @@ public class Miner extends Unit {
                         turnAtProductionHalt = rc.getRoundNum();
                         //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
-                }
-                if (getSchema(msg[0]) == 5 && (!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists)) {
+                } else if ((!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists) && getSchema(msg[0]) == 5) {
                     //drone has been built.
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if (b.typeBuilt == 1) {
@@ -716,16 +716,14 @@ public class Miner extends Unit {
                     } else if (b.typeBuilt == 3) {
                         firstRefineryExists = true;
                     }
-                }
-                if(getSchema(msg[0])==4 && enemyHQLocation==null) {
+                } else if(enemyHQLocation==null && getSchema(msg[0])==4) {
                     checkForEnemyHQLocationMessageSubroutine(msg);
                     if(ENEMY_HQ_LOCATION != null) {
                         enemyHQLocation = ENEMY_HQ_LOCATION;
                         System.out.println("[i] I know ENEMY HQ");
                         System.out.println(enemyHQLocation);
                     }
-                }
-                if(getSchema(msg[0])==7) {
+                } else if(getSchema(msg[0])==7) {
                     if(!hasSentRushCommit) {
                         System.out.println("[i] Commiting to Rush!");
                         rushHold = true;
