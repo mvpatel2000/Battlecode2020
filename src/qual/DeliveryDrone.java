@@ -344,6 +344,9 @@ public class DeliveryDrone extends Unit {
         }
     }
 
+    protected void updateDrones() {
+    }
+
     protected boolean canMove(Direction in) {
         return canMove(myLocation, in);
     }
