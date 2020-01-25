@@ -17,6 +17,9 @@ public class Landscaper extends Unit {
     boolean terraformer = false;
     MapLocation[] depositSiteExceptions = {null, null, null, null, null};
     boolean spiralClockwise = true;
+    Direction lastPlotICompletedDirToHQ = null;
+    int terraformHeight = 3;
+    MapLocation reservedForDSchoolBuild = null;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
@@ -44,21 +47,21 @@ public class Landscaper extends Unit {
     };
     Direction[][] outerRingDig = {
         {Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.NORTH, Direction.SOUTH},
-        {Direction.EAST, Direction.NORTHWEST, Direction.NORTHEAST, Direction.NORTH},
+        {Direction.EAST, Direction.NORTHEAST, Direction.NORTHWEST, Direction.NORTH},
         {Direction.CENTER},
-        {Direction.WEST, Direction.NORTHEAST, Direction.NORTHWEST, Direction.NORTH},
-        {Direction.NORTHWEST, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.NORTH, Direction.EAST},
-        {Direction.SOUTH, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.EAST},
+        {Direction.WEST, Direction.NORTHWEST, Direction.NORTHEAST, Direction.NORTH},
+        {Direction.NORTHEAST, Direction.NORTHWEST, Direction.SOUTHEAST, Direction.NORTH, Direction.EAST},
+        {Direction.SOUTH, Direction.SOUTHEAST, Direction.NORTHEAST, Direction.EAST},
         {Direction.CENTER},
-        {Direction.NORTH, Direction.SOUTHEAST, Direction.NORTHEAST, Direction.EAST},
+        {Direction.NORTH, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.EAST},
         {Direction.SOUTHEAST, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.EAST, Direction.SOUTH},
-        {Direction.WEST, Direction.SOUTHEAST, Direction.SOUTHWEST, Direction.SOUTH},
+        {Direction.WEST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.SOUTH},
         {Direction.CENTER},
-        {Direction.EAST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.SOUTH},
+        {Direction.EAST, Direction.SOUTHEAST, Direction.SOUTHWEST, Direction.SOUTH},
         {Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.NORTHWEST, Direction.WEST, Direction.SOUTH},
-        {Direction.NORTH, Direction.SOUTHWEST, Direction.NORTHWEST, Direction.WEST},
+        {Direction.NORTH, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.WEST},
         {Direction.CENTER},
-        {Direction.SOUTH, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.WEST}
+        {Direction.SOUTH, Direction.SOUTHWEST, Direction.NORTHWEST, Direction.WEST}
     };
     Direction[][] outerRingDeposit = {
         {Direction.SOUTHEAST},
@@ -165,6 +168,13 @@ public class Landscaper extends Unit {
         }
     }
 
+    public void constructTerraformer() throws GameActionException {
+        System.out.println("[i] YAY, I'm A TERRAFORMER!");
+        terraformer = true;
+        spiralClockwise = rc.getRoundNum() % 2 == 0;
+        reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
+    }
+
     @Override
     public void run() throws GameActionException {
         super.run();
@@ -189,7 +199,7 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        rc.setIndicatorDot(myLocation, 0, 255, 0);
+        System.out.println(myLocation);
         if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);
@@ -205,43 +215,53 @@ public class Landscaper extends Unit {
                 boolean plotComplete = true;
                 for (Direction d : directionsWithCenter) {
                     MapLocation t = myLocation.add(d);
-                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDumpHeight(rc.senseElevation(t)) && 
+                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDepositHeight(rc.senseElevation(t)) && 
                         (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
                         System.out.println("Dumping dirt in direction " + d.toString());
                         if (tryDeposit(d)) {
                             plotComplete = false;
+                            lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
                         }
                     }
                 }
                 if (plotComplete) {
+                    if (lastPlotICompletedDirToHQ == null || lastPlotICompletedDirToHQ == rotateBySpiralDirection(myLocation.directionTo(hqLocation))) { // completed this level of dirt
+                        System.out.println("Increasing height of dirt to " + Integer.toString(terraformHeight));
+                        terraformHeight += 2;
+                    }
                     Direction moveDir;
                     if (myLocation.distanceSquaredTo(hqLocation) > 24) {
                         moveDir = myLocation.directionTo(hqLocation);
+                        System.out.println("I'm too far from HQ now, moving back in");
                     }
                     else {
-                        if (spiralClockwise) {
-                            moveDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
-                        }
-                        else {
-                            moveDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+                        moveDir = rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)));
+                        MapLocation t = myLocation.add(moveDir);
+                        if (onBoundary(t)) {
+                            System.out.println("At boundary, swapping spiral rotation");
+                            spiralClockwise = !spiralClockwise;
+                            moveDir = moveDir.opposite();
                         }
                     }
-                    MapLocation t = myLocation.add(moveDir);
-                    if (onBoundary(t)) {
-                        spiralClockwise = !spiralClockwise;
-                        moveDir = moveDir.opposite();
-                    }
+                    System.out.println("Moving in direction " + moveDir.toString());
                     moveInDirection(moveDir);
                 }
             }
         }
+        rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
     }
 
-    public boolean terraformerValidDumpHeight(int h) { // TODO: make this better, it's still naive
-        int terraformHeight = 7;
-        if (rc.getRoundNum() > 800) {
-            terraformHeight = 13;
+    public Direction rotateBySpiralDirection(Direction d) {
+        if (spiralClockwise) {
+            return d.rotateLeft();
         }
+        else {
+            return d.rotateRight();
+        }
+    }
+
+    public boolean terraformerValidDepositHeight(int h) { // TODO: make this better, it's still naive
+        // terraformHeight = Math.min((int) Math.max((rc.getRoundNum()/100), 6), 13);
         return (h < terraformHeight) && (h >= -20);
     }
 
@@ -250,7 +270,7 @@ public class Landscaper extends Unit {
     }
 
     public void moveInDirection(Direction d) throws GameActionException {
-        fuzzyMoveToLoc(myLocation.add(d).add(d).add(d).add(d).add(d));
+        path(myLocation.add(d));
     }
 
     public boolean isNotDepositSiteException(MapLocation t) {
@@ -258,6 +278,9 @@ public class Landscaper extends Unit {
             if (t.equals(l)) {
                 return false;
             }
+        }
+        if (t.equals(reservedForDSchoolBuild)) {
+            return false;
         }
         return true;
     }
@@ -711,9 +734,7 @@ public class Landscaper extends Unit {
                 if(getSchema(msg[0])==6) {
                     TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(t.type==1 && t.id==rc.getID()%1000) {
-                        System.out.println("[i] YAY, I'm A TERRAFORMER!");
-                        terraformer = true;
-                        spiralClockwise = rc.getRoundNum() % 2 == 0;
+                        constructTerraformer();
                         return true;
                     }
                 }

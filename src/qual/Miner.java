@@ -108,7 +108,6 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-
         flee();
 
         if (holdProduction || rushHold) {
@@ -119,15 +118,20 @@ public class Miner extends Unit {
             handleAggro();
             return;
         }
-
-        tilesVisited[getTileNumber(myLocation)] = 1;
-
         //readMessage = false;
         //if (rc.getRoundNum() % messageFrequency == 4) {
         //    updateActiveLocations();
         //    readMessage = true;
         //}
         findMessageFromAllies(rc.getRoundNum()-1);
+
+        tilesVisited[getTileNumber(myLocation)] = 1;
+
+        readMessage = false;
+        if (rc.getRoundNum() % messageFrequency == 4) {
+            updateActiveLocations();
+            readMessage = true;
+        }
 
         checkBuildBuildings();
 
@@ -170,7 +174,7 @@ public class Miner extends Unit {
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
         if (location.distanceSquaredTo(hqLocation) < 9)
             return false;
-        return true; //((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
+        return ((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
     }
 
     //Returns true if should continue halting production
