@@ -1,4 +1,4 @@
-package qual;
+package hadesNoAtkDrones;
 
 import battlecode.common.*;
 
@@ -144,12 +144,8 @@ public abstract class Unit extends Robot {
     }
 
     public void navigate(int speculation) {
-        Direction d = navigate(speculation, true);
-    }
-
-    public Direction navigate(int speculation, boolean action) {
         if (rc.getCooldownTurns() >= 1) {
-            return Direction.CENTER;
+            return;
         }
         System.out.println("Pathing to: " + state.target);
         try {
@@ -157,7 +153,7 @@ public abstract class Unit extends Robot {
             PathState next = null;
             for (PathState p : path) {
                 System.out.println(p.me);
-                rc.setIndicatorDot(p.me, 60, 60, 60);
+                //rc.setIndicatorDot(p.me, 60, 60, 60);
                 Direction tmp = toward(myLocation, p.me);
                 if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
                     next = p;
@@ -165,15 +161,9 @@ public abstract class Unit extends Robot {
             }
             if (next != null)
                 state = next;
-
-            Direction moveDir = toward(myLocation, state.me);
-            if (action) {
-                go(moveDir);
-            }
-            return moveDir;
+            go(toward(myLocation, state.me));
         } catch (GameActionException e) {
             e.printStackTrace();
-            return Direction.CENTER;
         }
     }
 

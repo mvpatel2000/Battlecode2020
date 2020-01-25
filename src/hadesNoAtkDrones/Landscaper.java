@@ -1,4 +1,4 @@
-package qual;
+package hadesNoAtkDrones;
 
 import java.util.*;
 import battlecode.common.*;
@@ -15,6 +15,7 @@ public class Landscaper extends Unit {
     // class variables used specifically by terraformers:
     int bornTurn;
     boolean terraformer = false;
+    int TERRAFORM_HEIGHT = 7;
     MapLocation[] depositSiteExceptions = {null, null, null, null, null};
     boolean spiralClockwise = true;
 
@@ -192,7 +193,7 @@ public class Landscaper extends Unit {
         rc.setIndicatorDot(myLocation, 0, 255, 0);
         if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
-            moveInDirection(d);
+            path(myLocation.add(d).add(d).add(d).add(d).add(d).add(d).add(d));
         }
         else {
             Direction digDir = getTerraformDigDirection();
@@ -205,7 +206,7 @@ public class Landscaper extends Unit {
                 boolean plotComplete = true;
                 for (Direction d : directionsWithCenter) {
                     MapLocation t = myLocation.add(d);
-                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDumpHeight(rc.senseElevation(t)) && 
+                    if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && rc.senseElevation(t) < TERRAFORM_HEIGHT && 
                         (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
                         System.out.println("Dumping dirt in direction " + d.toString());
                         if (tryDeposit(d)) {
@@ -214,43 +215,18 @@ public class Landscaper extends Unit {
                     }
                 }
                 if (plotComplete) {
-                    Direction moveDir;
-                    if (myLocation.distanceSquaredTo(hqLocation) > 24) {
-                        moveDir = myLocation.directionTo(hqLocation);
+                    Direction moveDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
+                    if (!spiralClockwise) {
+                        moveDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
                     }
-                    else {
-                        if (spiralClockwise) {
-                            moveDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
-                        }
-                        else {
-                            moveDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
-                        }
-                    }
-                    MapLocation t = myLocation.add(moveDir);
-                    if (onBoundary(t)) {
+                    if (!rc.onTheMap(myLocation.add(moveDir))) {
                         spiralClockwise = !spiralClockwise;
                         moveDir = moveDir.opposite();
                     }
-                    moveInDirection(moveDir);
+                    path(myLocation.add(moveDir).add(moveDir).add(moveDir).add(moveDir).add(moveDir));
                 }
             }
         }
-    }
-
-    public boolean terraformerValidDumpHeight(int h) { // TODO: make this better, it's still naive
-        int terraformHeight = 7;
-        if (rc.getRoundNum() > 800) {
-            terraformHeight = 13;
-        }
-        return (h < terraformHeight) && (h >= -20);
-    }
-
-    public boolean onBoundary(MapLocation t) {
-        return t.x == 0 || t.y == 0 || t.x == MAP_WIDTH-1 || t.y == MAP_HEIGHT-1;
-    }
-
-    public void moveInDirection(Direction d) throws GameActionException {
-        fuzzyMoveToLoc(myLocation.add(d).add(d).add(d).add(d).add(d));
     }
 
     public boolean isNotDepositSiteException(MapLocation t) {
@@ -270,6 +246,7 @@ public class Landscaper extends Unit {
          *  x 1 2 x
          */
         int k = 3 * ((((myLocation.y - hqLocation.y) % 3) + 3) % 3) + ((((myLocation.x - hqLocation.x) % 3) + 3) % 3);
+        System.out.println("k = "+Integer.toString(k));
         switch (k) {
             case 0:
                 return Direction.CENTER;
@@ -339,13 +316,6 @@ public class Landscaper extends Unit {
                 tryDig(myLocation.directionTo(baseLocation));
             }
             else {
-                for (RobotInfo botInfo : nearbyBots) {
-                    if (botInfo.team.equals(allyTeam) && botInfo.location.isAdjacentTo(myLocation) && botInfo.type.isBuilding()) { // heal net guns
-                        System.out.println("Digging from ally building at " + botInfo.location.toString());
-                        tryDig(myLocation.directionTo(botInfo.location));
-                    }
-                }
-
                 // if (rc.senseElevation(myLocation.add(Direction.CENTER)) < rc.senseElevation(myLocation.add(enemyHQDir.opposite()))) {
                 //     if (rc.canDigDirt(enemyHQDir.opposite()) && !isAdjacentToWater(myLocation.add(enemyHQDir.opposite())) && notTrappingAlly(enemyHQDir.opposite())) {
                 //         System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
@@ -711,9 +681,8 @@ public class Landscaper extends Unit {
                 if(getSchema(msg[0])==6) {
                     TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(t.type==1 && t.id==rc.getID()%1000) {
-                        System.out.println("[i] YAY, I'm A TERRAFORMER!");
+                        //System.out.println("[i] YAY, I'm A TERRAFORMER!");
                         terraformer = true;
-                        spiralClockwise = rc.getRoundNum() % 2 == 0;
                         return true;
                     }
                 }

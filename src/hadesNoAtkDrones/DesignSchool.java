@@ -1,4 +1,4 @@
-package qual;
+package hadesNoAtkDrones;
 
 import battlecode.common.*;
 
@@ -132,7 +132,7 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (numLandscapersMade == 3 && numTerraformersMade == 0) { // build terraformer
+            if (numLandscapersMade == 5 && numTerraformersMade == 0) { // build terraformer
                 Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
                 for (int i = 8; i > 0; i--) {
                     if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
@@ -146,7 +146,7 @@ public class DesignSchool extends Building {
                     }
                 }
             }
-            if ((numLandscapersMade < 3 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if ((numLandscapersMade < 5 || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
 
                 // look for enemy d.school
@@ -199,7 +199,7 @@ public class DesignSchool extends Building {
                 if (startOuterWallAt == 0) {
                     startOuterWallAt = rc.getRoundNum();
                 }
-                if (rc.getRoundNum() - startOuterWallAt < 200 && rc.getTeamSoup() < 400) {
+                if (rc.getRoundNum() - startOuterWallAt < 80 && rc.getTeamSoup() < 400) {
                     return;
                 }
                 Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
@@ -230,8 +230,8 @@ public class DesignSchool extends Building {
     }
 
     public boolean sendTerraformMessage(int i) throws GameActionException {
-        System.out.println("[i] Sending terraform message");
-        System.out.println("[i] ID: " + Integer.toString(i%1000));
+        //System.out.println("[i] Sending terraform message");
+        //System.out.println("[i] ID: " + Integer.toString(i%1000));
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
@@ -257,7 +257,7 @@ public class DesignSchool extends Building {
             if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    System.out.println("[i] HOLDING PRODUCTION!");
+                    //System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                 } else if(getSchema(msg[0])==4 && trueEnemyHQLocation==null) {
@@ -280,14 +280,14 @@ public class DesignSchool extends Building {
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
         if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("[i] UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
         //-200 soup in one turn good approximation for building net gun
         //so we resume earlier than 10 turns if this happens
         if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("[i] UNHOLDING PRODUCTION!");
+            //System.out.println("[i] UNHOLDING PRODUCTION!");
             holdProduction = false;
             return false;
         }
