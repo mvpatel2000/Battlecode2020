@@ -144,6 +144,7 @@ public class Landscaper extends Unit {
             }
             System.out.println("I am a defensive landscaper. Found our HQ at " + hqLocation.toString());
             updateHoldPositionLoc();
+            System.out.println("Updated holdPositionLoc to " + holdPositionLoc.toString());
             //System.out.println("My hold position location: " + holdPositionLoc.toString());
         }
         else {
@@ -422,6 +423,7 @@ public class Landscaper extends Unit {
 
         // TODO: If we start exceeding bytecode limits, investigate ways to not do these two functions every turn.
         updateHoldPositionLoc();
+        System.out.println("Updated holdPositionLoc to " + holdPositionLoc.toString());
         checkWallStage();
 
         for (Direction d : directions) {// zeroth priority: kill an an enemy building
@@ -799,32 +801,32 @@ public class Landscaper extends Unit {
             }
         }
         if (wallPhase >= 3 || holdPositionLoc == null) {
+            // System.out.println("asdfasdfasdf");
             boolean amInOuterRing = false;
             for (int i = 0; i < 16; i++) {
-                if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation) && rc.getRoundNum() > 280)  { // TODO: ROUND NUM CONSTANT
+                if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation))  { 
                     outerRingIndex = i;
                     System.out.println("I'm already in the outer ring.");
-                    holdPositionLoc = myLocation;
                     amInOuterRing = true;
+                    // if (rc.getRoundNum() > 280) { // TODO: ROUND NUM CONSTANT
+                    System.out.println("Setting holdPositionLoc to my current location: " + myLocation.toString());
+                    holdPositionLoc = myLocation;
+                    // }
                     break;
                 }
             }
-            // if (rc.senseElevation(myLocation) < -5 || rc.senseElevation(myLocation) > 10) { // I am in a pit/hill, just stay
-            //     holdPositionLoc = myLocation;
-            //     for (int i = 0; i < 16; i++) { // update outerRingIndex
-            //         if (hqLocation.add(outerRing[i][0]).add(outerRing[i][1]).equals(myLocation)) {
-            //             outerRingIndex = i;
-            //         }
-            //     }
-            //     // TODO: there's a random edge case where a landscaper gets stuck in a pit/hill but is not part of the outer wall.
-            //     // I don't handle this for now.
-            // }
             if (!amInOuterRing) {
                 holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
-                while (!rc.onTheMap(holdPositionLoc) || nearbyBotsMap.containsKey(holdPositionLoc) || (rc.canSenseLocation(holdPositionLoc) && (rc.senseElevation(holdPositionLoc) < -5 || rc.senseElevation(holdPositionLoc) > 10))) {
+                int i = 0;
+                while (i < 16 && !rc.onTheMap(holdPositionLoc) || nearbyBotsMap.containsKey(holdPositionLoc) || (rc.canSenseLocation(holdPositionLoc) && (rc.senseElevation(holdPositionLoc) < -5 || rc.senseElevation(holdPositionLoc) > 10))) {
                     // if the holdposition is off the map or occupied or is a pit/hill that we likely can't path to, then try the next holdposition in the ring
                     outerRingIndex = (outerRingIndex + 1) % 16;
                     holdPositionLoc = hqLocation.add(outerRing[outerRingIndex][0]).add(outerRing[outerRingIndex][1]);
+                    i++;
+                    // System.out.println("Trying new holdPositionLoc: " + holdPositionLoc.toString());
+                }
+                if (i == 16) {
+                    holdPositionLoc = hqLocation;
                 }
             }
         }
