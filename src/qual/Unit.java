@@ -181,8 +181,7 @@ public abstract class Unit extends Robot {
         }
         try {
             if (speculation == 1) {
-                PathState next = bugPath(state, null);
-                state = next;
+                state = bugPath(state, null);
             } else {
                 List<PathState> path = speculativePath(state, speculation);
                 PathState next = null;
