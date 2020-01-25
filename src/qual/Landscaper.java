@@ -770,6 +770,9 @@ public class Landscaper extends Unit {
             holdPositionLoc = null;
             boolean hqInDanger = false;
             currentlyInInnerWall = false;
+            if (innerWallFillOrder == null) {
+                innerWallFillOrder = directions;
+            }
             for (Direction dir : innerWallFillOrder) {
                 MapLocation t = hqLocation.add(dir);
                 if (!rc.onTheMap(t)) {
