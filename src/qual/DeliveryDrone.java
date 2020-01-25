@@ -315,8 +315,8 @@ public class DeliveryDrone extends Unit {
         return rc.canSenseLocation(to)
                 && rc.senseNearbyRobots(to, 0, null).length == 0
                 && Arrays.stream(rc.senseNearbyRobots())
-                    .filter(x -> !x.getTeam().equals(allyTeam))
-                    .filter(x -> x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+                    .filter(x -> !x.getTeam().equals(allyTeam) &&
+                            (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ)))
                     .noneMatch(y -> y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 

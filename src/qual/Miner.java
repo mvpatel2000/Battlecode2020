@@ -113,7 +113,8 @@ public class Miner extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        flee();
+        if (flee())
+            return;
 
         if (returnToLattice && rc.getRoundNum() > 300) {
             path(hqLocation);
@@ -166,24 +167,23 @@ public class Miner extends Unit {
     /**
      * Flees from adjacent drone if it exists.
      */
-    public void flee() throws GameActionException {
+    public boolean flee() throws GameActionException {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
                                         x.getLocation().distanceSquaredTo(myLocation) < 3).toArray(RobotInfo[]::new);
+
         if (adjacentDrones.length == 0)
-            return;
-        dummyFn();
+            return false;
         Direction escape = Arrays.stream(directions)
-                .filter(this::canMove)
-                .filter(d -> getNearbyDrones().stream()
+                .filter(d -> canMove(d) && getNearbyDrones().stream()
                     .noneMatch(x -> x.getLocation().distanceSquaredTo(myLocation.add(d)) < 3))
                 .findAny().orElse(null);
-        if (escape != null)
+        if (escape != null) {
             go(escape);
+            return true;
+        }
+        return false;
     }
 
-    private void dummyFn() {
-        System.out.println("delete this");
-    }
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
