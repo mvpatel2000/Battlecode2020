@@ -416,6 +416,11 @@ public class Miner extends Unit {
             }
         }
 
+        // refinery flooded
+        if (rc.canSenseLocation(baseLocation) && rc.senseFlooding(baseLocation)) {
+            baseLocation = hqLocation;
+        }
+
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
         if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
@@ -492,6 +497,8 @@ public class Miner extends Unit {
             }
             if (turnsToBase >= 0)
                 turnsToBase++;
+            setPathTarget(destination);
+            navigate();
             path(destination);
             if (destination != baseLocation && !readMessage) {                // keep checking soup location
                 destination = updateNearestSoupLocation();
