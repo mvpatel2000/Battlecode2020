@@ -245,6 +245,15 @@ public class Miner extends Unit {
         return true;
     }
 
+    private boolean occupied(MapLocation loc) {
+        try {
+            return rc.isLocationOccupied(loc);
+        } catch (GameActionException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private void handleAggro() throws GameActionException {
         RobotInfo[] nearby = rc.senseNearbyRobots();
         if (dLoc != null) {
@@ -264,7 +273,7 @@ public class Miner extends Unit {
                 && myLocation.distanceSquaredTo(dLoc) < 3 // next to d.school
                 && Arrays.stream(directions).allMatch(d -> // enemy HQ is surrounded
                 target.get(0).add(d).equals(myLocation)
-                        || rc.senseNearbyRobots(target.get(0).add(d), 0, null).length > 0)) {
+                        || occupied(target.get(0).add(d)))) {
             setDestination(myLocation.add(adj(toward(myLocation, target.get(0)), 4))); // then step back
             navigate();
             return;
