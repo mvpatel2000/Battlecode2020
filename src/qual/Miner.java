@@ -38,6 +38,7 @@ public class Miner extends Unit {
     int timeout = 0;
 
     boolean terraformer = false;
+    boolean terraformerSpiralRight = false;
 
     //For halting production and resuming it.
     boolean rushHold = false;
@@ -168,7 +169,13 @@ public class Miner extends Unit {
         if (myLocation.distanceSquaredTo(hqLocation) > 16) {
             path(hqLocation);
         } else {
+            if (onBoundary(myLocation)) {
+                terraformerSpiralRight = !terraformerSpiralRight;
+            }
             Direction d = myLocation.directionTo(hqLocation).opposite().rotateLeft();
+            if (terraformerSpiralRight) {
+                d = myLocation.directionTo(hqLocation).opposite().rotateRight();
+            }
             path(hqLocation.add(d).add(d).add(d).add(d));
         }
     }
@@ -199,12 +206,19 @@ public class Miner extends Unit {
         return false;
     }
 
+    // returns false if special valid grid square, otherwise true
+    boolean checkGridExceptions(MapLocation location) throws GameActionException {
+        int x = Math.abs(location.y - hqLocation.y);
+        int y = Math.abs(location.x - hqLocation.x);
+        return !(x == 3 && y == 1 || x == 1 && y == 3);
+    }
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9)
+        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
-        if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
+        if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
+            && checkGridExceptions(location)) {
             return false;
         }
         for (Direction d : directions) { // check location is not reservedForDSchoolBuild
@@ -212,7 +226,7 @@ public class Miner extends Unit {
             if (rc.canSenseLocation(t)) {
                 RobotInfo r = rc.senseRobotAtLocation(t);
                 if (r != null && r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
-                    if (location.equals(t.directionTo(hqLocation).opposite().rotateRight())) {
+                    if (location.equals(t.add(t.directionTo(hqLocation).opposite().rotateRight()))) {
                         return false;
                     }
                 }
@@ -407,13 +421,13 @@ public class Miner extends Unit {
                     tryBuild(RobotType.NET_GUN, dir);
                 // } else if (dSchoolExists) {
                 //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
-                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 400) {
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else {
+                } else if (rc.getRoundNum() < 1700) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
                 if (!existsNetGun && rc.getRoundNum() > 500) {
-                    rc.buildRobot(RobotType.NET_GUN, dir);
+                    tryBuild(RobotType.NET_GUN, dir);
                 }
             }
         }
@@ -568,18 +582,19 @@ public class Miner extends Unit {
     }
 
     public Direction determineOptimalFulfillmentCenter() throws GameActionException {
-        Direction target = myLocation.directionTo(hqLocation).opposite();
-        MapLocation loc = myLocation.add(target);
+        Direction target = null;
+        MapLocation loc = null;
         for (Direction dir : directions) {
             MapLocation newLoc = myLocation.add(dir);
+            System.out.println(newLoc + " " + onBuildingGridSquare(newLoc) + " " + hqLocation.distanceSquaredTo(newLoc));
             if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc) && onBuildingGridSquare(newLoc)
+                    && (loc == null || rc.senseElevation(newLoc) >= rc.senseElevation(loc)) && onBuildingGridSquare(newLoc)
                     && hqLocation.distanceSquaredTo(newLoc) > 9) {
                 target = dir;
                 loc = newLoc;
             }
         }
-        if (loc.distanceSquaredTo(hqLocation) > 9)
+        if (target != null && loc.distanceSquaredTo(hqLocation) > 9)
             return target;
         return null;
     }

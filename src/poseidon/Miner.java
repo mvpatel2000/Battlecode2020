@@ -23,7 +23,6 @@ public class Miner extends Unit {
     int[] tilesVisited;
 
     boolean dSchoolExists;
-    boolean goingToBuildDSchool = false;
     boolean fulfillmentCenterExists;
     boolean firstRefineryExists;
 
@@ -39,6 +38,7 @@ public class Miner extends Unit {
     int timeout = 0;
 
     boolean terraformer = false;
+    boolean terraformerSpiralRight = false;
 
     //For halting production and resuming it.
     boolean rushHold = false;
@@ -59,8 +59,8 @@ public class Miner extends Unit {
         aggro = false; // uncomment to disable aggro
         aggroDone = false;
 
-        // terraformer = rc.getRoundNum() < 10;
-        terraformer = false;
+        terraformer = rc.getRoundNum() < 10;
+        // terraformer = false;
 
         if (aggro) {
             target = new ArrayList<>();
@@ -118,13 +118,9 @@ public class Miner extends Unit {
 
         findMessageFromAllies(rc.getRoundNum()-1);
 
-        if (goingToBuildDSchool) {
-            if (dSchoolExists) {
-                goingToBuildDSchool = false;
-            }
-            else {
-                handleBuildDSchool();
-                return;
+        if(rc.getRoundNum()<300 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
             }
         }
 
@@ -132,12 +128,7 @@ public class Miner extends Unit {
             return;
         }
 
-        if (terraformer && rc.getRoundNum() > 300) {
-            terraform();
-            return;
-        }
-
-        if (holdProduction || rushHold) {
+        if (holdProduction || rushHold || enemyAggression) {
             checkIfContinueHold();
         }
 
@@ -164,12 +155,29 @@ public class Miner extends Unit {
             }
         }
 
-        harvest();
-        previousSoup = rc.getTeamSoup();
+        if (terraformer && rc.getRoundNum() > 300) {
+            terraform();
+        } else {
+            if (rc.isReady()) {
+                harvest();
+            }
+            previousSoup = rc.getTeamSoup();
+        }
     }
 
     public void terraform() throws GameActionException {
-        path(hqLocation.add(Direction.NORTHWEST).add(Direction.NORTHWEST));
+        if (myLocation.distanceSquaredTo(hqLocation) > 16) {
+            path(hqLocation);
+        } else {
+            if (onBoundary(myLocation)) {
+                terraformerSpiralRight = !terraformerSpiralRight;
+            }
+            Direction d = myLocation.directionTo(hqLocation).opposite().rotateLeft();
+            if (terraformerSpiralRight) {
+                d = myLocation.directionTo(hqLocation).opposite().rotateRight();
+            }
+            path(hqLocation.add(d).add(d).add(d).add(d));
+        }
     }
 
     /**
@@ -177,16 +185,22 @@ public class Miner extends Unit {
      */
     public boolean flee() throws GameActionException {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                                        x.getLocation().distanceSquaredTo(myLocation) < 3).toArray(RobotInfo[]::new);
+                                        x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
 
         if (adjacentDrones.length == 0)
             return false;
-        Direction escape = Arrays.stream(directions)
-                .filter(d -> canMove(d) && getNearbyDrones().stream()
-                    .noneMatch(x -> x.getLocation().distanceSquaredTo(myLocation.add(d)) < 3))
-                .findAny().orElse(null);
-        if (escape != null) {
-            go(escape);
+        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
+        Direction escapeRight = escapeLeft;
+        while (!canMove(escapeLeft)) {
+            escapeRight = escapeRight.rotateRight();
+            if (canMove(escapeRight)) {
+                go(escapeRight);
+                return true;
+            }
+            escapeLeft = escapeLeft.rotateLeft();
+        }
+        if (canMove(escapeLeft)) {
+            go(escapeLeft);
             return true;
         }
         return false;
@@ -195,9 +209,23 @@ public class Miner extends Unit {
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9)
+        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
-        return ((location.y - hqLocation.y) % 3 != 0) && ((location.x - hqLocation.x) % 3 != 0);
+        if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
+            return false;
+        }
+        for (Direction d : directions) { // check location is not reservedForDSchoolBuild
+            MapLocation t = location.add(d);
+            if (rc.canSenseLocation(t)) {
+                RobotInfo r = rc.senseRobotAtLocation(t);
+                if (r != null && r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
+                    if (location.equals(t.directionTo(hqLocation).opposite().rotateRight())) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     //Returns true if should continue halting production
@@ -222,6 +250,12 @@ public class Miner extends Unit {
             if(rc.getRoundNum() - turnAtRushHalt > 100) {
                 //System.out.println("[i] NO LONGER RUSH HALTING!");
                 rushHold = false;
+                return false;
+            }
+        }
+        if(enemyAggression) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                enemyAggression = false;
                 return false;
             }
         }
@@ -345,45 +379,48 @@ public class Miner extends Unit {
         }
 
         // path to next candidate enemy HQ locationbat
-        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ))
-            navigate(1);
-        else
-            navigate(SPECULATION);
+        if(rc.isReady()) {
+            if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ))
+                navigate(1);
+            else
+                navigate(SPECULATION);
+        }
     }
 
     public void checkBuildBuildings() throws GameActionException {
+        if (terraformer && rc.getRoundNum() < 350) {
+            return;
+        }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
-//        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-//        boolean existsNetGun = false;
-//        for (RobotInfo robot : allyRobots) {
-//            switch (robot.getType()) {
-//                case NET_GUN:
-//                    existsNetGun = true;
-//                    break;
-//            }
-//        }
+        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+        boolean existsNetGun = false;
+        boolean existsFulfillmentCenter = false;
+        for (RobotInfo robot : allyRobots) {
+            switch (robot.getType()) {
+                case NET_GUN:
+                    existsNetGun = true;
+                    break;
+                case FULFILLMENT_CENTER:
+                    existsFulfillmentCenter = true;
+                    break;
+            }
+        }
         for (Direction dir : directions) {
-//            if (!existsNetGun) {
-//                tryBuild(RobotType.NET_GUN, dir);
-//            } else if (!existsDesignSchool) {
-//                tryBuild(RobotType.DESIGN_SCHOOL, dir);
-//            } else if (!existsFulfillmentCenter) {
-//                tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-//            } else {
-//                tryBuild(RobotType.VAPORATOR, dir);
-//            }
-//            if (!existsNetGun && rc.getRoundNum() > 500) {
-//                rc.buildRobot(RobotType.NET_GUN, dir);
-//            }
             //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
-            if ( onBuildingGridSquare(myLocation.add(dir))
+            if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                int elev = rc.senseElevation(myLocation.add(dir));
-                int roundNum = rc.getRoundNum();
-                System.out.println(elev + " " + roundNum);
-                if (elev == 5 && roundNum < 900 || elev == 4 && roundNum < 600 || elev == 3 && roundNum < 430) {
+                if (!existsNetGun && rc.getRoundNum() > 400) {
+                    tryBuild(RobotType.NET_GUN, dir);
+                // } else if (dSchoolExists) {
+                //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
+                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+                } else if (rc.getRoundNum() < 1700) {
                     tryBuild(RobotType.VAPORATOR, dir);
+                }
+                if (!existsNetGun && rc.getRoundNum() > 500) {
+                    tryBuild(RobotType.NET_GUN, dir);
                 }
             }
         }
@@ -391,19 +428,18 @@ public class Miner extends Unit {
 
     public void harvest() throws GameActionException {
 
-//        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
-//        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+        //System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
+        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation + " " + destination);
-        //rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
-        //rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
+        ////rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
+        ////rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
 
         if (dSchoolExists) {
             refineryCheck();
         }
 
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
-        //TODO: Fix this check to make like dschool so it checks all dirs instead of just trying 1
-        if (rc.getTeamSoup()>220 && !fulfillmentCenterExists && dSchoolExists && !holdProduction && !rushHold) {
+        if (rc.getTeamSoup()>151 && !fulfillmentCenterExists && !holdProduction && !rushHold) {
             Direction optimalDir = determineOptimalFulfillmentCenter();
             if (optimalDir != null) {
                 fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, optimalDir);
@@ -421,7 +457,7 @@ public class Miner extends Unit {
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
-        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
+        if (fulfillmentCenterExists && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
             handleBuildDSchool();
         }
@@ -463,7 +499,8 @@ public class Miner extends Unit {
                 }
                 destination = updateNearestSoupLocation();
             } else {                                                           // mining
-                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
+                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit
+                    || (rc.getRoundNum() < 30 && rc.getSoupCarrying() >= 70)) { // done mining
                     System.out.println("Last soup loc: "+lastSoupLocation);
                     refineryCheck();
                     destination = baseLocation;
@@ -475,7 +512,7 @@ public class Miner extends Unit {
                     if (turnsToBase < 0) {
                         destination = updateNearestSoupLocation();
                         System.out.println("reset destination:" + destination);
-                        if (lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) { // next location far, go drop off
+                        if ((lastSoupLocation == null || myLocation.distanceSquaredTo(destination) > 34) && rc.getSoupCarrying() > 30) { // next location far, go drop off
                             refineryCheck();
                             destination = baseLocation;
                             turnsToBase++;
@@ -493,7 +530,7 @@ public class Miner extends Unit {
             }
         } else {                                                                // in transit
             // Just dropped off soup (adjacent to HQ) now leaving for far away / late soup
-            if (myLocation.isAdjacentTo(hqLocation) &&
+            if (fulfillmentCenterExists && myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
                 System.out.println("Handling dschool!");
@@ -530,7 +567,6 @@ public class Miner extends Unit {
                 BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                 b.writeTypeBuilt(2); //2 is d.school
                 sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                goingToBuildDSchool = false;
             }
         }
         else {
@@ -539,18 +575,18 @@ public class Miner extends Unit {
     }
 
     public Direction determineOptimalFulfillmentCenter() throws GameActionException {
-        Direction target = myLocation.directionTo(hqLocation).opposite();
-        MapLocation loc = myLocation.add(target);
+        Direction target = null;
+        MapLocation loc = null;
         for (Direction dir : directions) {
             MapLocation newLoc = myLocation.add(dir);
             if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc) && onBuildingGridSquare(newLoc)
+                    && (loc == null || rc.senseElevation(newLoc) >= rc.senseElevation(loc)) && onBuildingGridSquare(newLoc)
                     && hqLocation.distanceSquaredTo(newLoc) > 9) {
                 target = dir;
                 loc = newLoc;
             }
         }
-        if (loc.distanceSquaredTo(hqLocation) > 9)
+        if (target != null && loc.distanceSquaredTo(hqLocation) > 9)
             return target;
         return null;
     }
@@ -612,14 +648,15 @@ public class Miner extends Unit {
                 }
             }
         }
-        if (distToBase > 64) {
-            //rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
-        } else {
-            //rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
-        }
+        // if (distToBase > 64) {
+        //     //rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
+        // } else {
+        //     //rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
+        // }
         // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
         if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
-                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)) {
+                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)
+                && rc.getSoupCarrying() > 70) {
             System.out.println("Refinery Check: " + distToBase + " " + lastSoupLocation + " " + myLocation + " " + turnsToBase);
             //TODO: build a refinery smarter and in good direction.
             //build new refinery!
@@ -716,7 +753,7 @@ public class Miner extends Unit {
     //it's probably not a significant bytecode saving.
     public void findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-//        System.out.println("reading messages from " + Integer.toString(rn) + " round.");
+       //System.out.println("[i] reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
@@ -770,10 +807,25 @@ public class Miner extends Unit {
                         //System.out.println("[i] I know ENEMY HQ " + enemyHQLocation);
                     }
                 } else if(getSchema(msg[0])==7) {
-                    if(!hasSentRushCommit) {
-                        //System.out.println("[i] Commiting to Rush!");
-                        rushHold = true;
-                        turnAtRushHalt = rc.getRoundNum();
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(r.typeOfCommit == 1) {
+                        if(!hasSentRushCommit) {
+                            //System.out.println("[i] Commiting to Rush!");
+                            rushHold = true;
+                            turnAtRushHalt = rc.getRoundNum();
+                        }
+                    } else if(r.typeOfCommit == 2) {
+                        if(!enemyAggression) {
+                            //System.out.println("[i] I know Enemy is Rushing!");
+                            enemyAggression = true;
+                            turnAtEnemyAggression = rc.getRoundNum();
+                        }
+                    } else if (r.typeOfCommit == 3) {
+                        if(enemyAggression) {
+                            //System.out.println("[i] Enemy has stopped rushing");
+                            enemyAggression = false;
+                            turnAtEnemyAggression = -1;
+                        }
                     }
                 }
             }

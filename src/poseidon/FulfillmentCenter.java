@@ -14,30 +14,68 @@ public class FulfillmentCenter extends Building {
     boolean holdProduction = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
+    boolean enemyNetGun = false;
+    int spawnTurn;
 
 
     public FulfillmentCenter(RobotController rc) throws GameActionException {
         super(rc);
         checkForLocationMessage();
         hqLocation = HEADQUARTERS_LOCATION;
+
+        //readmessages before you were born to see if we are under attack
+        int rn = rc.getRoundNum();
+        int topr = Math.min(rn, 200);
+        for(int i=1; i<topr; i++) {
+            findMessagesFromAllies(i);
+        }
+        spawnTurn = rc.getRoundNum();
     }
 
     @Override
     public void run() throws GameActionException {
-        if(holdProduction) {
+        super.run();
+
+        if(holdProduction || enemyAggression) {
             checkIfContinueHold();
         }
 
-        super.run();
-        if(!holdProduction) {
-            if ((rc.getTeamSoup() >= Math.min(135 + 15 * (attackDroneCount + defenseDroneCount), 200))
-                    && ((attackDroneCount + defenseDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
-                buildDrone();
+        if(rc.getRoundNum() < 300 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
+            }
         }
 
-        if(rc.getRoundNum()%5==3) {
-            readMessages();
+        enemyNetGun = false;
+        for (RobotInfo enemy : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
+            if (enemy.type == RobotType.NET_GUN) {
+                enemyNetGun = true;
+                break;
+            }
         }
+
+        if(!holdProduction && !enemyNetGun && rc.getRoundNum() - spawnTurn > 30) {
+            if (attackDroneCount + defenseDroneCount < 1) {
+                buildDrone();
+            } else if (enemyAggression) {
+                RobotInfo[] near = rc.senseNearbyRobots();
+                int numEnemLand = 0;
+                for(RobotInfo r : near) {
+                    if(r.team.equals(enemyTeam) && r.type.equals(RobotType.LANDSCAPER)) {
+                        numEnemLand+=1;
+                    }
+                }
+                if(numEnemLand>=2) {
+                    buildDrone();
+                }
+            } else if (!enemyAggression && rc.getRoundNum() > 200 && attackDroneCount + defenseDroneCount < 4) {
+                buildDrone();
+            } if (rc.getTeamSoup() >= 521 && rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100) {
+                buildDrone();
+            }
+        }
+
+        findMessagesFromAllies(rc.getRoundNum()-1);
 
         //should always be the last thing
         previousSoup = rc.getTeamSoup();
@@ -92,17 +130,25 @@ public class FulfillmentCenter extends Building {
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
-        if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            //System.out.println("[i] UNHOLDING PRODUCTION!");
-            holdProduction = false;
-            return false;
+        if(holdProduction) {
+            if(rc.getRoundNum()-turnAtProductionHalt>30) {
+                //System.out.println("[i] UNHOLDING PRODUCTION!");
+                holdProduction = false;
+                return false;
+            }
+            //-200 soup in one turn good approximation for building net gun
+            //so we resume earlier than 10 turns if this happens
+            if(previousSoup - rc.getTeamSoup() > 200) {
+                //System.out.println("[i] UNHOLDING PRODUCTION!");
+                holdProduction = false;
+                return false;
+            }
         }
-        //-200 soup in one turn good approximation for building net gun
-        //so we resume earlier than 10 turns if this happens
-        if(previousSoup - rc.getTeamSoup() > 200) {
-            //System.out.println("[i] UNHOLDING PRODUCTION!");
-            holdProduction = false;
-            return false;
+        if(enemyAggression) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                enemyAggression = false;
+                return false;
+            }
         }
         //if neither condition happens (10 turns or -200), continue holding production
         return true;
@@ -138,6 +184,21 @@ public class FulfillmentCenter extends Building {
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     return true;
+                } else if (getSchema(msg[0])==7) {
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(!enemyAggression) {
+                        if(r.typeOfCommit==2) {
+                            //System.out.println("[i] Enemy is Rushing!");
+                            enemyAggression = true;
+                            turnAtEnemyAggression = rc.getRoundNum();
+                        }
+                    } else {
+                        if(r.typeOfCommit==3) {
+                            //System.out.println("[i] Enemy has stopped rushing");
+                            enemyAggression = false;
+                            turnAtEnemyAggression = -1;
+                        }
+                    }
                 }
             }
         }

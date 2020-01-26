@@ -27,8 +27,8 @@ public class DeliveryDrone extends Unit {
     boolean hasSentEnemyLoc = false;
 
     boolean attackDrone;
-    final int DEFEND_TURN;
-    final int ATTACK_TURN;
+    final int DEFEND_TURN = 1100;
+    final int ATTACK_TURN = 2300;
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -79,9 +79,6 @@ public class DeliveryDrone extends Unit {
         if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(hqLocation)) {
             attackDrone = true;
         }
-
-        DEFEND_TURN = 1100;
-        ATTACK_TURN = 2200;
 
         tilesVisited[getTileNumber(enemyLocation)] = 1;
         updateVisitedTiles(hqLocation);
@@ -159,7 +156,7 @@ public class DeliveryDrone extends Unit {
         for (Direction di : directions) {
             MapLocation loc = myLocation.add(di);
             int[] dxy = xydist(hqLocation, loc);
-            if (rc.senseFlooding(loc) || !rc.canDropUnit(di)) continue;
+            if ((rc.canSenseLocation(loc) && rc.senseFlooding(loc)) || !rc.canDropUnit(di)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
                 if (loc.distanceSquaredTo(hqLocation) > 8 && !loc.equals(reservedForDSchoolBuild)) {
                     dropToward(loc);

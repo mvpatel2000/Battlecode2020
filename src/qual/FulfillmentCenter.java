@@ -57,9 +57,20 @@ public class FulfillmentCenter extends Building {
         if(!holdProduction && !enemyNetGun && rc.getRoundNum() - spawnTurn > 30) {
             if (attackDroneCount + defenseDroneCount < 1) {
                 buildDrone();
+            } else if (enemyAggression) {
+                RobotInfo[] near = rc.senseNearbyRobots();
+                int numEnemLand = 0;
+                for(RobotInfo r : near) {
+                    if(r.team.equals(enemyTeam) && r.type.equals(RobotType.LANDSCAPER)) {
+                        numEnemLand+=1;
+                    }
+                }
+                if(numEnemLand>=2) {
+                    buildDrone();
+                }
             } else if (!enemyAggression && rc.getRoundNum() > 200 && attackDroneCount + defenseDroneCount < 4) {
                 buildDrone();
-            } if (rc.getTeamSoup() >= 200 && (rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100)) {
+            } if (rc.getTeamSoup() >= 521 && rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100) {
                 buildDrone();
             }
         }
