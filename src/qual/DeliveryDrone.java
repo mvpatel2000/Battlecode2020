@@ -27,8 +27,8 @@ public class DeliveryDrone extends Unit {
     boolean hasSentEnemyLoc = false;
 
     boolean attackDrone;
-    final int DEFEND_TURN;
-    final int ATTACK_TURN;
+    final int DEFEND_TURN = 1100;
+    final int ATTACK_TURN = 2300;
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -79,9 +79,6 @@ public class DeliveryDrone extends Unit {
         if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(hqLocation)) {
             attackDrone = true;
         }
-
-        DEFEND_TURN = 1100;
-        ATTACK_TURN = 2000;
 
         tilesVisited[getTileNumber(enemyLocation)] = 1;
         updateVisitedTiles(hqLocation);
