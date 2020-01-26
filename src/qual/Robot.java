@@ -387,4 +387,15 @@ public abstract class Robot {
         }
         return true;
     }
+
+
+    int[] xydist(MapLocation a, MapLocation b) {
+        int dx = Math.abs(a.x - b.x);
+        int dy = Math.abs(a.y - b.y);
+        return new int[]{dx, dy};
+    }
+
+    MapLocation add(MapLocation a, int[] delta) {
+        return new MapLocation(a.x + delta[0], a.y + delta[1]);
+    }
 }

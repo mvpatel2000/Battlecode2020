@@ -34,6 +34,7 @@ public class DeliveryDrone extends Unit {
     boolean giveUpOnAMove;
     boolean carryingCow;
     private boolean trapped;
+    private boolean ferrying;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -68,6 +69,7 @@ public class DeliveryDrone extends Unit {
         carryingCow = false;
         carryingAlly = false;
         giveUpOnAMove = false;
+        ferrying = false;
         nearbyNetGuns = new ArrayList<>();
 
         attackDrone = false;
@@ -100,9 +102,11 @@ public class DeliveryDrone extends Unit {
         int distToNearest = enemyInfo.getDistToNearest();
         int droneCount = enemyInfo.getDroneCount();
 
+        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy + " " + ferrying);
 
-        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy);
-        if (carryingEnemy) { // go to water and drop
+        if (ferrying) { // ferry ally onto lattice
+            dropOntoLattice();
+        } else if (carryingEnemy) { // go to water and drop
             if (carryingCow && nearest != null && !nearest.getType().equals(RobotType.COW))
                 dropToward(nearest.getLocation());
             else if (goToWaterAndDrop())
@@ -113,6 +117,9 @@ public class DeliveryDrone extends Unit {
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
                 attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
+            checkToFerry(nearby);
+            if (ferrying)
+                return;
             if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
                 tryPickUp(nearest);
             } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
@@ -124,7 +131,7 @@ public class DeliveryDrone extends Unit {
                 checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
-                handleDefend();
+                handleDefense(nearby);
             }
         }
 
@@ -133,11 +140,24 @@ public class DeliveryDrone extends Unit {
         checkEnemyLocMessage();
     }
 
+    private void dropOntoLattice() throws GameActionException {
+        for (Direction d : directions) {
+            MapLocation loc = myLocation.add(d);
+            int[] dxy = xydist(hqLocation, loc);
+            if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
+                if (loc.distanceSquaredTo(hqLocation) > 8) {
+                    dropToward(loc);
+                    return;
+                }
+            }
+        }
+    }
+
     private void checkIfDoneWithAMove(RobotInfo[] nearby) throws GameActionException {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
             if (Arrays.stream(nearby).noneMatch(x -> !x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER)) {
                 giveUpOnAMove = true;
-                handleDefend();
+                handleDefense(nearby);
             }
         }
     }
@@ -153,6 +173,7 @@ public class DeliveryDrone extends Unit {
             rc.dropUnit(dir);
             carryingEnemy = false;
             carryingCow = false;
+            ferrying = false;
         }
     }
 
@@ -197,7 +218,35 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    private void handleDefend() throws GameActionException {
+    private void checkToFerry(RobotInfo[] nearby) throws GameActionException {
+        System.out.println("FERRY CHECK");
+        if (!rc.isReady()) return;
+        if (myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE)
+            return;
+        for (RobotInfo x : nearby) {
+            if (!x.getTeam().equals(allyTeam) || x.getType().equals(RobotType.DELIVERY_DRONE) || x.getType().isBuilding())
+                continue;
+            int[] dxy = xydist(x.getLocation(), hqLocation);
+            MapLocation loc = x.getLocation();
+            if ((dxy[0] % 3 + dxy[1] % 3 == 0
+                    && loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE
+                    && loc.distanceSquaredTo(hqLocation) > 8)
+                    || loc.distanceSquaredTo(hqLocation) == 4
+                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9)) {
+                if (loc.isAdjacentTo(myLocation)) {
+                    tryPickUp(x);
+                    ferrying = true;
+                    System.out.println("FERRY AT: " + loc);
+                } else {
+                    path(loc);
+                }
+                return;
+            }
+        }
+    }
+
+    private void handleDefense(RobotInfo[] nearby) throws GameActionException {
+        System.out.println("Handle Defense");
         destination = hqLocation;
         if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
@@ -352,8 +401,8 @@ public class DeliveryDrone extends Unit {
                         (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ)))
                 .forEach(nearbyNetGuns::add);
         trapped = Arrays.stream(directionsWithCenter).allMatch(x -> nearbyNetGuns.stream().anyMatch(y ->
-                    y.getLocation().distanceSquaredTo(myLocation.add(x))
-                            <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED));
+                y.getLocation().distanceSquaredTo(myLocation.add(x))
+                        <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED));
     }
 
     protected boolean canMove(Direction in) {
@@ -365,8 +414,8 @@ public class DeliveryDrone extends Unit {
         return rc.canSenseLocation(to)
                 && rc.senseNearbyRobots(to, 0, null).length == 0
                 && (trapped || nearbyNetGuns.stream().noneMatch(y ->
-                        y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-                ) && (enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+                y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+        ) && (enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
     protected Direction[] getDirections() {
@@ -398,10 +447,10 @@ public class DeliveryDrone extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-         System.out.println("start map scan "+Clock.getBytecodeNum());
+        System.out.println("start map scan " + Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x - 5, 0); x <= Math.min(myLocation.x + 5, MAP_WIDTH - 1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
-            for (int y : getLocationsToCheck(((waterChecked[x] >> Math.max(myLocation.y - 5, 0)) << Math.max(5-myLocation.y,0)) & 1023)) {
+            for (int y : getLocationsToCheck(((waterChecked[x] >> Math.max(myLocation.y - 5, 0)) << Math.max(5 - myLocation.y, 0)) & 1023)) {
                 MapLocation newLoc = new MapLocation(x, myLocation.y + y - 5);
                 if (rc.canSenseLocation(newLoc)) {
                     if (rc.senseFlooding(newLoc)) {
@@ -418,11 +467,11 @@ public class DeliveryDrone extends Unit {
                 return newLoc;
             }
         }
-         System.out.println("end map scan "+Clock.getBytecodeNum());
+        System.out.println("end map scan " + Clock.getBytecodeNum());
 
-         System.out.println("start find nearest "+Clock.getBytecodeNum());
+        System.out.println("start find nearest " + Clock.getBytecodeNum());
         nearest = waterLocations.findNearest();
-         System.out.println("end find nearest "+Clock.getBytecodeNum());
+        System.out.println("end find nearest " + Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;
