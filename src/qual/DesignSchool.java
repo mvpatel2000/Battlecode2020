@@ -14,7 +14,7 @@ public class DesignSchool extends Building {
     int numLandscapersMade;
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
-    int numTerraformersMade = 100; // set to 0 to enable, set to 100 to disable
+    int numTerraformersMade = 0; // set to 0 to enable, set to 100 to disable
     int NUM_TERRAFORMERS_TOTAL = 4;
     int INNER_WALL_PAUSE_AT = 4;
 
