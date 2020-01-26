@@ -56,7 +56,7 @@ public class Miner extends Unit {
             enemyHQLocation = ENEMY_HQ_LOCATION;
         }
         aggro = rc.getRoundNum() == 2;
-        // aggro = false; // uncomment to disable aggro
+        aggro = false; // uncomment to disable aggro
         aggroDone = false;
 
         terraformer = rc.getRoundNum() < 10;
