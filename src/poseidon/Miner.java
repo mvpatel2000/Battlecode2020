@@ -13,7 +13,7 @@ public class Miner extends Unit {
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage = false;
-    public static int SPECULATION = 3;
+    public static int SPECULATION = 1;
 
     MapLocation destination;
     MapLocation hqLocation;
@@ -165,6 +165,12 @@ public class Miner extends Unit {
         }
     }
 
+    @Override
+    public boolean flee() throws GameActionException {
+        checkBuildBuildings();
+        return super.flee();
+    }
+
     public void terraform() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) > 16) {
             path(hqLocation);
@@ -180,31 +186,6 @@ public class Miner extends Unit {
         }
     }
 
-    /**
-     * Flees from adjacent drone if it exists.
-     */
-    public boolean flee() throws GameActionException {
-        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                                        x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
-
-        if (adjacentDrones.length == 0)
-            return false;
-        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
-        Direction escapeRight = escapeLeft;
-        while (!canMove(escapeLeft)) {
-            escapeRight = escapeRight.rotateRight();
-            if (canMove(escapeRight)) {
-                go(escapeRight);
-                return true;
-            }
-            escapeLeft = escapeLeft.rotateLeft();
-        }
-        if (canMove(escapeLeft)) {
-            go(escapeLeft);
-            return true;
-        }
-        return false;
-    }
 
     // returns false if special valid grid square, otherwise true
     boolean checkGridExceptions(MapLocation location) throws GameActionException {
@@ -271,6 +252,29 @@ public class Miner extends Unit {
     }
 
     private void handleAggro() throws GameActionException {
+//        if (rc.getRoundNum() > 70)
+//            rc.resign();
+        // resign check
+        int allyNetGun = 0;
+        int allyLandscaper = 0;
+        int enemyDrone = 0;
+        int enemyLandscaper = 0;
+        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
+        for (RobotInfo r : robots) {
+            if (r.team == allyTeam && r.type == RobotType.NET_GUN)
+                allyNetGun++;
+            else if (r.team == allyTeam && r.type == RobotType.LANDSCAPER)
+                allyLandscaper++;
+            else if (r.team == enemyTeam && r.type == RobotType.DELIVERY_DRONE)
+                enemyDrone++;
+            else if (r.team == enemyTeam && r.type == RobotType.LANDSCAPER)
+                enemyLandscaper++;
+        }
+        if (allyNetGun == 0 && enemyDrone > 0) {
+            aggro = false;
+            return;
+        }
+
         RobotInfo[] nearby = rc.senseNearbyRobots();
         if (dLoc != null) {
             RobotInfo[] dinfo = rc.senseNearbyRobots(dLoc, 0, null);
@@ -395,9 +399,6 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (terraformer && rc.getRoundNum() < 350) {
-            return;
-        }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);

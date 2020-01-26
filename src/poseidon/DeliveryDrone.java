@@ -28,7 +28,7 @@ public class DeliveryDrone extends Unit {
 
     boolean attackDrone;
     final int DEFEND_TURN = 1100;
-    final int ATTACK_TURN = 2300;
+    final int ATTACK_TURN = 2100;
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -80,6 +80,7 @@ public class DeliveryDrone extends Unit {
             attackDrone = true;
         }
 
+
         tilesVisited[getTileNumber(enemyLocation)] = 1;
         updateVisitedTiles(hqLocation);
 
@@ -91,6 +92,8 @@ public class DeliveryDrone extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
+        
+
 
         updateVisitedTiles(myLocation);
 
@@ -415,13 +418,23 @@ public class DeliveryDrone extends Unit {
 
     protected void updateDrones() {
         nearbyNetGuns.clear();
-        Arrays.stream(rc.senseNearbyRobots())
-                .filter(x -> !x.getTeam().equals(allyTeam) &&
-                        (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ)))
-                .forEach(nearbyNetGuns::add);
-        trapped = Arrays.stream(directionsWithCenter).allMatch(x -> nearbyNetGuns.stream().anyMatch(y ->
-                y.getLocation().distanceSquaredTo(myLocation.add(x))
-                        <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED));
+        for (RobotInfo x : rc.senseNearbyRobots()) {
+            if (!x.getTeam().equals(allyTeam) &&
+                    (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))) {
+                nearbyNetGuns.add(x);
+            }
+        }
+
+        trapped = true;
+
+        outer: for (Direction d : directionsWithCenter) {
+            for (RobotInfo n : nearbyNetGuns) {
+                if (n.getLocation().distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                    continue outer;
+                }
+            }
+            trapped = false;
+        }
     }
 
     protected boolean canMove(Direction in) {
@@ -430,11 +443,16 @@ public class DeliveryDrone extends Unit {
 
     protected boolean canMove(MapLocation from, Direction in) {
         MapLocation to = from.add(in);
-        return rc.canSenseLocation(to)
-                && rc.senseNearbyRobots(to, 0, null).length == 0
-                && (trapped || nearbyNetGuns.stream().noneMatch(y ->
-                y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-        ) && (enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        try {
+            return rc.canSenseLocation(to)
+                    && !rc.isLocationOccupied(to)
+                    && (trapped || nearbyNetGuns.stream().noneMatch(y ->
+                    y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+            ) && (trapped || enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        } catch (GameActionException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     protected Direction[] getDirections() {
@@ -2694,7 +2712,7 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
-                    if (nearest == null
+                    if (nearest == null && (rc.getRoundNum() > 200 || enemyRobot.type != RobotType.COW)
                             || nearest.type == RobotType.COW
                             || (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
                             || enemyRobot.type == RobotType.LANDSCAPER) {

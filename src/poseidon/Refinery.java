@@ -12,5 +12,9 @@ public class Refinery extends Building {
     @Override
     public void run() throws GameActionException {
         super.run();
+
+        if (rc.getRoundNum() > 1200 && myLocation.distanceSquaredTo(HEADQUARTERS_LOCATION) < 100) {
+            rc.disintegrate();
+        }
     }
 }

@@ -165,6 +165,12 @@ public class Miner extends Unit {
         }
     }
 
+    @Override
+    public boolean flee() throws GameActionException {
+        checkBuildBuildings();
+        return super.flee();
+    }
+
     public void terraform() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) > 16) {
             path(hqLocation);
@@ -393,9 +399,6 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (terraformer && rc.getRoundNum() < 350) {
-            return;
-        }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
