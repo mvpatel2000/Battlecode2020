@@ -144,6 +144,7 @@ public class DeliveryDrone extends Unit {
         for (Direction d : directions) {
             MapLocation loc = myLocation.add(d);
             int[] dxy = xydist(hqLocation, loc);
+            if (rc.senseFlooding(loc)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
                 if (loc.distanceSquaredTo(hqLocation) > 8) {
                     dropToward(loc);
