@@ -434,7 +434,8 @@ public class Landscaper extends Unit {
                             for (MapLocation digLoc : depositSiteExceptions) {
                                 if (digLoc != null && myLocation.isAdjacentTo(digLoc) && !myLocation.equals(digLoc) &&
                                         (!nearbyBotsMap.containsKey(digLoc) ||
-                                                (nearbyBotsMap.containsKey(digLoc) && nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()))) {
+                                            (nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()) ||
+                                            (nearbyBotsMap.get(digLoc).type.equals(RobotType.DELIVERY_DRONE)))) {
                                     System.out.println("Attempting to dig from pre-designated dig site " + digLoc.toString());
                                     tryDig(myLocation.directionTo(digLoc));
                                 }
