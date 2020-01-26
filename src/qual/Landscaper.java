@@ -887,7 +887,7 @@ public class Landscaper extends Unit {
             int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
                 continue;
-            if (isDepositSiteException(loc) !rc.canSenseLocation(loc))
+            if (isDepositSiteException(loc) || !rc.canSenseLocation(loc))
                 continue;
             if (existsNearbyBotAt(loc) && getNearbyBotAt(loc).team.equals(allyTeam) && getNearbyBotAt(loc).type.isBuilding())
                 continue;
