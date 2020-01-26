@@ -139,12 +139,23 @@ public class DeliveryDrone extends Unit {
     }
 
     private void dropOntoLattice() throws GameActionException {
-        for (Direction d : directions) {
-            MapLocation loc = myLocation.add(d);
+        for (Direction di : directions) {
+            MapLocation loc = myLocation.add(di);
             int[] dxy = xydist(hqLocation, loc);
             if (rc.senseFlooding(loc)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
                 if (loc.distanceSquaredTo(hqLocation) > 8) {
+                    for (Direction d : directions) { // check location is not reservedForDSchoolBuild
+                        MapLocation t = loc.add(d);
+                        if (rc.canSenseLocation(t)) {
+                            RobotInfo r = rc.senseRobotAtLocation(t);
+                            if (r != null && r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
+                                if (loc.equals(t.directionTo(hqLocation).opposite().rotateRight())) {
+                                    continue;
+                                }
+                            }
+                        }
+                    }
                     dropToward(loc);
                     return;
                 }

@@ -9,7 +9,7 @@ import battlecode.common.*;
 public class Landscaper extends Unit {
 
     public static final int MIN_LATTICE_BUILD_HEIGHT = -25;
-    public static final int LATTICE_SIZE = 63;
+    public static final int LATTICE_SIZE = 65;
 
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
@@ -198,15 +198,16 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        System.out.println(myLocation);
         if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);
+            rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
         } else {
-            MapLocation target = findLatticeDepositSite(hqLocation, Arrays.asList(reservedForDSchoolBuild), terraformHeight);
-            while (target == null) {
+            rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
+            MapLocation target = findLatticeDepositSite();
+            while (target == null || isStuck()) {
                 terraformHeight += 2;
-                target = findLatticeDepositSite(hqLocation, Arrays.asList(reservedForDSchoolBuild), terraformHeight);
+                target = findLatticeDepositSite();
             }
 
             if (myLocation.isAdjacentTo(target)) {
@@ -273,7 +274,6 @@ public class Landscaper extends Unit {
             //     }
             // }
         }
-        rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
     }
 
     public Direction rotateBySpiralDirection(Direction d) {
@@ -437,7 +437,7 @@ public class Landscaper extends Unit {
         for (Direction d : directions) {// zeroth priority: kill an an enemy building
             if (nearbyBotsMap.containsKey(myLocation.add(d))) {
                 RobotInfo botInfo = nearbyBotsMap.get(myLocation.add(d));
-                if (botInfo.team.equals(enemyTeam) && (botInfo.type.equals(RobotType.DESIGN_SCHOOL) || botInfo.type.equals(RobotType.FULFILLMENT_CENTER) || botInfo.type.equals(RobotType.NET_GUN))) {
+                if (botInfo.team.equals(enemyTeam) && botInfo.type.isBuilding()) {
                     if (rc.getDirtCarrying() > 0) {
                         System.out.println("Dumping dirt on enemy building at " + botInfo.location);
                         if (tryDeposit(d)) {
@@ -447,10 +447,14 @@ public class Landscaper extends Unit {
                         System.out.println("Attempting to gather dirt in an emergency to kill the enemy building");
                         if (myLocation.isAdjacentTo(hqLocation) && rc.canDigDirt(hqDir)) { // first priority: heal HQ
                             System.out.println("Healing HQ");
-                            tryDig(hqDir);
+                            if (tryDig(hqDir)) {
+                                return;
+                            }
                         } else if (myLocation.isAdjacentTo(baseLocation) && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // second priority: heal d.school
                             System.out.println("Healing d.school");
-                            tryDig(myLocation.directionTo(baseLocation));
+                            if (tryDig(myLocation.directionTo(baseLocation))) {
+                                return;
+                            }
                         } else {
                             for (MapLocation digLoc : depositSiteExceptions) {
                                 if (digLoc != null && myLocation.isAdjacentTo(digLoc) && !myLocation.equals(digLoc) &&
@@ -458,16 +462,22 @@ public class Landscaper extends Unit {
                                             (nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()) ||
                                             (nearbyBotsMap.get(digLoc).type.equals(RobotType.DELIVERY_DRONE)))) {
                                     System.out.println("Attempting to dig from pre-designated dig site " + digLoc.toString());
-                                    tryDig(myLocation.directionTo(digLoc));
+                                    if (tryDig(myLocation.directionTo(digLoc))) {
+                                        return;
+                                    }
                                 }
                             }
                             System.out.println("Attempting to dig from direction " + d.opposite().toString());
-                            tryDig(d.opposite());
+                            if (tryDig(d.opposite())) {
+                                return;
+                            }
                             for (Direction di : directions) {
                                 MapLocation digLoc = myLocation.add(di);
                                 if (!nearbyBotsMap.containsKey(digLoc) || !nearbyBotsMap.get(digLoc).type.isBuilding()) {
                                     System.out.println("Last resort: attempting to dig from direction " + di.toString());
-                                    tryDig(di);
+                                    if (tryDig(di)) {
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -478,12 +488,20 @@ public class Landscaper extends Unit {
         if (!myLocation.equals(holdPositionLoc)) { // first priority: path to holdPositionLoc, dig in if needed
             rc.setIndicatorLine(myLocation, holdPositionLoc, 255, 192, 203);
             if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) > 3) {
-                tryDig(myLocation.directionTo(holdPositionLoc));
-                tryDeposit(Direction.CENTER);
+                if (tryDig(myLocation.directionTo(holdPositionLoc))) {
+                    return;
+                }
+                if (tryDeposit(Direction.CENTER)) {
+                    return;
+                }
             }
             if (myLocation.isAdjacentTo(holdPositionLoc) && rc.senseElevation(holdPositionLoc) - rc.senseElevation(myLocation) < -3) {
-                tryDig(Direction.CENTER);
-                tryDeposit(myLocation.directionTo(holdPositionLoc));
+                if (tryDig(Direction.CENTER)) {
+                    return;
+                }
+                if (tryDeposit(myLocation.directionTo(holdPositionLoc))) {
+                    return;
+                }
             }
             System.out.println("Pathing towards my holdPositionLoc: " + holdPositionLoc.toString());
             path(holdPositionLoc);
@@ -491,7 +509,9 @@ public class Landscaper extends Unit {
             if (wallPhase < 2) { // i am an inner landscaper
                 if (rc.canDigDirt(hqDir)) { // first priority: heal HQ
                     System.out.println("Healing HQ");
-                    tryDig(hqDir);
+                    if (tryDig(hqDir)) {
+                        return;
+                    }
                 } else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
                     boolean foundDigSite = false;
                     int hqElevation = rc.senseElevation(hqLocation);
@@ -502,7 +522,9 @@ public class Landscaper extends Unit {
                         if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && shouldLowerPile(hqLocation, d)) {
                             foundDigSite = true;
                             System.out.println("Digging from pile in direction " + myLocation.directionTo(hqLocation.add(d)));
-                            tryDig(myLocation.directionTo(hqLocation.add(d)));
+                            if (tryDig(myLocation.directionTo(hqLocation.add(d)))) {
+                                return;
+                            }
                         }
                     }
                     if (!foundDigSite) {
@@ -523,7 +545,9 @@ public class Landscaper extends Unit {
                                         digDir = digDir.rotateLeft();
                                     }
                                     System.out.println("Dig in backup spot because I'm up against the wall");
-                                    tryDig(digDir);
+                                    if (tryDig(digDir)) {
+                                        return;
+                                    }
                                 }
                             }
                         }
@@ -538,12 +562,16 @@ public class Landscaper extends Unit {
                         if (rc.getRoundNum() < forceInnerWallTakeoffAt && hqLocation.add(d).isAdjacentTo(myLocation) && !hqLocation.add(d).equals(myLocation) && !nearbyBotsMap.containsKey(hqLocation.add(d)) && shouldRaisePit(hqLocation, d)) {
                             foundDumpSite = true;
                             System.out.println("Dumping to pit in direction " + myLocation.directionTo(hqLocation.add(d)));
-                            tryDeposit(myLocation.directionTo(hqLocation.add(d)));
+                            if (tryDeposit(myLocation.directionTo(hqLocation.add(d)))) {
+                                return;
+                            }
                         }
                     }
                     if (!foundDumpSite) {
                         System.out.println("Dumping dirt under myself");
-                        tryDeposit(Direction.CENTER);
+                        if (tryDeposit(Direction.CENTER)) {
+                            return;
+                        }
                     }
                 } else { // inner wall tight; distribute to the lowest point of the inner wall around it
                     Direction dump = Direction.CENTER;
@@ -571,7 +599,9 @@ public class Landscaper extends Unit {
                         }
                     }
                     System.out.println("Dumping dirt in direction " + dump.toString());
-                    tryDeposit(dump);
+                    if (tryDeposit(dump)) {
+                        return;
+                    }
                 }
             } else if (wallPhase == 2) { // i'm outside the inner wall but the inner wall has enemies on it and hasn't taken off yet
                 // path to enemy building if visible (go to holdpositionloc will handle this)
@@ -582,12 +612,14 @@ public class Landscaper extends Unit {
                     for (Direction d : outerRingDig[outerRingIndex]) {
                         System.out.println("Attempting to dig from direction " + d);
                         if (tryDig(d)) {
-                            break;
+                            return;
                         }
                     }
                 } else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 3) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
                     System.out.println("Dumping dirt under myself");
-                    tryDeposit(Direction.CENTER);
+                    if (tryDeposit(Direction.CENTER)) {
+                        return;
+                    }
                 } else {
                     Direction dumpDir = outerRingDeposit[outerRingIndex][0];
                     int minElev = 50000;
@@ -598,7 +630,9 @@ public class Landscaper extends Unit {
                         }
                     }
                     System.out.println("Dumping dirt in direction " + dumpDir.toString());
-                    tryDeposit(dumpDir);
+                    if (tryDeposit(dumpDir)) {
+                        return;
+                    }
                 }
             }
         }
@@ -846,12 +880,13 @@ public class Landscaper extends Unit {
     }
 
 
-    protected MapLocation findLatticeDepositSite(MapLocation hq, List<MapLocation> exceptions, int elevation) throws GameActionException {
+    protected MapLocation findLatticeDepositSite() throws GameActionException {
+        List<MapLocation> exceptions = Arrays.asList(reservedForDSchoolBuild);
         for (int[] d : visionSpiral) {
             MapLocation loc = add(myLocation, d);
-            if (loc.distanceSquaredTo(hq) < 9)
+            if (loc.distanceSquaredTo(hqLocation) < 9)
                 continue;
-            int[] dxy = xydist(loc, hq);
+            int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
                 continue;
             if (exceptions.contains(loc) || !rc.canSenseLocation(loc))
@@ -861,7 +896,7 @@ public class Landscaper extends Unit {
             if (loc.distanceSquaredTo(hqLocation) > LATTICE_SIZE)
                 continue;
             int height = rc.senseElevation(loc);
-            if (height >= elevation || height <= MIN_LATTICE_BUILD_HEIGHT)
+            if (height >= terraformHeight || height <= MIN_LATTICE_BUILD_HEIGHT)
                 continue;
             return loc;
         }

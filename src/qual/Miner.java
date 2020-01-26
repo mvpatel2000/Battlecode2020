@@ -132,11 +132,6 @@ public class Miner extends Unit {
             return;
         }
 
-        if (terraformer && rc.getRoundNum() > 300) {
-            terraform();
-            return;
-        }
-
         if (holdProduction || rushHold) {
             checkIfContinueHold();
         }
@@ -164,8 +159,12 @@ public class Miner extends Unit {
             }
         }
 
-        harvest();
-        previousSoup = rc.getTeamSoup();
+        if (terraformer && rc.getRoundNum() > 300) {
+            terraform();
+        } else {
+            harvest();
+            previousSoup = rc.getTeamSoup();
+        }
     }
 
     public void terraform() throws GameActionException {
@@ -200,7 +199,7 @@ public class Miner extends Unit {
         if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
             return false;
         }
-        for (Direction d : directions) { // check location is reservedForDSchoolBuild
+        for (Direction d : directions) { // check location is not reservedForDSchoolBuild
             MapLocation t = location.add(d);
             if (rc.canSenseLocation(t)) {
                 RobotInfo r = rc.senseRobotAtLocation(t);
@@ -366,6 +365,9 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
+        if (terraformer && rc.getRoundNum() < 350) {
+            return;
+        }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
 //        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
@@ -408,8 +410,8 @@ public class Miner extends Unit {
 //        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
 //        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation + " " + destination);
-        rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
-        rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
+        //rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
+        //rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
 
         if (dSchoolExists) {
             refineryCheck();
@@ -627,11 +629,11 @@ public class Miner extends Unit {
                 }
             }
         }
-        if (distToBase > 64) {
-            rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
-        } else {
-            rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
-        }
+        // if (distToBase > 64) {
+        //     rc.setIndicatorLine(myLocation, baseLocation, 255, 0, 0);
+        // } else {
+        //     rc.setIndicatorLine(myLocation, baseLocation, 255, 255, 255);
+        // }
         // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
         if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
                 && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)
