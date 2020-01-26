@@ -903,7 +903,8 @@ public class Landscaper extends Unit {
         List<MapLocation> exceptions = Arrays.asList(reservedForDSchoolBuild);
         for (int[] d : visionSpiral) {
             MapLocation loc = add(myLocation, d);
-            if (loc.distanceSquaredTo(hqLocation) < 9)
+            int dist = loc.distanceSquaredTo(hqLocation);
+            if (dist < 5)
                 continue;
             int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
@@ -912,7 +913,7 @@ public class Landscaper extends Unit {
                 continue;
             if (nearbyBotsMap.containsKey(loc) && nearbyBotsMap.get(loc).team.equals(allyTeam) && nearbyBotsMap.get(loc).type.isBuilding())
                 continue;
-            if (loc.distanceSquaredTo(hqLocation) > LATTICE_SIZE)
+            if (dist > LATTICE_SIZE)
                 continue;
             int height = rc.senseElevation(loc);
             if (height >= terraformHeight || height <= MIN_LATTICE_BUILD_HEIGHT)
