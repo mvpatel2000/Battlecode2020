@@ -36,15 +36,20 @@ public class FulfillmentCenter extends Building {
         }
 
         super.run();
+
+        if(rc.getRoundNum() < 300 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
+            }
+        }
+
         if(!holdProduction) {
             if ((rc.getTeamSoup() >= Math.min(135 + 15 * (attackDroneCount + defenseDroneCount), 200))
                     && ((attackDroneCount + defenseDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
                 buildDrone();
         }
 
-        if(rc.getRoundNum()%5==3) {
-            readMessages();
-        }
+        findMessagesFromAllies(rc.getRoundNum()-1);
 
         //should always be the last thing
         previousSoup = rc.getTeamSoup();

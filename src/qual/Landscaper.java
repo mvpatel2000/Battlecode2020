@@ -916,8 +916,11 @@ public class Landscaper extends Unit {
 
     public boolean isWalled() throws GameActionException {
         for (Direction d : directions) {
-            RobotInfo x = nearbyBotsMap.get(myLocation.add(d));
-            if (!(Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(myLocation.add(d))) > 3)
+            MapLocation loc = myLocation.add(d);
+            if (!rc.canSenseLocation(loc))
+                continue;
+            RobotInfo x = nearbyBotsMap.get(loc);
+            if (!(Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(loc)) > 3)
                     && !(x != null && x.getType().isBuilding()))
                 return false;
         }
