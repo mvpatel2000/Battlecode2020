@@ -27,8 +27,8 @@ public class DeliveryDrone extends Unit {
     boolean hasSentEnemyLoc = false;
 
     boolean attackDrone;
-    final int DEFEND_TURN;
-    final int ATTACK_TURN;
+    final int DEFEND_TURN = 1100;
+    final int ATTACK_TURN = 2300;
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -79,9 +79,6 @@ public class DeliveryDrone extends Unit {
         if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(hqLocation)) {
             attackDrone = true;
         }
-
-        DEFEND_TURN = 1100;
-        ATTACK_TURN = 2000;
 
         tilesVisited[getTileNumber(enemyLocation)] = 1;
         updateVisitedTiles(hqLocation);
@@ -315,7 +312,7 @@ public class DeliveryDrone extends Unit {
             fuzzyMoveToLoc(nearest.location);
         } else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100) {
             System.out.println("pathing recklessly");
-            path(nearest.location, false); // to nearest enemy.
+            path(nearest.location, true); // to nearest enemy.
         } else {
             path(nearest.location, true);
         }
@@ -324,7 +321,7 @@ public class DeliveryDrone extends Unit {
 
     private void handleAttack() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) < 50) {
-            spiral(enemyLocation, false);
+            spiral(enemyLocation, enemyAggression);
         } else {
             spiral(enemyLocation, true);
         }
@@ -372,7 +369,7 @@ public class DeliveryDrone extends Unit {
                 }
             }
             if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                path(nearestWaterLocation, false);
+                path(nearestWaterLocation, enemyAggression);
             } else {
                 path(nearestWaterLocation, true);
             }
@@ -388,7 +385,7 @@ public class DeliveryDrone extends Unit {
                 }
             }
             if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                path(nearestWaterLocation, false);
+                path(nearestWaterLocation, enemyAggression);
             } else {
                 path(nearestWaterLocation, true);
             }
