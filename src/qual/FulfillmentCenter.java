@@ -15,6 +15,7 @@ public class FulfillmentCenter extends Building {
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
     boolean enemyNetGun = false;
+    int spawnTurn;
 
 
     public FulfillmentCenter(RobotController rc) throws GameActionException {
@@ -28,6 +29,7 @@ public class FulfillmentCenter extends Building {
         for(int i=1; i<topr; i++) {
             findMessagesFromAllies(i);
         }
+        spawnTurn = rc.getRoundNum();
     }
 
     @Override
@@ -52,12 +54,12 @@ public class FulfillmentCenter extends Building {
             }
         }
 
-        if(!holdProduction && !enemyNetGun) {
-            if (attackDroneCount + defenseDroneCount < 2) {
+        if(!holdProduction && !enemyNetGun && rc.getRoundNum() - spawnTurn > 30) {
+            if (attackDroneCount + defenseDroneCount < 1) {
                 buildDrone();
-            } else if (enemyAggression && (attackDroneCount + defenseDroneCount) < 4) {
+            } else if (!enemyAggression && rc.getRoundNum() > 200 && attackDroneCount + defenseDroneCount < 4) {
                 buildDrone();
-            } else if (rc.getTeamSoup() >= 200 && (rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100)) {
+            } if (rc.getTeamSoup() >= 200 && (rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100)) {
                 buildDrone();
             }
         }
