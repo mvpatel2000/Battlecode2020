@@ -428,9 +428,6 @@ public class DeliveryDrone extends Unit {
         trapped = true;
 
         outer: for (Direction d : directionsWithCenter) {
-            if (!rc.canMove(d)) {
-                continue;
-            }
             for (RobotInfo n : nearbyNetGuns) {
                 if (n.getLocation().distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                     continue outer;
