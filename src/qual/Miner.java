@@ -386,36 +386,30 @@ public class Miner extends Unit {
         }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
-//        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
-//        boolean existsNetGun = false;
-//        for (RobotInfo robot : allyRobots) {
-//            switch (robot.getType()) {
-//                case NET_GUN:
-//                    existsNetGun = true;
-//                    break;
-//            }
-//        }
+        RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
+        boolean existsNetGun = false;
+        for (RobotInfo robot : allyRobots) {
+            switch (robot.getType()) {
+                case NET_GUN:
+                    existsNetGun = true;
+                    break;
+            }
+        }
         for (Direction dir : directions) {
-//            if (!existsNetGun) {
-//                tryBuild(RobotType.NET_GUN, dir);
-//            } else if (!existsDesignSchool) {
-//                tryBuild(RobotType.DESIGN_SCHOOL, dir);
-//            } else if (!existsFulfillmentCenter) {
-//                tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-//            } else {
-//                tryBuild(RobotType.VAPORATOR, dir);
-//            }
-//            if (!existsNetGun && rc.getRoundNum() > 500) {
-//                rc.buildRobot(RobotType.NET_GUN, dir);
-//            }
             //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
-            if ( onBuildingGridSquare(myLocation.add(dir))
+            if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                int elev = rc.senseElevation(myLocation.add(dir));
-                int roundNum = rc.getRoundNum();
-                System.out.println(elev + " " + roundNum);
-                if ((elev == 5 && roundNum < 900 || elev == 4 && roundNum < 600 || elev == 3 && roundNum < 430) && roundNum > 100) {
+                if (!existsNetGun) {
+                    tryBuild(RobotType.NET_GUN, dir);
+                } else if (!dSchoolExists) {
+                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, dir);
+                } else if (!fulfillmentCenterExists) {
+                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, dir);
+                } else {
                     tryBuild(RobotType.VAPORATOR, dir);
+                }
+                if (!existsNetGun && rc.getRoundNum() > 500) {
+                    rc.buildRobot(RobotType.NET_GUN, dir);
                 }
             }
         }

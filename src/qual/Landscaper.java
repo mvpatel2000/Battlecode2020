@@ -9,7 +9,7 @@ import battlecode.common.*;
 public class Landscaper extends Unit {
 
     public static final int MIN_LATTICE_BUILD_HEIGHT = -25;
-    public static final int LATTICE_SIZE = 65;
+    public static final int LATTICE_SIZE = 35;
 
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
@@ -180,6 +180,9 @@ public class Landscaper extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
+        if (!rc.isReady()) {
+            rc.setIndicatorDot(myLocation, 0, 0, 0);
+        }
 
         updateNearbyBots();
 
