@@ -171,12 +171,11 @@ public abstract class Unit extends Robot {
     }
 
     public boolean isStuck() {
-        boolean stuck = true;
         for (Direction d : directions) {
             if (canMove(d))
-                stuck = false;
+                return false;
         }
-        return stuck;
+        return true;
     }
 
     public Direction navigate(int speculation, boolean action) {
