@@ -367,6 +367,16 @@ public abstract class Robot {
         }
     }
 
+    boolean existsNearbyEnemyOfType(RobotType type) throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.type.equals(type) && botInfo.team.equals(enemyTeam)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean existsNearbyAllyOfType(RobotType type) throws GameActionException {
         RobotInfo[] nearbyBots = rc.senseNearbyRobots();
         for (RobotInfo botInfo : nearbyBots) {
@@ -384,7 +394,7 @@ public abstract class Robot {
     boolean existsNearbyEnemyBuilding() throws GameActionException {
         RobotInfo[] nearbyBots = rc.senseNearbyRobots();
         for (RobotInfo botInfo : nearbyBots) {
-            if (!botInfo.team.equals(allyTeam) && botInfo.type.isBuilding()) {
+            if (botInfo.team.equals(enemyTeam) && botInfo.type.isBuilding()) {
                 return true;
             }
         }
