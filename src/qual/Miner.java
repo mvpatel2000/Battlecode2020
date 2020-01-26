@@ -178,16 +178,13 @@ public class Miner extends Unit {
      */
     public boolean flee() throws GameActionException {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                                        x.getLocation().distanceSquaredTo(myLocation) < 3).toArray(RobotInfo[]::new);
+                                        x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
 
         if (adjacentDrones.length == 0)
             return false;
-        Direction escape = Arrays.stream(directions)
-                .filter(d -> canMove(d) && getNearbyDrones().stream()
-                    .noneMatch(x -> x.getLocation().distanceSquaredTo(myLocation.add(d)) < 3))
-                .findAny().orElse(null);
+        Direction escape = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         if (escape != null) {
-            go(escape);
+            path(myLocation.add(escape));
             return true;
         }
         return false;
