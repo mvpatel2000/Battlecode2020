@@ -84,15 +84,18 @@ public class DesignSchool extends Building {
         }
 
         if (defensive) {
+            if(rc.getRoundNum() < 300 && !enemyAggression) {
+                if(enemyAggressionCheck()) {
+                    turnAtEnemyAggression = rc.getRoundNum();
+                }
+            }
             defense();
         }
         else if (aggressive) {
             aggro();
         }
 
-        if(rc.getRoundNum()%5==3) {
-            readMessages();
-        }
+        findMessagesFromAllies(rc.getRoundNum()-1);
 
         //should always be the last thing
         previousSoup = rc.getTeamSoup();
