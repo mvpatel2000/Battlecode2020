@@ -8,6 +8,9 @@ import battlecode.common.*;
 
 public class Landscaper extends Unit {
 
+    private static final int MIN_LATTICE_BUILD_HEIGHT = -20;
+    private static final int LATTICE_SIZE = 4;
+
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
     RobotInfo[] nearbyBots;
@@ -805,11 +808,37 @@ public class Landscaper extends Unit {
         }
     }
 
-    protected MapLocation findLatticeDepositSite(MapLocation hq, List<MapLocation> exceptions, int elevation) {
+    private int[] xydist(MapLocation a, MapLocation b) {
+        int dx = Math.abs(a.x - b.x);
+        int dy = Math.abs(a.y - b.y);
+        return new int[]{dx, dy};
+    }
+
+    private MapLocation add(MapLocation a, int[] delta) {
+        return new MapLocation(a.x + delta[0], a.y + delta[1]);
+    }
+
+    protected MapLocation findLatticeDepositSite(MapLocation hq, List<MapLocation> exceptions, int elevation) throws GameActionException {
+        for (int[] d : visionSpiral) {
+            MapLocation loc = add(myLocation, d);
+            if (loc.distanceSquaredTo(hq) < 9)
+                continue;
+            int[] dxy = xydist(loc, hq);
+            if (dxy[0] % 3 + dxy[1] % 3 == 0)
+                continue;
+            if (exceptions.contains(loc) || !rc.canSenseLocation(loc))
+                continue;
+            if (dxy[0] > LATTICE_SIZE || dxy[1] > LATTICE_SIZE)
+                continue;
+            int height = rc.senseElevation(loc);
+            if (height >= elevation || height <= MIN_LATTICE_BUILD_HEIGHT)
+                continue;
+            return loc;
+        }
         return null;
     }
 
-    public int[][] visionSpiral = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2},
+    private int[][] visionSpiral = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2},
             {0, 2}, {2, 0}, {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2},
             {-3, 0}, {0, -3}, {0, 3}, {3, 0}, {-3, -1}, {-3, 1}, {-1, -3}, {-1, 3}, {1, -3}, {1, 3}, {3, -1}, {3, 1}, {-3, -2}, {-3, 2},
             {-2, -3}, {-2, 3}, {2, -3}, {2, 3}, {3, -2}, {3, 2}, {-4, 0}, {0, -4}, {0, 4}, {4, 0}, {-4, -1}, {-4, 1}, {-1, -4}, {-1, 4},
