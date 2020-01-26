@@ -1,4 +1,4 @@
-package qual;
+package qualNoAtacc;
 
 import battlecode.common.*;
 
@@ -15,8 +15,8 @@ public class DesignSchool extends Building {
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
     int numTerraformersMade = 0; // set to 0 to enable, set to 100 to disable
-    int NUM_TERRAFORMERS_INITIAL = 3;
-    int NUM_TERRAFORMERS_TOTAL = 6;
+    int NUM_TERRAFORMERS_INITIAL = 1;
+    int NUM_TERRAFORMERS_TOTAL = 4;
     int INNER_WALL_PAUSE_AT = 3;
 
     //For halting production and resuming it.
@@ -149,7 +149,7 @@ public class DesignSchool extends Building {
             if (numLandscapersMade == INNER_WALL_PAUSE_AT && numTerraformersMade < NUM_TERRAFORMERS_INITIAL) { // build terraformer
                 spawnTerraformer();
             }
-            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || (firstRefineryExists && rc.getTeamSoup() >= 521)) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
                 spawnInnerWaller();
             }
@@ -240,7 +240,7 @@ public class DesignSchool extends Building {
     public boolean sendTerraformMessage(int i) throws GameActionException {
         System.out.println("[i] Sending terraform message");
         System.out.println("[i] ID: " + Integer.toString(i%1000));
-        TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+        TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
     }
@@ -262,19 +262,19 @@ public class DesignSchool extends Building {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            if (allyMessage(msg[0], rn)) {
+            if (allyMessage(msg[0])) {
                 if(getSchema(msg[0])==3) {
-                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                 } else if(getSchema(msg[0])==4 && trueEnemyHQLocation==null) {
-                    checkForEnemyHQLocationMessageSubroutine(msg, rn);
+                    checkForEnemyHQLocationMessageSubroutine(msg);
                     if(ENEMY_HQ_LOCATION != null) {
                         trueEnemyHQLocation = ENEMY_HQ_LOCATION;
                     }
                 } else if(getSchema(msg[0])==5 && (!firstRefineryExists || !firstFullfillmentCenterExists)) {
-                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(b.typeBuilt==3) {
                         firstRefineryExists = true;
                     }
@@ -282,7 +282,7 @@ public class DesignSchool extends Building {
                         firstFullfillmentCenterExists = true;
                     }
                 } else if (getSchema(msg[0])==7) {
-                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(!enemyAggression) {
                         if(r.typeOfCommit==2) {
                             System.out.println("[i] Enemy is Rushing!");

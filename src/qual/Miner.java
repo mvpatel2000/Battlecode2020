@@ -13,7 +13,7 @@ public class Miner extends Unit {
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage = false;
-    public static int SPECULATION = 3;
+    public static int SPECULATION = 1;
 
     MapLocation destination;
     MapLocation hqLocation;
@@ -165,6 +165,12 @@ public class Miner extends Unit {
         }
     }
 
+    @Override
+    public boolean flee() throws GameActionException {
+        checkBuildBuildings();
+        return super.flee();
+    }
+
     public void terraform() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) > 16) {
             path(hqLocation);
@@ -255,6 +261,29 @@ public class Miner extends Unit {
     }
 
     private void handleAggro() throws GameActionException {
+//        if (rc.getRoundNum() > 70)
+//            rc.resign();
+        // resign check
+        int allyNetGun = 0;
+        int allyLandscaper = 0;
+        int enemyDrone = 0;
+        int enemyLandscaper = 0;
+        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
+        for (RobotInfo r : robots) {
+            if (r.team == allyTeam && r.type == RobotType.NET_GUN)
+                allyNetGun++;
+            else if (r.team == allyTeam && r.type == RobotType.LANDSCAPER)
+                allyLandscaper++;
+            else if (r.team == enemyTeam && r.type == RobotType.DELIVERY_DRONE)
+                enemyDrone++;
+            else if (r.team == enemyTeam && r.type == RobotType.LANDSCAPER)
+                enemyLandscaper++;
+        }
+        if (allyNetGun == 0 && enemyDrone > 0) {
+            aggro = false;
+            return;
+        }
+
         RobotInfo[] nearby = rc.senseNearbyRobots();
         if (dLoc != null) {
             RobotInfo[] dinfo = rc.senseNearbyRobots(dLoc, 0, null);
@@ -298,7 +327,7 @@ public class Miner extends Unit {
                 // and I don't see any of my netguns
                 && Arrays.stream(nearby).noneMatch(x -> x.getTeam().equals(rc.getTeam()) && x.getType().equals(RobotType.NET_GUN))) {
             if (rc.getTeamSoup() < 250 && !hasSentHalt) { // send save resources message if can't build netgun
-                HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                HoldProductionMessage h = new HoldProductionMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                 //make sure this sends successfully.
                 if (sendMessage(h.getMessage(), 2)) {
                     hasSentHalt = true;
@@ -321,7 +350,7 @@ public class Miner extends Unit {
         // If next to enemy HQ, end aggro and build d.school
         RobotInfo[] seen = rc.senseNearbyRobots(target.get(0), 0, null);
         if(seen.length > 0 && seen[0].getType().equals(RobotType.HQ) && !hasSentEnemyLoc) {
-            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
             MapLocation ml = seen[0].getLocation();
             l.writeInformation(ml.x, ml.y, 1);
             if(sendMessage(l.getMessage(), 1)) {
@@ -338,7 +367,7 @@ public class Miner extends Unit {
                         !x.getTeam().equals(allyTeam)).noneMatch(x ->
                         x.getType().equals(RobotType.DESIGN_SCHOOL)
                         || x.getType().equals(RobotType.FULFILLMENT_CENTER))) {
-                            RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                             r.writeTypeOfCommit(1);
                             if(sendMessage(r.getMessage(), 1)) {
                                 System.out.println("[i] Sending Rush Commit!!");
@@ -379,9 +408,6 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (terraformer && rc.getRoundNum() < 350) {
-            return;
-        }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
@@ -435,7 +461,7 @@ public class Miner extends Unit {
             if (optimalDir != null) {
                 fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, optimalDir);
                 if (fulfillmentCenterExists) {
-                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                     b.writeTypeBuilt(1); //1 is Fulfillment Center
                     sendMessage(b.getMessage(), 1); //Find better bidding scheme
                 }
@@ -555,7 +581,7 @@ public class Miner extends Unit {
         if (myLocation.isAdjacentTo(closestDSchoolBuildLoc)) {
             dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, myLocation.directionTo(closestDSchoolBuildLoc));
             if(dSchoolExists) {
-                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                 b.writeTypeBuilt(2); //2 is d.school
                 sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
             }
@@ -660,7 +686,7 @@ public class Miner extends Unit {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     //send message if this is the first refinery built
                     if (!firstRefineryExists) {
-                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                         b.writeTypeBuilt(3); //3 is refinery
                         if (sendMessage(b.getMessage(), 1)) {
                             firstRefineryExists = true;
@@ -748,9 +774,9 @@ public class Miner extends Unit {
        System.out.println("[i] reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            if (allyMessage(msg[0])) {
+            if (allyMessage(msg[0], rn)) {
                 if (getSchema(msg[0]) == 2) {
-                    MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    MinePatchMessage p = new MinePatchMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     //System.out.println("Found a mine patch message with " + Integer.toString(p.numPatchesWritten) + " patches.");
                     int oldPatch = -1;
                     for (int j = 0; j < p.MAX_PATCHES; j++) {
@@ -784,7 +810,7 @@ public class Miner extends Unit {
                     }
                 } else if ((!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists) && getSchema(msg[0]) == 5) {
                     //drone has been built.
-                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if (b.typeBuilt == 1) {
                         fulfillmentCenterExists = true;
                     } else if (b.typeBuilt == 2) {
@@ -793,13 +819,13 @@ public class Miner extends Unit {
                         firstRefineryExists = true;
                     }
                 } else if(enemyHQLocation==null && getSchema(msg[0])==4) {
-                    checkForEnemyHQLocationMessageSubroutine(msg);
+                    checkForEnemyHQLocationMessageSubroutine(msg, rn);
                     if(ENEMY_HQ_LOCATION != null) {
                         enemyHQLocation = ENEMY_HQ_LOCATION;
                         System.out.println("[i] I know ENEMY HQ " + enemyHQLocation);
                     }
                 } else if(getSchema(msg[0])==7) {
-                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if(r.typeOfCommit == 1) {
                         if(!hasSentRushCommit) {
                             System.out.println("[i] Commiting to Rush!");
@@ -855,13 +881,13 @@ public class Miner extends Unit {
             // 0 when hq doesn't know about it
             System.out.println("I see " + Integer.toString(soupTotal) + " soup, so I'm sending a message");
             if (!noSoup || soupTotal == 0) {
-                generateSoupMessage(destination, soupToPower(soupTotal));
+                generateSoupMessage(destination, soupToPower(soupTotal), rc.getRoundNum());
             }
             soupMiningTiles[tnum] = 1;
         }
     }
 
-    public void generateSoupMessage(MapLocation destination, int soupAmount) throws GameActionException {
+    public void generateSoupMessage(MapLocation destination, int soupAmount, int roundNumber) throws GameActionException {
         int tnum = getTileNumber(destination);
 //        if (soupAmount>0) {
 //            System.out.println("Telling HQ about Soup at tile: " + Integer.toString(tnum));
@@ -870,7 +896,7 @@ public class Miner extends Unit {
 //            System.out.println("Telling HQ about NO SOUP at tile: " + Integer.toString(tnum));
 //            rc.setIndicatorDot(getCenterFromTileNumber(tnum), 168, 0, 255);
 //        }
-        SoupMessage s = new SoupMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+        SoupMessage s = new SoupMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, roundNumber);
         s.writeTile(tnum);
         s.writeSoupAmount(soupAmount);
         sendMessage(s.getMessage(), 1);

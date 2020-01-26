@@ -1,4 +1,4 @@
-package poseidon;
+package qualNoAtacc;
 
 import battlecode.common.*;
 
@@ -223,7 +223,7 @@ public abstract class Unit extends Robot {
                 List<PathState> path = speculativePath(state, speculation);
                 PathState next = null;
                 for (PathState p : path) {
-                    //rc.setIndicatorDot(p.me, 60, 60, 60);
+                    rc.setIndicatorDot(p.me, 60, 60, 60);
                     Direction tmp = toward(myLocation, p.me);
                     if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
                         next = p;

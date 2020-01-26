@@ -13,7 +13,7 @@ public class Miner extends Unit {
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage = false;
-    public static int SPECULATION = 3;
+    public static int SPECULATION = 1;
 
     MapLocation destination;
     MapLocation hqLocation;
@@ -165,6 +165,12 @@ public class Miner extends Unit {
         }
     }
 
+    @Override
+    public boolean flee() throws GameActionException {
+        checkBuildBuildings();
+        return super.flee();
+    }
+
     public void terraform() throws GameActionException {
         if (myLocation.distanceSquaredTo(hqLocation) > 16) {
             path(hqLocation);
@@ -180,38 +186,20 @@ public class Miner extends Unit {
         }
     }
 
-    /**
-     * Flees from adjacent drone if it exists.
-     */
-    public boolean flee() throws GameActionException {
-        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                                        x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
 
-        if (adjacentDrones.length == 0)
-            return false;
-        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
-        Direction escapeRight = escapeLeft;
-        while (!canMove(escapeLeft)) {
-            escapeRight = escapeRight.rotateRight();
-            if (canMove(escapeRight)) {
-                go(escapeRight);
-                return true;
-            }
-            escapeLeft = escapeLeft.rotateLeft();
-        }
-        if (canMove(escapeLeft)) {
-            go(escapeLeft);
-            return true;
-        }
-        return false;
+    // returns false if special valid grid square, otherwise true
+    boolean checkGridExceptions(MapLocation location) throws GameActionException {
+        int x = Math.abs(location.y - hqLocation.y);
+        int y = Math.abs(location.x - hqLocation.x);
+        return !(x == 3 && y == 1 || x == 1 && y == 3);
     }
-
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
         if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
-        if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
+        if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
+            && checkGridExceptions(location)) {
             return false;
         }
         for (Direction d : directions) { // check location is not reservedForDSchoolBuild
@@ -219,7 +207,7 @@ public class Miner extends Unit {
             if (rc.canSenseLocation(t)) {
                 RobotInfo r = rc.senseRobotAtLocation(t);
                 if (r != null && r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
-                    if (location.equals(t.directionTo(hqLocation).opposite().rotateRight())) {
+                    if (location.equals(t.add(t.directionTo(hqLocation).opposite().rotateRight()))) {
                         return false;
                     }
                 }
@@ -264,6 +252,29 @@ public class Miner extends Unit {
     }
 
     private void handleAggro() throws GameActionException {
+//        if (rc.getRoundNum() > 70)
+//            rc.resign();
+        // resign check
+        int allyNetGun = 0;
+        int allyLandscaper = 0;
+        int enemyDrone = 0;
+        int enemyLandscaper = 0;
+        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
+        for (RobotInfo r : robots) {
+            if (r.team == allyTeam && r.type == RobotType.NET_GUN)
+                allyNetGun++;
+            else if (r.team == allyTeam && r.type == RobotType.LANDSCAPER)
+                allyLandscaper++;
+            else if (r.team == enemyTeam && r.type == RobotType.DELIVERY_DRONE)
+                enemyDrone++;
+            else if (r.team == enemyTeam && r.type == RobotType.LANDSCAPER)
+                enemyLandscaper++;
+        }
+        if (allyNetGun == 0 && enemyDrone > 0) {
+            aggro = false;
+            return;
+        }
+
         RobotInfo[] nearby = rc.senseNearbyRobots();
         if (dLoc != null) {
             RobotInfo[] dinfo = rc.senseNearbyRobots(dLoc, 0, null);
@@ -388,9 +399,6 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (terraformer && rc.getRoundNum() < 350) {
-            return;
-        }
         if (!rc.isReady() || rc.getTeamSoup() < 500)
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
@@ -579,6 +587,7 @@ public class Miner extends Unit {
         MapLocation loc = null;
         for (Direction dir : directions) {
             MapLocation newLoc = myLocation.add(dir);
+            System.out.println(newLoc + " " + onBuildingGridSquare(newLoc) + " " + hqLocation.distanceSquaredTo(newLoc));
             if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
                     && (loc == null || rc.senseElevation(newLoc) >= rc.senseElevation(loc)) && onBuildingGridSquare(newLoc)
                     && hqLocation.distanceSquaredTo(newLoc) > 9) {
@@ -664,7 +673,7 @@ public class Miner extends Unit {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)
-                        && dSchoolExists && onBuildingGridSquare(myLocation.add(dir))) {
+                        && dSchoolExists) {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     //send message if this is the first refinery built
                     if (!firstRefineryExists) {

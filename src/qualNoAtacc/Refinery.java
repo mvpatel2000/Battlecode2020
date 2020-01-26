@@ -1,4 +1,4 @@
-package poseidon;
+package qualNoAtacc;
 
 import battlecode.common.*;
 

@@ -1,4 +1,4 @@
-package qual;
+package qualNoAtacc;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -11,8 +11,8 @@ public class SoupMessage extends Message {
     int bitsPerTile = 9;
     int bitsPerPresence = 6;
 
-    public SoupMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
-        super(myMapHeight, myMapWidth, myTeam, roundNum);
+    public SoupMessage(int myMapHeight, int myMapWidth, int myTeam) {
+        super(myMapHeight, myMapWidth, myTeam);
         this.writeSchema(soupSchema);
         tile = -1;
         soupThere = -1;
@@ -20,8 +20,8 @@ public class SoupMessage extends Message {
 
     //Use for recieved message.
     //use .tile and .soupThere to get information
-    public SoupMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
-        super(recieved, myMapHeight, myMapWidth, myTeam, roundNum);
+    public SoupMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
+        super(recieved, myMapHeight, myMapWidth, myTeam);
         this.schema = soupSchema;
         tile = -1;
         soupThere = -1;

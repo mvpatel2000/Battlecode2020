@@ -1,4 +1,4 @@
-package qual;
+package qualNoAtacc;
 
 public class MinePatchMessage extends Message {
 
@@ -11,8 +11,8 @@ public class MinePatchMessage extends Message {
     int bitsPerWeight = 5;
     int totalBitsPerElement = bitsPerPatch+bitsPerWeight;
 
-    public MinePatchMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
-        super(myMapHeight, myMapWidth, myTeam, roundNum);
+    public MinePatchMessage(int myMapHeight, int myMapWidth, int myTeam) {
+        super(myMapHeight, myMapWidth, myTeam);
         this.writeSchema(mpmSchema);
         MAX_PATCHES = this.getBitsRemaining()/totalBitsPerElement;
         numPatchesWritten = 0;
@@ -20,8 +20,8 @@ public class MinePatchMessage extends Message {
         weights = new int[MAX_PATCHES];
     }
 
-    public MinePatchMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
-        super(recieved, myMapHeight, myMapWidth, myTeam, roundNum);
+    public MinePatchMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
+        super(recieved, myMapHeight, myMapWidth, myTeam);
         this.schema = mpmSchema;
         MAX_PATCHES = (msgLen-headerLen-schemaLen)/totalBitsPerElement;
         numPatchesWritten = MAX_PATCHES;

@@ -1,4 +1,4 @@
-package qual;
+package qualNoAtacc;
 
 public class LocationMessage extends Message {
 
@@ -9,8 +9,8 @@ public class LocationMessage extends Message {
     int unitType;   //0 is our HQ, 1 is enemy HQ
     int bitsPerUnitType = 6;
 
-    public LocationMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
-        super(myMapHeight, myMapWidth, myTeam, roundNum);
+    public LocationMessage(int myMapHeight, int myMapWidth, int myTeam) {
+        super(myMapHeight, myMapWidth, myTeam);
         this.writeSchema(locMessage);
         xLoc = -1;
         yLoc = -1;
@@ -19,8 +19,8 @@ public class LocationMessage extends Message {
 
     //Use for recieved message.
     //use .tile and .soupThere to get information
-    public LocationMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
-        super(recieved, myMapHeight, myMapWidth, myTeam, roundNum);
+    public LocationMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
+        super(recieved, myMapHeight, myMapWidth, myTeam);
         this.schema=locMessage;
         xLoc = -1;
         yLoc = -1;
