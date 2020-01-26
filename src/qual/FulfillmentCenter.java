@@ -53,10 +53,13 @@ public class FulfillmentCenter extends Building {
         }
 
         if(!holdProduction && !enemyNetGun) {
-            if (enemyAggression && (attackDroneCount + defenseDroneCount) < 3)
+            if (attackDroneCount + defenseDroneCount < 2) {
                 buildDrone();
-            else if (rc.getTeamSoup() >= 200 && (rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
+            } else if (enemyAggression && (attackDroneCount + defenseDroneCount) < 4) {
                 buildDrone();
+            } else if (rc.getTeamSoup() >= 200 && (rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100)) {
+                buildDrone();
+            }
         }
 
         findMessagesFromAllies(rc.getRoundNum()-1);

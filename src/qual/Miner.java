@@ -424,7 +424,7 @@ public class Miner extends Unit {
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
-        if (fulfillmentCenterExists && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
+        if (fulfillmentCenterExists && rc.getTeamSoup() >= 160 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
             handleBuildDSchool();
         }
@@ -499,7 +499,7 @@ public class Miner extends Unit {
             // Just dropped off soup (adjacent to HQ) now leaving for far away / late soup
             if (fulfillmentCenterExists && myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
-                    && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
+                    && rc.getTeamSoup() >= 160 && !dSchoolExists && !holdProduction && !rushHold) {
                 System.out.println("Handling dschool!");
                 handleBuildDSchool();
             }
