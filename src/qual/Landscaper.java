@@ -98,7 +98,7 @@ public class Landscaper extends Unit {
 
     @Override
     protected int getFleeRadius() {
-        return 2;
+        return 8;
     }
 
     public Landscaper(RobotController rc) throws GameActionException {

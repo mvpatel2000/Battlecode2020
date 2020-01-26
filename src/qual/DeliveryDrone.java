@@ -6,7 +6,7 @@ import java.util.*;
 
 public class DeliveryDrone extends Unit {
 
-    private static final int START_FERRY = 400;
+    private static final int START_FERRY = 300;
     private static final int FILL_WALL_ROUND = 500;
     private static final int FILL_OUTER_ROUND = 1000;
     long[] waterChecked = new long[64]; // align to top right
@@ -109,7 +109,7 @@ public class DeliveryDrone extends Unit {
             return false;
         for (MapLocation loc : outerWall) {
             try {
-                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc))
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
                     return true;
             } catch (GameActionException e) {
                 e.printStackTrace();
@@ -124,7 +124,7 @@ public class DeliveryDrone extends Unit {
         for (Direction d : directions) {
             MapLocation loc = hqLocation.add(d);
             try {
-                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc))
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
                     return true;
             } catch (GameActionException e) {
                 e.printStackTrace();
