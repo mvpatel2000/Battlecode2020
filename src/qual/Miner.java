@@ -169,7 +169,7 @@ public class Miner extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        path(hqLocation.add(Direction.NORTHWEST).add(Direction.NORTHWEST));
+        path(new MapLocation(2*hqLocation.x - myLocation.x, 2*hqLocation.y - myLocation.y));
     }
 
     /**

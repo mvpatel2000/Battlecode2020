@@ -120,7 +120,7 @@ public abstract class Unit extends Robot {
         MapLocation me = myLocation.add(in);
         try {
             return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me)
-                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().distanceSquaredTo(me) < 3);
+                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(me));
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
@@ -128,16 +128,17 @@ public abstract class Unit extends Robot {
     }
 
     protected boolean canMove(MapLocation from, Direction in) {
-        if (from.equals(myLocation)) {
-            return canMove(in);
-        }
         MapLocation to = from.add(in);
         try {
+            if (from.equals(myLocation)) {
+                return rc.canSenseLocation(to) && rc.canMove(in) && !rc.senseFlooding(to)
+                        && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(to));
+            }
             return rc.canSenseLocation(to)
-                    && rc.senseNearbyRobots(to, 0, null).length == 0
+                    && !rc.isLocationOccupied(to)
                     && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4
                     && !rc.senseFlooding(to)
-                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().distanceSquaredTo(to) < 3);
+                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(to));
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;

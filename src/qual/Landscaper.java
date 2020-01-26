@@ -8,8 +8,8 @@ import battlecode.common.*;
 
 public class Landscaper extends Unit {
 
-    public static final int MIN_LATTICE_BUILD_HEIGHT = -20;
-    public static final int LATTICE_SIZE = 4;
+    private static final int MIN_LATTICE_BUILD_HEIGHT = -20;
+    private static final int LATTICE_SIZE = 63;
 
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
@@ -203,52 +203,75 @@ public class Landscaper extends Unit {
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);
         } else {
-            Direction digDir = getTerraformDigDirection();
-            MapLocation digLoc = myLocation.add(digDir);
-            if (onBoundary(myLocation)) {
-                moveInDirection(myLocation.directionTo(new MapLocation((int) (MAP_WIDTH / 2), (int) (MAP_HEIGHT / 2))));
-            } else {
-                if (rc.getDirtCarrying() == 0) { // dig
+            MapLocation target = findLatticeDepositSite(hqLocation, Arrays.asList(reservedForDSchoolBuild), terraformHeight);
+            while (target == null) {
+                terraformHeight += 2;
+                target = findLatticeDepositSite(hqLocation, Arrays.asList(reservedForDSchoolBuild), terraformHeight);
+            }
+
+            if (myLocation.isAdjacentTo(target)) {
+                if (rc.getDirtCarrying() == 0) {
+                    Direction digDir = getTerraformDigDirection();
                     System.out.println("Trying to dig in direction " + digDir.toString());
-                    tryDig(digDir);
-                } else {
-                    boolean plotComplete = true;
-                    for (Direction d : directionsWithCenter) {
-                        MapLocation t = myLocation.add(d);
-                        if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDepositHeight(rc.senseElevation(t)) &&
-                                (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
-                            System.out.println("Dumping dirt in direction " + d.toString());
-                            if (tryDeposit(d)) {
-                                plotComplete = false;
-                                lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
-                                System.out.println("Update lastPlotICompletedDirToHQ to " + lastPlotICompletedDirToHQ.toString());
-                            }
-                        }
+                    if (tryDig(digDir)) {
+                        return;
                     }
-                    if (plotComplete) {
-                        if (lastPlotICompletedDirToHQ == null || lastPlotICompletedDirToHQ == rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)))) { // completed this level of dirt
-                            lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
-                            terraformHeight += 2;
-                            System.out.println("Increasing height of dirt to " + Integer.toString(terraformHeight));
-                        }
-                        Direction moveDir;
-                        if (myLocation.distanceSquaredTo(hqLocation) > 25) {
-                            moveDir = myLocation.directionTo(hqLocation);
-                            System.out.println("I'm too far from HQ now, moving back in");
-                        } else {
-                            moveDir = rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)));
-                            MapLocation t = myLocation.add(moveDir);
-                            if (onBoundary(t)) {
-                                System.out.println("At boundary, swapping spiral rotation");
-                                spiralClockwise = !spiralClockwise;
-                                moveDir = moveDir.opposite();
-                            }
-                        }
-                        System.out.println("Moving in direction " + moveDir.toString());
-                        moveInDirection(moveDir);
+                } else {
+                    System.out.println("Trying to deposit at " + target.toString());
+                    if (tryDeposit(myLocation.directionTo(target))) {
+                        return;
                     }
                 }
+            } else {
+                path(target);
             }
+
+            // Direction digDir = getTerraformDigDirection();
+            // MapLocation digLoc = myLocation.add(digDir);
+            // if (onBoundary(myLocation)) {
+            //     moveInDirection(myLocation.directionTo(new MapLocation((int) (MAP_WIDTH / 2), (int) (MAP_HEIGHT / 2))));
+            // } else {
+            //     if (rc.getDirtCarrying() == 0) { // dig
+            //         System.out.println("Trying to dig in direction " + digDir.toString());
+            //         tryDig(digDir);
+            //     } else {
+            //         boolean plotComplete = true;
+            //         for (Direction d : directionsWithCenter) {
+            //             MapLocation t = myLocation.add(d);
+            //             if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDepositHeight(rc.senseElevation(t)) &&
+            //                     (!nearbyBotsMap.containsKey(t) || !nearbyBotsMap.get(t).team.equals(allyTeam) || !nearbyBotsMap.get(t).type.isBuilding())) {
+            //                 System.out.println("Dumping dirt in direction " + d.toString());
+            //                 if (tryDeposit(d)) {
+            //                     plotComplete = false;
+            //                     lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
+            //                     System.out.println("Update lastPlotICompletedDirToHQ to " + lastPlotICompletedDirToHQ.toString());
+            //                 }
+            //             }
+            //         }
+            //         if (plotComplete) {
+            //             if (lastPlotICompletedDirToHQ == null || lastPlotICompletedDirToHQ == rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)))) { // completed this level of dirt
+            //                 lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
+            //                 terraformHeight += 2;
+            //                 System.out.println("Increasing height of dirt to " + Integer.toString(terraformHeight));
+            //             }
+            //             Direction moveDir;
+            //             if (myLocation.distanceSquaredTo(hqLocation) > 25) {
+            //                 moveDir = myLocation.directionTo(hqLocation);
+            //                 System.out.println("I'm too far from HQ now, moving back in");
+            //             } else {
+            //                 moveDir = rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)));
+            //                 MapLocation t = myLocation.add(moveDir);
+            //                 if (onBoundary(t)) {
+            //                     System.out.println("At boundary, swapping spiral rotation");
+            //                     spiralClockwise = !spiralClockwise;
+            //                     moveDir = moveDir.opposite();
+            //                 }
+            //             }
+            //             System.out.println("Moving in direction " + moveDir.toString());
+            //             moveInDirection(moveDir);
+            //         }
+            //     }
+            // }
         }
         rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
     }
@@ -259,11 +282,6 @@ public class Landscaper extends Unit {
         } else {
             return d.rotateRight();
         }
-    }
-
-    public boolean terraformerValidDepositHeight(int h) { // TODO: make this better, it's still naive
-        // terraformHeight = Math.min((int) Math.max((rc.getRoundNum()/100), 6), 13);
-        return (h < terraformHeight) && (h >= -20);
     }
 
     public boolean onBoundary(MapLocation t) {
@@ -437,7 +455,8 @@ public class Landscaper extends Unit {
                             for (MapLocation digLoc : depositSiteExceptions) {
                                 if (digLoc != null && myLocation.isAdjacentTo(digLoc) && !myLocation.equals(digLoc) &&
                                         (!nearbyBotsMap.containsKey(digLoc) ||
-                                                (nearbyBotsMap.containsKey(digLoc) && nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()))) {
+                                            (nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()) ||
+                                            (nearbyBotsMap.get(digLoc).type.equals(RobotType.DELIVERY_DRONE)))) {
                                     System.out.println("Attempting to dig from pre-designated dig site " + digLoc.toString());
                                     tryDig(myLocation.directionTo(digLoc));
                                 }
@@ -837,7 +856,7 @@ public class Landscaper extends Unit {
                 continue;
             if (exceptions.contains(loc) || !rc.canSenseLocation(loc))
                 continue;
-            if (dxy[0] > LATTICE_SIZE || dxy[1] > LATTICE_SIZE)
+            if (loc.distanceSquaredTo(hqLocation) > LATTICE_SIZE)
                 continue;
             int height = rc.senseElevation(loc);
             if (height >= elevation || height <= MIN_LATTICE_BUILD_HEIGHT)
