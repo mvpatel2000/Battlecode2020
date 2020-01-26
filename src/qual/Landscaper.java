@@ -846,6 +846,8 @@ public class Landscaper extends Unit {
     protected boolean canMove(MapLocation me, Direction d) {
         if (terraformer) {
             MapLocation to = me.add(d);
+            if (me.distanceSquaredTo(hqLocation) > 8 && to.distanceSquaredTo(hqLocation) < 9)
+                return false;
             if (onBoundary(to))
                 return false;
             int[] dxy = xydist(to, hqLocation);
