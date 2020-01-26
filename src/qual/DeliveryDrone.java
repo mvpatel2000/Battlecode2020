@@ -159,8 +159,6 @@ public class DeliveryDrone extends Unit {
             else
                 goToWaterAndDrop();
         } else {
-            if (droneCount > 6)
-                giveUpOnAMove = true;
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
                 attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
@@ -174,7 +172,7 @@ public class DeliveryDrone extends Unit {
                 chaseEnemy(nearest);
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove) { // drone attack-move
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
@@ -371,15 +369,18 @@ public class DeliveryDrone extends Unit {
         return ferrying;
     }
 
+    private boolean inShell() {
+        int[] dxy = xydist(myLocation, hqLocation);
+        return dxy[0] <= 3 && dxy[1] == 3 || dxy[0] == 3 && dxy[1] <= 3;
+    }
+
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
         System.out.println("Handle Defense");
         destination = hqLocation;
         if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
         } else {
-            int dx = Math.abs(destination.x - myLocation.x);
-            int dy = Math.abs(destination.y - myLocation.y);
-            if (!(dx <= 3 && dy == 3 || dx == 3 && dy <= 3))
+            if (!inShell())
                 path(destination, false);
         }
         nearestWaterLocation = updateNearestWaterLocation();
@@ -548,6 +549,15 @@ public class DeliveryDrone extends Unit {
 
     protected boolean canMove(MapLocation from, Direction in) {
         MapLocation to = from.add(in);
+        if (landscaping && wallMissing()) {
+            if (innerWallMissing()) {
+                if (to.isAdjacentTo(hqLocation))
+                    return false;
+            } else {
+                if (outerWall.contains(to))
+                    return false;
+            }
+        }
         try {
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
