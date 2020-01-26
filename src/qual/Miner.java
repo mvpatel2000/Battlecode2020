@@ -180,31 +180,6 @@ public class Miner extends Unit {
         }
     }
 
-    /**
-     * Flees from adjacent drone if it exists.
-     */
-    public boolean flee() throws GameActionException {
-        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                                        x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
-
-        if (adjacentDrones.length == 0)
-            return false;
-        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
-        Direction escapeRight = escapeLeft;
-        while (!canMove(escapeLeft)) {
-            escapeRight = escapeRight.rotateRight();
-            if (canMove(escapeRight)) {
-                go(escapeRight);
-                return true;
-            }
-            escapeLeft = escapeLeft.rotateLeft();
-        }
-        if (canMove(escapeLeft)) {
-            go(escapeLeft);
-            return true;
-        }
-        return false;
-    }
 
     // returns false if special valid grid square, otherwise true
     boolean checkGridExceptions(MapLocation location) throws GameActionException {

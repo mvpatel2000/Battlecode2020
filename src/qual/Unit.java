@@ -179,6 +179,33 @@ public abstract class Unit extends Robot {
     }
 
 
+    /**
+     * Flees from adjacent drone if it exists.
+     */
+    public boolean flee() throws GameActionException {
+        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
+                x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
+
+        if (adjacentDrones.length == 0)
+            return false;
+        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
+        Direction escapeRight = escapeLeft;
+        while (!canMove(escapeLeft)) {
+            escapeRight = escapeRight.rotateRight();
+            if (canMove(escapeRight)) {
+                go(escapeRight);
+                return true;
+            }
+            escapeLeft = escapeLeft.rotateLeft();
+        }
+        if (canMove(escapeLeft)) {
+            go(escapeLeft);
+            return true;
+        }
+        return false;
+    }
+
+
     public Direction navigate(int speculation, boolean action) {
         System.out.println("Pathing to: " + state.target);
         if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
