@@ -206,12 +206,19 @@ public class Miner extends Unit {
         return false;
     }
 
+    // returns false if special valid grid square, otherwise true
+    boolean checkGridExceptions(MapLocation location) throws GameActionException {
+        int x = Math.abs(location.y - hqLocation.y);
+        int y = Math.abs(location.x - hqLocation.x);
+        return !(x == 3 && y == 1 || x == 1 && y == 3);
+    }
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
         if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
-        if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
+        if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
+            && checkGridExceptions(location)) {
             return false;
         }
         for (Direction d : directions) { // check location is not reservedForDSchoolBuild
@@ -219,7 +226,7 @@ public class Miner extends Unit {
             if (rc.canSenseLocation(t)) {
                 RobotInfo r = rc.senseRobotAtLocation(t);
                 if (r != null && r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
-                    if (location.equals(t.directionTo(hqLocation).opposite().rotateRight())) {
+                    if (location.equals(t.add(t.directionTo(hqLocation).opposite().rotateRight()))) {
                         return false;
                     }
                 }
@@ -579,6 +586,7 @@ public class Miner extends Unit {
         MapLocation loc = null;
         for (Direction dir : directions) {
             MapLocation newLoc = myLocation.add(dir);
+            System.out.println(newLoc + " " + onBuildingGridSquare(newLoc) + " " + hqLocation.distanceSquaredTo(newLoc));
             if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
                     && (loc == null || rc.senseElevation(newLoc) >= rc.senseElevation(loc)) && onBuildingGridSquare(newLoc)
                     && hqLocation.distanceSquaredTo(newLoc) > 9) {
