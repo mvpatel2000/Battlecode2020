@@ -240,7 +240,7 @@ public class DeliveryDrone extends Unit {
                     tryPickUp(x);
                     ferrying = true;
                     for (int i = 0; i < 50; i++)
-                    System.out.println("FERRY AT: " + loc);
+                        System.out.println("FERRY AT: " + loc);
                 } else {
                     path(loc);
                 }
@@ -2648,6 +2648,13 @@ public class DeliveryDrone extends Unit {
             nearest = null;
             distToNearest = MAX_SQUARED_DISTANCE;
             droneCount = 0;
+            boolean bSchool = false;
+            for (RobotInfo x : enemyRobots) {
+                if (!x.getTeam().equals(allyTeam) && x.getType() == RobotType.DESIGN_SCHOOL) {
+                    bSchool = true;
+                    break;
+                }
+            }
             for (RobotInfo enemyRobot : enemyRobots) {
                 if (enemyRobot.team != allyTeam && enemyRobot.type == RobotType.HQ && !hasSentEnemyLoc) {
                     if (enemyLocation != ENEMY_HQ_LOCATION) {
@@ -2679,8 +2686,10 @@ public class DeliveryDrone extends Unit {
                             || enemyRobot.type == RobotType.LANDSCAPER) {
                         System.out.print("Updating nearest target to ");
                         System.out.println(enemyRobot);
-                        nearest = enemyRobot;
-                        distToNearest = distToEnemy;
+                        if (!(bSchool && enemyRobot.getType() == RobotType.COW)) {
+                            nearest = enemyRobot;
+                            distToNearest = distToEnemy;
+                        }
                     }
                 }
             }
