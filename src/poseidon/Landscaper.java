@@ -213,6 +213,9 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
+        // if (flee()) {
+        //     return;
+        // }
         if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);

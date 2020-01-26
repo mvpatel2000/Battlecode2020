@@ -15,8 +15,8 @@ public class DesignSchool extends Building {
     int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
     int numTerraformersMade = 0; // set to 0 to enable, set to 100 to disable
-    int NUM_TERRAFORMERS_INITIAL = 1;
-    int NUM_TERRAFORMERS_TOTAL = 4;
+    int NUM_TERRAFORMERS_INITIAL = 3;
+    int NUM_TERRAFORMERS_TOTAL = 6;
     int INNER_WALL_PAUSE_AT = 3;
 
     //For halting production and resuming it.
@@ -149,7 +149,7 @@ public class DesignSchool extends Building {
             if (numLandscapersMade == INNER_WALL_PAUSE_AT && numTerraformersMade < NUM_TERRAFORMERS_INITIAL) { // build terraformer
                 spawnTerraformer();
             }
-            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || firstRefineryExists) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || (firstRefineryExists && rc.getTeamSoup() >= 521)) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
                 spawnInnerWaller();
             }
