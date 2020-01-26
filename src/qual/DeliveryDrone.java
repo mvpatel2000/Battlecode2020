@@ -29,8 +29,7 @@ public class DeliveryDrone extends Unit {
     final int DEFEND_TURN;
     final int ATTACK_TURN;
 
-    boolean carryingEnemy;
-    boolean carryingAlly;
+    boolean carrying;
     boolean giveUpOnAMove;
     boolean carryingCow;
     private boolean trapped;
@@ -65,9 +64,8 @@ public class DeliveryDrone extends Unit {
         destination = hqLocation;
         enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
         enemyVisited = false;
-        carryingEnemy = false;
+        carrying = false;
         carryingCow = false;
-        carryingAlly = false;
         giveUpOnAMove = false;
         ferrying = false;
         nearbyNetGuns = new ArrayList<>();
@@ -102,11 +100,11 @@ public class DeliveryDrone extends Unit {
         int distToNearest = enemyInfo.getDistToNearest();
         int droneCount = enemyInfo.getDroneCount();
 
-        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carryingEnemy + " " + ferrying);
+        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
         if (ferrying) { // ferry ally onto lattice
             dropOntoLattice();
-        } else if (carryingEnemy) { // go to water and drop
+        } else if (carrying) { // go to water and drop
             if (carryingCow && nearest != null && !nearest.getType().equals(RobotType.COW))
                 dropToward(nearest.getLocation());
             else if (goToWaterAndDrop())
@@ -172,7 +170,7 @@ public class DeliveryDrone extends Unit {
                 .orElse(null);
         if (dir != null) {
             rc.dropUnit(dir);
-            carryingEnemy = false;
+            carrying = false;
             carryingCow = false;
             ferrying = false;
         }
@@ -194,7 +192,7 @@ public class DeliveryDrone extends Unit {
             if (rc.senseRobot(nearest.getID()).getType().equals(RobotType.COW)) {
                 carryingCow = true;
             }
-            carryingEnemy = true;
+            carrying = true;
         }
     }
 
@@ -339,7 +337,7 @@ public class DeliveryDrone extends Unit {
                 if (rc.isReady() && rc.canDropUnit(dir) &&
                         rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
                     rc.dropUnit(dir);
-                    carryingEnemy = false;
+                    carrying = false;
                     carryingCow = false;
                     return true;
                 }
@@ -363,7 +361,7 @@ public class DeliveryDrone extends Unit {
                 if (rc.isReady() && rc.canDropUnit(dir) &&
                         rc.canSenseLocation(myLocation.add(dir)) && rc.senseFlooding(myLocation.add(dir))) {
                     rc.dropUnit(dir);
-                    carryingEnemy = false;
+                    carrying = false;
                     carryingCow = false;
                     return true;
                 }
