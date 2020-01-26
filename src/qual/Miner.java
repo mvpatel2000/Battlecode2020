@@ -59,7 +59,8 @@ public class Miner extends Unit {
         aggro = false; // uncomment to disable aggro
         aggroDone = false;
 
-        terraformer = rc.getRoundNum() < 10;
+        terraformer = rc.getRoundNum() > 250;
+        // terraformer = rc.getRoundNum() < 10;
         // terraformer = false;
 
         if (aggro) {
@@ -167,7 +168,7 @@ public class Miner extends Unit {
 
     @Override
     public boolean flee() throws GameActionException {
-        checkBuildBuildings();
+        checkBuildBuildings(true);
         return super.flee();
     }
 
@@ -408,7 +409,11 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        if (!rc.isReady() || rc.getTeamSoup() < 500)
+        checkBuildBuildings(false);
+    }
+
+    public void checkBuildBuildings(boolean fleeing) throws GameActionException {
+        if (!rc.isReady() || (rc.getTeamSoup() < 500 && !fleeing))
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
@@ -427,7 +432,7 @@ public class Miner extends Unit {
             //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
             if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                if (!existsNetGun && rc.getRoundNum() > 400) {
+                if (!existsNetGun && rc.getRoundNum() > 350) {
                     tryBuild(RobotType.NET_GUN, dir);
                 // } else if (dSchoolExists) {
                 //     tryBuild(RobotType.DESIGN_SCHOOL, dir);

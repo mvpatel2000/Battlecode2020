@@ -13,6 +13,7 @@ public class HQ extends Building {
     private Refinery refinery;
     int minerCount;
     int minerCooldown = 0;
+    int terraformCount = 0;
     //each elements is an [tilenum, soupHere]
     List<int[]> accessibleSoupsPerTile = new ArrayList<int[]>();
     List<int[]> inaccessibleSoupsPerTile = new ArrayList<int[]>();
@@ -110,6 +111,11 @@ public class HQ extends Building {
                 System.out.println("[i] Producing extra miner");
                 minerCount++;
             } else {
+                if (rc.getRoundNum() > 250 && terraformCount < 2) {
+                    if (tryBuild(RobotType.MINER, getBestMinerDirection())) {
+                        terraformCount++;
+                    }
+                }
                 //System.out.println("[i] Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
                 //System.out.println("[i] I have produced " + Integer.toString(minerCount));
                 //System.out.println("I can't build miners");
