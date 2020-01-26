@@ -197,15 +197,15 @@ public class Miner extends Unit {
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
         if (location.distanceSquaredTo(hqLocation) < 9)
             return false;
-        if ((location.y - hqLocation.y) % 3 == 0) || ((location.x - hqLocation.x) % 3 == 0) {
+        if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
             return false;
         }
         for (Direction d : directions) { // check location is reservedForDSchoolBuild
             MapLocation t = location.add(d);
             if (rc.canSenseLocation(t)) {
                 RobotInfo r = rc.senseRobotAtLocation(t);
-                if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
-                    if (location.equals(r.directionTo(hqLocation).opposite().rotateRight())) {
+                if (r != null && r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) { // t is the d.school location
+                    if (location.equals(t.directionTo(hqLocation).opposite().rotateRight())) {
                         return false;
                     }
                 }

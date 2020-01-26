@@ -9,7 +9,7 @@ import battlecode.common.*;
 public class Landscaper extends Unit {
 
     private static final int MIN_LATTICE_BUILD_HEIGHT = -20;
-    private static final int LATTICE_SIZE = 63;
+    private static final int LATTICE_SIZE = 65;
 
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
@@ -864,6 +864,8 @@ public class Landscaper extends Unit {
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
                 continue;
             if (exceptions.contains(loc) || !rc.canSenseLocation(loc))
+                continue;
+            if (nearbyBotsMap.containsKey(loc) && nearbyBotsMap.get(loc).team.equals(allyTeam) && nearbyBotsMap.get(loc).type.isBuilding())
                 continue;
             if (loc.distanceSquaredTo(hqLocation) > LATTICE_SIZE)
                 continue;
