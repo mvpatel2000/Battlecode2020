@@ -27,7 +27,7 @@ public abstract class Robot {
     final int MAP_HEIGHT;
     final int HQ_SEARCH = 31;
     final int messageModulus = 2;
-    final int messageFrequency = 5;
+    final int messageFrequency = 10;
     //for reading message headers
     final int arbitraryConstant = 94655; //make sure this is the same constant in Message.java
     final int header;
@@ -37,6 +37,8 @@ public abstract class Robot {
     public MapLocation HEADQUARTERS_LOCATION = null;
     public MapLocation ENEMY_HQ_LOCATION = null;
 
+    boolean enemyAggression = false;
+    int turnAtEnemyAggression = -1;
     //discretized grid for communicating map information
     //if changing squareWidth and squareHeight, make sure to change
     //number of bits allocated to tile in HoldProductionMessage and MinePatchMessage and SoupMessage
@@ -181,6 +183,24 @@ public abstract class Robot {
         }
     }
 
+    public boolean onBoundary(MapLocation t) {
+        return t.x == 0 || t.y == 0 || t.x == MAP_WIDTH-1 || t.y == MAP_HEIGHT-1;
+    }
+
+    public boolean enemyAggressionCheck() throws GameActionException {
+        if(enemyAggression == false) {
+            enemyAggression = existsNearbyEnemy();
+            if(enemyAggression) {
+                RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                r.writeTypeOfCommit(2); //2 is enemy is attacking/rushing
+                if(sendMessage(r.getMessage(), 1)) {
+                    enemyAggression = true;
+                    //System.out.println("[i] Telling allies enemy is rushing!!!");
+                }
+            }
+        }
+        return enemyAggression;
+    }
     /**
      * Communication methods.
      * Generally, most communication methods should go into the specific
@@ -347,6 +367,16 @@ public abstract class Robot {
         }
     }
 
+    boolean existsNearbyEnemyOfType(RobotType type) throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.type.equals(type) && botInfo.team.equals(enemyTeam)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean existsNearbyAllyOfType(RobotType type) throws GameActionException {
         RobotInfo[] nearbyBots = rc.senseNearbyRobots();
         for (RobotInfo botInfo : nearbyBots) {
@@ -359,6 +389,16 @@ public abstract class Robot {
 
     boolean existsNearbyEnemy() throws GameActionException {
         return rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam).length > 0;
+    }
+
+    boolean existsNearbyEnemyBuilding() throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (botInfo.team.equals(enemyTeam) && botInfo.type.isBuilding()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean allyMessage(int firstInt) throws GameActionException {
@@ -386,5 +426,16 @@ public abstract class Robot {
             ptr = ptr.add(ptr.directionTo(target));
         }
         return true;
+    }
+
+
+    int[] xydist(MapLocation a, MapLocation b) {
+        int dx = Math.abs(a.x - b.x);
+        int dy = Math.abs(a.y - b.y);
+        return new int[]{dx, dy};
+    }
+
+    MapLocation add(MapLocation a, int[] delta) {
+        return new MapLocation(a.x + delta[0], a.y + delta[1]);
     }
 }

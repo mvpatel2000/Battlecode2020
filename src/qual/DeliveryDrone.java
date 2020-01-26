@@ -159,7 +159,7 @@ public class DeliveryDrone extends Unit {
         for (Direction di : directions) {
             MapLocation loc = myLocation.add(di);
             int[] dxy = xydist(hqLocation, loc);
-            if (rc.senseFlooding(loc) || !rc.canDropUnit(di)) continue;
+            if ((rc.canSenseLocation(loc) && rc.senseFlooding(loc)) || !rc.canDropUnit(di)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
                 if (loc.distanceSquaredTo(hqLocation) > 8 && !loc.equals(reservedForDSchoolBuild)) {
                     dropToward(loc);

@@ -38,6 +38,7 @@ public class Miner extends Unit {
     int timeout = 0;
 
     boolean terraformer = false;
+    boolean terraformerSpiralRight = false;
 
     //For halting production and resuming it.
     boolean rushHold = false;
@@ -168,7 +169,13 @@ public class Miner extends Unit {
         if (myLocation.distanceSquaredTo(hqLocation) > 16) {
             path(hqLocation);
         } else {
+            if (onBoundary(myLocation)) {
+                terraformerSpiralRight = !terraformerSpiralRight;
+            }
             Direction d = myLocation.directionTo(hqLocation).opposite().rotateLeft();
+            if (terraformerSpiralRight) {
+                d = myLocation.directionTo(hqLocation).opposite().rotateRight();
+            }
             path(hqLocation.add(d).add(d).add(d).add(d));
         }
     }
