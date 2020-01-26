@@ -8,6 +8,7 @@ public class DeliveryDrone extends Unit {
 
     private static final int START_FERRY = 400;
     private static final int FILL_WALL_ROUND = 500;
+    private static final int FILL_OUTER_ROUND = 1000;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
 
@@ -304,6 +305,10 @@ public class DeliveryDrone extends Unit {
         if (!rc.isReady() || myLocation.isAdjacentTo(hqLocation)
                 || myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE)
             return landscaping;
+
+        if (rc.getRoundNum() < FILL_OUTER_ROUND && !innerWallMissing()) {
+            return landscaping;
+        }
 
         if (innerWallMissing()) {
             for (RobotInfo x : nearby) {
