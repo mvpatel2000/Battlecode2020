@@ -9,7 +9,7 @@ import battlecode.common.*;
 public class Landscaper extends Unit {
 
     public static final int MIN_LATTICE_BUILD_HEIGHT = -25;
-    public static final int LATTICE_SIZE = 35;
+    public static final int LATTICE_SIZE = 48;
 
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;

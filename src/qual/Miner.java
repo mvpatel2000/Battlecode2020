@@ -176,7 +176,12 @@ public class Miner extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        path(new MapLocation(2*hqLocation.x - myLocation.x, 2*hqLocation.y - myLocation.y));
+        if (myLocation.distanceSquaredTo(hqLocation) > 16) {
+            path(hqLocation);
+        } else {
+            Direction d = myLocation.directionTo(hqLocation).opposite().rotateLeft();
+            path(hqLocation.add(d).add(d).add(d).add(d));
+        }
     }
 
     /**
@@ -388,10 +393,14 @@ public class Miner extends Unit {
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
+        boolean existsFulfillmentCenter = false;
         for (RobotInfo robot : allyRobots) {
             switch (robot.getType()) {
                 case NET_GUN:
                     existsNetGun = true;
+                    break;
+                case FULFILLMENT_CENTER:
+                    existsFulfillmentCenter = true;
                     break;
             }
         }
@@ -399,12 +408,12 @@ public class Miner extends Unit {
             //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
             if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                if (!existsNetGun) {
+                if (!existsNetGun && rc.getRoundNum() > 400) {
                     tryBuild(RobotType.NET_GUN, dir);
-                } else if (!dSchoolExists) {
-                    dSchoolExists = tryBuildIfNotPresent(RobotType.DESIGN_SCHOOL, dir);
-                } else if (!fulfillmentCenterExists) {
-                    fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, dir);
+                // } else if (dSchoolExists) {
+                //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 400) {
+                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);
                 } else {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
