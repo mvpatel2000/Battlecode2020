@@ -170,7 +170,7 @@ public abstract class Unit extends Robot {
     }
 
     public Direction navigate(int speculation, boolean action) {
-//        System.out.println("Start pathing to: " + state.target);
+        System.out.println("Pathing to: " + state.target);
         if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
             MapLocation target = state.target;
             clearHistory();
@@ -179,19 +179,22 @@ public abstract class Unit extends Robot {
         if (rc.getCooldownTurns() >= 1) {
             return Direction.CENTER;
         }
-//        System.out.println("Pathing to: " + state.target);
         try {
-            List<PathState> path = speculativePath(state, speculation);
-            PathState next = null;
-            for (PathState p : path) {
-                rc.setIndicatorDot(p.me, 60, 60, 60);
-                Direction tmp = toward(myLocation, p.me);
-                if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
-                    next = p;
+            if (speculation == 1) {
+                state = bugPath(state, null);
+            } else {
+                List<PathState> path = speculativePath(state, speculation);
+                PathState next = null;
+                for (PathState p : path) {
+                    rc.setIndicatorDot(p.me, 60, 60, 60);
+                    Direction tmp = toward(myLocation, p.me);
+                    if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
+                        next = p;
+                    }
                 }
+                if (next != null)
+                    state = next;
             }
-            if (next != null)
-                state = next;
 
             Direction moveDir = toward(myLocation, state.me);
             if (action) {
@@ -215,7 +218,7 @@ public abstract class Unit extends Robot {
                 break;
             for (LinkedList<PathState> st : states) {
                 PathState next = bugPath(st.getLast(), branch);
-                if (branch[0] && i < depth - 1) {
+                if (branch[0]) {
                     PathState tmp = st.getLast().clone();
                     tmp.follow = next.follow == Hand.Left ? Hand.Right : Hand.Left;
                     PathState alternate = bugPath(tmp, null);
