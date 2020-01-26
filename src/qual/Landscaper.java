@@ -8,8 +8,8 @@ import battlecode.common.*;
 
 public class Landscaper extends Unit {
 
-    private static final int MIN_LATTICE_BUILD_HEIGHT = -20;
-    private static final int LATTICE_SIZE = 4;
+    public static final int MIN_LATTICE_BUILD_HEIGHT = -20;
+    public static final int LATTICE_SIZE = 4;
 
     boolean defensive = false;
     Map<MapLocation, RobotInfo> nearbyBotsMap;
@@ -826,15 +826,6 @@ public class Landscaper extends Unit {
         }
     }
 
-    private int[] xydist(MapLocation a, MapLocation b) {
-        int dx = Math.abs(a.x - b.x);
-        int dy = Math.abs(a.y - b.y);
-        return new int[]{dx, dy};
-    }
-
-    private MapLocation add(MapLocation a, int[] delta) {
-        return new MapLocation(a.x + delta[0], a.y + delta[1]);
-    }
 
     protected MapLocation findLatticeDepositSite(MapLocation hq, List<MapLocation> exceptions, int elevation) throws GameActionException {
         for (int[] d : visionSpiral) {
