@@ -79,15 +79,7 @@ public class HQ extends Building {
         netgun.shoot();
         minerCooldown--;
 
-        if(rc.getRoundNum() < 300 && !enemyAggression) {
-            if(enemyAggressionCheck()) {
-                turnAtEnemyAggression = rc.getRoundNum();
-            }
-        } else if(enemyAggression) {
-            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
-                enemyAggression = false;
-            }
-        }
+        dealWithEnemyRush();
 
         if(!holdProduction) {
             int soupSum = 0;
@@ -235,6 +227,26 @@ public class HQ extends Building {
                 if(soupPerTile[0] != getTileNumber(enemyHQLocation)) {
                     itr.remove();
                 }
+            }
+        }
+    }
+
+    void dealWithEnemyRush() throws GameActionException {
+        if(rc.getRoundNum() < 300 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
+            }
+        } else if(enemyAggression) {
+            if (rc.getRoundNum() - turnAtEnemyAggression > 50 && !existsNearbyEnemy()) {
+                RushCommitMessage rm = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                rm.writeTypeOfCommit(3);
+                if(sendMessage(rm.getMessage(), 1)) {
+                    System.out.println("[i] Telling allies enemy rush is done");
+                    enemyAggression = false;
+                    turnAtEnemyAggression = -1;
+                }
+            } else if (rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                enemyAggression = false;
             }
         }
     }

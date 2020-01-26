@@ -158,12 +158,20 @@ public class FulfillmentCenter extends Building {
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     return true;
-                } else if (!enemyAggression && getSchema(msg[0])==7) {
+                } else if (getSchema(msg[0])==7) {
                     RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
-                    if(r.typeOfCommit==2) {
-                        System.out.println("[i] Enemy is Rushing!");
-                        enemyAggression = true;
-                        turnAtEnemyAggression = rc.getRoundNum();
+                    if(!enemyAggression) {
+                        if(r.typeOfCommit==2) {
+                            System.out.println("[i] Enemy is Rushing!");
+                            enemyAggression = true;
+                            turnAtEnemyAggression = rc.getRoundNum();
+                        }
+                    } else {
+                        if(r.typeOfCommit==3) {
+                            System.out.println("[i] Enemy has stopped rushing");
+                            enemyAggression = false;
+                            turnAtEnemyAggression = -1;
+                        }
                     }
                 }
             }

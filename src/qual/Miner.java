@@ -800,6 +800,12 @@ public class Miner extends Unit {
                             enemyAggression = true;
                             turnAtEnemyAggression = rc.getRoundNum();
                         }
+                    } else if (r.typeOfCommit == 3) {
+                        if(enemyAggression) {
+                            System.out.println("[i] Enemy has stopped rushing");
+                            enemyAggression = false;
+                            turnAtEnemyAggression = -1;
+                        }
                     }
                 }
             }

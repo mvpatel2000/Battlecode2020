@@ -381,6 +381,16 @@ public abstract class Robot {
         return rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam).length > 0;
     }
 
+    boolean existsNearbyEnemyBuilding() throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (!botInfo.team.equals(allyTeam) && botInfo.type.isBuilding()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     boolean allyMessage(int firstInt) throws GameActionException {
         if (firstInt >>> (32 - headerLen) == header) {
             return true;
