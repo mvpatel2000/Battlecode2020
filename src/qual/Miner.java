@@ -23,7 +23,6 @@ public class Miner extends Unit {
     int[] tilesVisited;
 
     boolean dSchoolExists;
-    boolean goingToBuildDSchool = false;
     boolean fulfillmentCenterExists;
     boolean firstRefineryExists;
 
@@ -121,16 +120,6 @@ public class Miner extends Unit {
         if(rc.getRoundNum()<300 && !enemyAggression) {
             if(enemyAggressionCheck()) {
                 turnAtEnemyAggression = rc.getRoundNum();
-            }
-        }
-
-        if (goingToBuildDSchool) {
-            if (dSchoolExists) {
-                goingToBuildDSchool = false;
-            }
-            else {
-                handleBuildDSchool();
-                return;
             }
         }
 
@@ -417,8 +406,7 @@ public class Miner extends Unit {
         }
 
 //        System.out.println(candidateBuildLoc + " " + outsideOuterWall + " " + !fulfillmentCenterExists);
-        //TODO: Fix this check to make like dschool so it checks all dirs instead of just trying 1
-        if (rc.getTeamSoup()>220 && !fulfillmentCenterExists && dSchoolExists && !holdProduction && !rushHold) {
+        if (rc.getTeamSoup()>151 && !fulfillmentCenterExists && !holdProduction && !rushHold) {
             Direction optimalDir = determineOptimalFulfillmentCenter();
             if (optimalDir != null) {
                 fulfillmentCenterExists = tryBuildIfNotPresent(RobotType.FULFILLMENT_CENTER, optimalDir);
@@ -436,7 +424,7 @@ public class Miner extends Unit {
         }
 
         // build d.school if see enemy or if last departing miner didn't build for whatever reason
-        if (rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
+        if (fulfillmentCenterExists && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold && (existsNearbyEnemy() || rc.getRoundNum() > 300)
             && myLocation.distanceSquaredTo(hqLocation) < 25) {
             handleBuildDSchool();
         }
@@ -509,7 +497,7 @@ public class Miner extends Unit {
             }
         } else {                                                                // in transit
             // Just dropped off soup (adjacent to HQ) now leaving for far away / late soup
-            if (myLocation.isAdjacentTo(hqLocation) &&
+            if (fulfillmentCenterExists && myLocation.isAdjacentTo(hqLocation) &&
                     (lastSoupLocation == null || myLocation.distanceSquaredTo(lastSoupLocation) > 45 || rc.getRoundNum() > 100)
                     && rc.getTeamSoup() >= 151 && !dSchoolExists && !holdProduction && !rushHold) {
                 System.out.println("Handling dschool!");
@@ -546,7 +534,6 @@ public class Miner extends Unit {
                 BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
                 b.writeTypeBuilt(2); //2 is d.school
                 sendMessage(b.getMessage(), 1); //151 is necessary to build d.school and send message. Don't build if can't send message.
-                goingToBuildDSchool = false;
             }
         }
         else {

@@ -14,6 +14,7 @@ public class FulfillmentCenter extends Building {
     boolean holdProduction = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
+    boolean enemyNetGun = false;
 
 
     public FulfillmentCenter(RobotController rc) throws GameActionException {
@@ -31,11 +32,11 @@ public class FulfillmentCenter extends Building {
 
     @Override
     public void run() throws GameActionException {
+        super.run();
+
         if(holdProduction || enemyAggression) {
             checkIfContinueHold();
         }
-
-        super.run();
 
         if(rc.getRoundNum() < 300 && !enemyAggression) {
             if(enemyAggressionCheck()) {
@@ -43,9 +44,18 @@ public class FulfillmentCenter extends Building {
             }
         }
 
-        if(!holdProduction) {
-            if ((rc.getTeamSoup() >= Math.min(135 + 15 * (attackDroneCount + defenseDroneCount), 200))
-                    && ((attackDroneCount + defenseDroneCount) < 4 || rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
+        enemyNetGun = false;
+        for (RobotInfo enemy : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
+            if (enemy.type == RobotType.NET_GUN) {
+                enemyNetGun = true;
+                break;
+            }
+        }
+
+        if(!holdProduction && !enemyNetGun) {
+            if (enemyAggression && (attackDroneCount + defenseDroneCount) < 3)
+                buildDrone();
+            else if (rc.getTeamSoup() >= 200 && (rc.getRoundNum() > 655 || rc.getTeamSoup() > 1100))
                 buildDrone();
         }
 
