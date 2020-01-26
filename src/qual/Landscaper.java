@@ -757,6 +757,24 @@ public class Landscaper extends Unit {
         return false;
     }
 
+    @Override
+    protected boolean canMove(Direction d) {
+        return canMove(myLocation, d);
+    }
+
+    @Override
+    protected boolean canMove(MapLocation me, Direction d) {
+        if (terraformer) {
+            MapLocation to = me.add(d);
+            int[] dxy = xydist(to, hqLocation);
+            if (dxy[0] % 3 + dxy[1] % 3 == 0)
+                return false;
+            if (to.distanceSquaredTo(hqLocation) > LATTICE_SIZE)
+                return false;
+        }
+        return super.canMove(me, d);
+    }
+
     void updateHoldPositionLoc() throws GameActionException {
         if (wallPhase < 2) {
             holdPositionLoc = null;
