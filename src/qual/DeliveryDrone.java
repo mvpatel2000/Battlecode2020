@@ -81,7 +81,7 @@ public class DeliveryDrone extends Unit {
         }
 
         DEFEND_TURN = 1100;
-        ATTACK_TURN = 2200;
+        ATTACK_TURN = 2000;
 
         tilesVisited[getTileNumber(enemyLocation)] = 1;
         updateVisitedTiles(hqLocation);
