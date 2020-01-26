@@ -568,18 +568,18 @@ public class Miner extends Unit {
     }
 
     public Direction determineOptimalFulfillmentCenter() throws GameActionException {
-        Direction target = myLocation.directionTo(hqLocation).opposite();
-        MapLocation loc = myLocation.add(target);
+        Direction target = null;
+        MapLocation loc = null;
         for (Direction dir : directions) {
             MapLocation newLoc = myLocation.add(dir);
             if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
-                    && rc.senseElevation(newLoc) >= rc.senseElevation(loc) && onBuildingGridSquare(newLoc)
+                    && (loc == null || rc.senseElevation(newLoc) >= rc.senseElevation(loc)) && onBuildingGridSquare(newLoc)
                     && hqLocation.distanceSquaredTo(newLoc) > 9) {
                 target = dir;
                 loc = newLoc;
             }
         }
-        if (loc.distanceSquaredTo(hqLocation) > 9)
+        if (target != null && loc.distanceSquaredTo(hqLocation) > 9)
             return target;
         return null;
     }
