@@ -1,4 +1,4 @@
-package qual;
+package qualNoAtacc;
 
 import battlecode.common.*;
 
@@ -13,7 +13,7 @@ public class Miner extends Unit {
     SoupList soupListLocations = new SoupList();
     int[] soupMiningTiles; //given by HQ. Check comment in updateActiveLocations.
     boolean readMessage = false;
-    public static int SPECULATION = 1;
+    public static int SPECULATION = 3;
 
     MapLocation destination;
     MapLocation hqLocation;
@@ -246,29 +246,6 @@ public class Miner extends Unit {
     }
 
     private void handleAggro() throws GameActionException {
-//        if (rc.getRoundNum() > 70)
-//            rc.resign();
-        // resign check
-        int allyNetGun = 0;
-        int allyLandscaper = 0;
-        int enemyDrone = 0;
-        int enemyLandscaper = 0;
-        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared());
-        for (RobotInfo r : robots) {
-            if (r.team == allyTeam && r.type == RobotType.NET_GUN)
-                allyNetGun++;
-            else if (r.team == allyTeam && r.type == RobotType.LANDSCAPER)
-                allyLandscaper++;
-            else if (r.team == enemyTeam && r.type == RobotType.DELIVERY_DRONE)
-                enemyDrone++;
-            else if (r.team == enemyTeam && r.type == RobotType.LANDSCAPER)
-                enemyLandscaper++;
-        }
-        if (allyNetGun == 0 && enemyDrone > 0) {
-            aggro = false;
-            return;
-        }
-
         RobotInfo[] nearby = rc.senseNearbyRobots();
         if (dLoc != null) {
             RobotInfo[] dinfo = rc.senseNearbyRobots(dLoc, 0, null);
