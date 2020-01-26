@@ -182,9 +182,18 @@ public class Miner extends Unit {
 
         if (adjacentDrones.length == 0)
             return false;
-        Direction escape = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
-        if (escape != null) {
-            path(myLocation.add(escape));
+        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
+        Direction escapeRight = escapeLeft;
+        while (!canMove(escapeLeft)) {
+            escapeRight = escapeRight.rotateRight();
+            if (canMove(escapeRight)) {
+                go(escapeRight);
+                return true;
+            }
+            escapeLeft = escapeLeft.rotateLeft();
+        }
+        if (canMove(escapeLeft)) {
+            go(escapeLeft);
             return true;
         }
         return false;
