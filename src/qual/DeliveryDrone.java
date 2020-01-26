@@ -221,7 +221,8 @@ public class DeliveryDrone extends Unit {
     private void checkToFerry(RobotInfo[] nearby) throws GameActionException {
         System.out.println("FERRY CHECK");
         if (!rc.isReady()) return;
-        if (myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE)
+        if (myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE
+                || myLocation.isAdjacentTo(hqLocation))
             return;
         for (RobotInfo x : nearby) {
             if (!x.getTeam().equals(allyTeam) || x.getType().equals(RobotType.DELIVERY_DRONE) || x.getType().isBuilding())
@@ -236,6 +237,7 @@ public class DeliveryDrone extends Unit {
                 if (loc.isAdjacentTo(myLocation)) {
                     tryPickUp(x);
                     ferrying = true;
+                    for (int i = 0; i < 50; i++)
                     System.out.println("FERRY AT: " + loc);
                 } else {
                     path(loc);
