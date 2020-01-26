@@ -178,6 +178,7 @@ public abstract class Unit extends Robot {
         return true;
     }
 
+
     public Direction navigate(int speculation, boolean action) {
         System.out.println("Pathing to: " + state.target);
         if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
