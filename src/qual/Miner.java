@@ -463,7 +463,8 @@ public class Miner extends Unit {
                 }
                 destination = updateNearestSoupLocation();
             } else {                                                           // mining
-                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit) { // done mining
+                if (rc.getSoupCarrying() == RobotType.MINER.soupLimit
+                    || (rc.getRoundNum() < 30 && rc.getSoupCarrying() >= 70)) { // done mining
                     System.out.println("Last soup loc: "+lastSoupLocation);
                     refineryCheck();
                     destination = baseLocation;
