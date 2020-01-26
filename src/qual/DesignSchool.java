@@ -21,6 +21,7 @@ public class DesignSchool extends Building {
     //For halting production and resuming it.
     boolean holdProduction = false;
     boolean firstRefineryExists = false; //this will only work if first refinery built after d.school exists
+    boolean firstFullfillmentCenterExists = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
     MapLocation trueEnemyHQLocation = null;
@@ -267,10 +268,13 @@ public class DesignSchool extends Building {
                     if(ENEMY_HQ_LOCATION != null) {
                         trueEnemyHQLocation = ENEMY_HQ_LOCATION;
                     }
-                } else if(getSchema(msg[0])==5 && !firstRefineryExists) {
+                } else if(getSchema(msg[0])==5 && (!firstRefineryExists || !firstFullfillmentCenterExists)) {
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
                     if(b.typeBuilt==3) {
                         firstRefineryExists = true;
+                    }
+                    if(b.typeBuilt==1) {
+                        firstFullfillmentCenterExists = true;   
                     }
                 }
             }
