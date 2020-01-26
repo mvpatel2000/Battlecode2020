@@ -59,8 +59,8 @@ public class Miner extends Unit {
         aggro = false; // uncomment to disable aggro
         aggroDone = false;
 
-        // terraformer = rc.getRoundNum() < 10;
-        terraformer = false;
+        terraformer = rc.getRoundNum() < 10;
+        // terraformer = false;
 
         if (aggro) {
             target = new ArrayList<>();

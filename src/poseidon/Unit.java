@@ -14,6 +14,7 @@ public abstract class Unit extends Robot {
     List<RobotInfo> drones;
 
     public static int HISTORY_SIZE = 30;
+    private MapLocation pathStart;
 
     public Unit(RobotController rc) throws GameActionException {
         super(rc);
@@ -32,6 +33,10 @@ public abstract class Unit extends Robot {
         }
         historySet.put(loc, HISTORY_SIZE);
         state = new PathState(myLocation, null, null, null, Integer.MAX_VALUE);
+    }
+
+    public void setPathTarget(MapLocation t) {
+        state.setTarget(t);
     }
 
     protected void updateDrones() {
@@ -153,6 +158,7 @@ public abstract class Unit extends Robot {
 
     public void setDestination(MapLocation loc) {
         state = new PathState(myLocation, loc, null, null, Integer.MAX_VALUE);
+        pathStart = myLocation;
     }
 
     public void navigate() {
@@ -164,18 +170,20 @@ public abstract class Unit extends Robot {
     }
 
     public Direction navigate(int speculation, boolean action) {
-        if (historySet.getOrDefault(myLocation, 0) >= 3) {
-            setDestination(state.target);
+//        System.out.println("Start pathing to: " + state.target);
+        if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
+            MapLocation target = state.target;
+            clearHistory();
+            setDestination(target);
         }
         if (rc.getCooldownTurns() >= 1) {
             return Direction.CENTER;
         }
-        System.out.println("Pathing to: " + state.target);
+//        System.out.println("Pathing to: " + state.target);
         try {
             List<PathState> path = speculativePath(state, speculation);
             PathState next = null;
             for (PathState p : path) {
-                System.out.println(p.me);
                 //rc.setIndicatorDot(p.me, 60, 60, 60);
                 Direction tmp = toward(myLocation, p.me);
                 if (p.me.equals(myLocation.add(tmp)) && canMove(tmp)) {
@@ -207,7 +215,7 @@ public abstract class Unit extends Robot {
                 break;
             for (LinkedList<PathState> st : states) {
                 PathState next = bugPath(st.getLast(), branch);
-                if (branch[0]) {
+                if (branch[0] && i < depth - 1) {
                     PathState tmp = st.getLast().clone();
                     tmp.follow = next.follow == Hand.Left ? Hand.Right : Hand.Left;
                     PathState alternate = bugPath(tmp, null);
@@ -250,6 +258,10 @@ public abstract class Unit extends Robot {
             } catch (CloneNotSupportedException e) {
                 return null;
             }
+        }
+
+        public void setTarget(MapLocation t) {
+            target = t;
         }
 
         public String toString() {
@@ -350,9 +362,9 @@ public abstract class Unit extends Robot {
 
         if (bestdir == null) {
             return false;
-        } else {
-            tryMove(bestdir);
         }
+        tryMove(bestdir);
+        myLocation = rc.getLocation();
         return true;
     }
 }
