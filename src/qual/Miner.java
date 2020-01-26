@@ -118,6 +118,12 @@ public class Miner extends Unit {
 
         findMessageFromAllies(rc.getRoundNum()-1);
 
+        if(rc.getRoundNum()<300 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
+            }
+        }
+
         if (goingToBuildDSchool) {
             if (dSchoolExists) {
                 goingToBuildDSchool = false;
@@ -137,7 +143,7 @@ public class Miner extends Unit {
             return;
         }
 
-        if (holdProduction || rushHold) {
+        if (holdProduction || rushHold || enemyAggression) {
             checkIfContinueHold();
         }
 
@@ -163,8 +169,9 @@ public class Miner extends Unit {
                 }
             }
         }
-
-        harvest();
+        if(rc.isReady()) {
+            harvest();
+        }
         previousSoup = rc.getTeamSoup();
     }
 
@@ -222,6 +229,12 @@ public class Miner extends Unit {
             if(rc.getRoundNum() - turnAtRushHalt > 100) {
                 System.out.println("[i] NO LONGER RUSH HALTING!");
                 rushHold = false;
+                return false;
+            }
+        }
+        if(enemyAggression) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                enemyAggression = false;
                 return false;
             }
         }
@@ -345,10 +358,12 @@ public class Miner extends Unit {
         }
 
         // path to next candidate enemy HQ locationbat
-        if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ))
-            navigate(1);
-        else
-            navigate(SPECULATION);
+        if(rc.isReady()) {
+            if (seen.length > 0 && seen[0].getType().equals(RobotType.HQ))
+                navigate(1);
+            else
+                navigate(SPECULATION);
+        }
     }
 
     public void checkBuildBuildings() throws GameActionException {
@@ -382,7 +397,7 @@ public class Miner extends Unit {
                 int elev = rc.senseElevation(myLocation.add(dir));
                 int roundNum = rc.getRoundNum();
                 System.out.println(elev + " " + roundNum);
-                if (elev == 5 && roundNum < 900 || elev == 4 && roundNum < 600 || elev == 3 && roundNum < 430) {
+                if ((elev == 5 && roundNum < 900 || elev == 4 && roundNum < 600 || elev == 3 && roundNum < 430) && roundNum > 100) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
             }
@@ -391,8 +406,8 @@ public class Miner extends Unit {
 
     public void harvest() throws GameActionException {
 
-//        System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
-//        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
+        //System.out.println("Start harvest round num: " + rc.getRoundNum() + " time: " + Clock.getBytecodeNum() + " dest: " + destination + " dist: " + distanceToDestination);
+        System.out.println("Soup: " + rc.getSoupCarrying() + " base location: " + baseLocation);
         System.out.println("Soup: " + rc.getSoupCarrying() + " Turns to Base: " + turnsToBase + " Last Soup Location " + lastSoupLocation + " " + destination);
         rc.setIndicatorDot(myLocation, (int) (rc.getSoupCarrying() * 2.5), 0, 0);
         rc.setIndicatorLine(myLocation, destination, 0, 150, 255);
@@ -718,7 +733,7 @@ public class Miner extends Unit {
     //it's probably not a significant bytecode saving.
     public void findMessageFromAllies(int rn) throws GameActionException {
         Transaction[] msgs = rc.getBlock(rn);
-//        System.out.println("reading messages from " + Integer.toString(rn) + " round.");
+       System.out.println("[i] reading messages from " + Integer.toString(rn) + " round.");
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0])) {
@@ -772,10 +787,19 @@ public class Miner extends Unit {
                         System.out.println("[i] I know ENEMY HQ " + enemyHQLocation);
                     }
                 } else if(getSchema(msg[0])==7) {
-                    if(!hasSentRushCommit) {
-                        System.out.println("[i] Commiting to Rush!");
-                        rushHold = true;
-                        turnAtRushHalt = rc.getRoundNum();
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(r.typeOfCommit == 1) {
+                        if(!hasSentRushCommit) {
+                            System.out.println("[i] Commiting to Rush!");
+                            rushHold = true;
+                            turnAtRushHalt = rc.getRoundNum();
+                        }
+                    } else if(r.typeOfCommit == 2) {
+                        if(!enemyAggression) {
+                            System.out.println("[i] I know Enemy is Rushing!");
+                            enemyAggression = true;
+                            turnAtEnemyAggression = rc.getRoundNum();
+                        }
                     }
                 }
             }

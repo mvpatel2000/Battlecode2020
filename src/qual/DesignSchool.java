@@ -68,11 +68,18 @@ public class DesignSchool extends Building {
                 }
             }
         }
+
+        //readmessages before you were born to see if we are under attack
+        int rn = rc.getRoundNum();
+        int topr = Math.min(rn, 200);
+        for(int i=1; i<topr; i++) {
+            findMessagesFromAllies(i);
+        }
     }
 
     @Override
     public void run() throws GameActionException  {
-        if(holdProduction) {
+        if(holdProduction || enemyAggression) {
             checkIfContinueHold();
         }
 
@@ -274,7 +281,14 @@ public class DesignSchool extends Building {
                         firstRefineryExists = true;
                     }
                     if(b.typeBuilt==1) {
-                        firstFullfillmentCenterExists = true;   
+                        firstFullfillmentCenterExists = true;
+                    }
+                } else if (!enemyAggression && getSchema(msg[0])==7) {
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(r.typeOfCommit==2) {
+                        System.out.println("[i] Enemy is Rushing!");
+                        enemyAggression = true;
+                        turnAtEnemyAggression = rc.getRoundNum();
                     }
                 }
             }
@@ -285,17 +299,25 @@ public class DesignSchool extends Building {
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
         //resume production after 10 turns, at most
-        if(rc.getRoundNum()-turnAtProductionHalt>30) {
-            System.out.println("[i] UNHOLDING PRODUCTION!");
-            holdProduction = false;
-            return false;
+        if(holdProduction) {
+            if(rc.getRoundNum()-turnAtProductionHalt>30) {
+                System.out.println("[i] UNHOLDING PRODUCTION!");
+                holdProduction = false;
+                return false;
+            }
+            //-200 soup in one turn good approximation for building net gun
+            //so we resume earlier than 10 turns if this happens
+            if(previousSoup - rc.getTeamSoup() > 200) {
+                System.out.println("[i] UNHOLDING PRODUCTION!");
+                holdProduction = false;
+                return false;
+            }
         }
-        //-200 soup in one turn good approximation for building net gun
-        //so we resume earlier than 10 turns if this happens
-        if(previousSoup - rc.getTeamSoup() > 200) {
-            System.out.println("[i] UNHOLDING PRODUCTION!");
-            holdProduction = false;
-            return false;
+        if(enemyAggression) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                enemyAggression = false;
+                return false;
+            }
         }
         //if neither condition happens (10 turns or -200), continue holding production
         return true;

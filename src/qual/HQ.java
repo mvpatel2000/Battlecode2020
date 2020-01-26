@@ -78,7 +78,17 @@ public class HQ extends Building {
         super.run();
         netgun.shoot();
         minerCooldown--;
-        boolean existsEnemy = existsNearbyEnemy();
+
+        if(rc.getRoundNum() < 300 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
+            }
+        } else if(enemyAggression) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                enemyAggression = false;
+            }
+        }
+
         if(!holdProduction) {
             int soupSum = 0;
             for (int[] soupPerTile : accessibleSoupsPerTile) {
@@ -93,7 +103,7 @@ public class HQ extends Building {
                 minerCount++;
                 minerCooldown = 5;
             }*/
-            if((minerCount < 4 || (minerCount < 5 && !existsEnemy)) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
+            if((minerCount < 4 || (minerCount < 5 && !enemyAggression)) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
                 minerCount++;
                 minerCooldown = 5;
             } else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
@@ -294,7 +304,7 @@ public class HQ extends Building {
     }
 
     void readMessages() throws GameActionException {
-        System.out.println("[i] reading messages...");
+        //System.out.println("[i] reading messages...");
         Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
         for (int i=0; i<msgs.length; i++) {
             int f = msgs[i].getMessage()[0];
@@ -316,19 +326,24 @@ public class HQ extends Building {
                         System.out.println("[i] MINER TELLING ME THERE IS " + Integer.toString(powerToSoup(s.soupThere)) + " POWERSOUP AT TILE " + Integer.toString(s.tile));
                         addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
-                }
-                if(getSchema(f)==3) {
+                } else if(getSchema(f)==3) {
                     HoldProductionMessage h = new HoldProductionMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                }
-                if(getSchema(f)==4 && enemyHQLocation==null) {
+                } else if(getSchema(f)==4 && enemyHQLocation==null) {
                     checkForEnemyHQLocationMessageSubroutine(msgs[i].getMessage());
                     if(ENEMY_HQ_LOCATION != null) {
                         System.out.println("[i] I know ENEMY HQ");
                         enemyHQLocation = ENEMY_HQ_LOCATION;
                         removeExtraneous(enemyHQLocation);
+                    }
+                } else if(!enemyAggression && getSchema(f)==7) {
+                    RushCommitMessage r = new RushCommitMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    if(r.typeOfCommit==2) {
+                        System.out.println("[i] Enemy is Rushing!");
+                        enemyAggression = true;
+                        turnAtEnemyAggression = rc.getRoundNum();
                     }
                 }
             }
