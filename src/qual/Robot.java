@@ -29,8 +29,7 @@ public abstract class Robot {
     final int messageModulus = 2;
     final int messageFrequency = 10;
     //for reading message headers
-    final int arbitraryConstant = 94655; //make sure this is the same constant in Message.java
-    final int header;
+    final int arbitraryConstant = 15035; //make sure this is the same constant in Message.java
     final int headerLen = 16;
     final int schemaLen = 3;
 
@@ -64,7 +63,6 @@ public abstract class Robot {
         MAP_HEIGHT = rc.getMapHeight();
         numRows = (MAP_HEIGHT + squareHeight - 1) / squareHeight;
         numCols = (MAP_WIDTH + squareWidth - 1) / squareWidth;
-        header = arbitraryConstant * (teamNum + 1) * MAP_HEIGHT * MAP_WIDTH % ((1 << headerLen) - 1);
     }
 
     public Direction toward(MapLocation me, MapLocation dest) {
@@ -191,7 +189,7 @@ public abstract class Robot {
         if(enemyAggression == false) {
             enemyAggression = existsNearbyEnemy();
             if(enemyAggression) {
-                RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                 r.writeTypeOfCommit(2); //2 is enemy is attacking/rushing
                 if(sendMessage(r.getMessage(), 1)) {
                     enemyAggression = true;
@@ -215,9 +213,9 @@ public abstract class Robot {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
-                    if (allyMessage(msg[0])) {
+                    if (allyMessage(msg[0], i)) {
                         if (getSchema(msg[0]) == 4) {
-                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, i);
                             if (l.unitType == 0) {
                                 HEADQUARTERS_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                             }
@@ -235,9 +233,9 @@ public abstract class Robot {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
-                    if (allyMessage(msg[0])) {
+                    if (allyMessage(msg[0], i)) {
                         if (getSchema(msg[0]) == 4) {
-                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, i);
                             if (l.unitType == 1) {
                                 ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                             }
@@ -255,9 +253,9 @@ public abstract class Robot {
                 Transaction[] msgs = rc.getBlock(i);
                 for (Transaction transaction : msgs) {
                     int[] msg = transaction.getMessage();
-                    if (allyMessage(msg[0])) {
+                    if (allyMessage(msg[0], i)) {
                         if (getSchema(msg[0]) == 4) {
-                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, i);
                             if (l.unitType == 1) {
                                 ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                             }
@@ -268,8 +266,8 @@ public abstract class Robot {
         }
     }
 
-    public void checkForEnemyHQLocationMessageSubroutine(int[] msg) throws GameActionException {
-        LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+    public void checkForEnemyHQLocationMessageSubroutine(int[] msg, int roundNum) throws GameActionException {
+        LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, roundNum);
         if (l.unitType == 1) {
             ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
         }
@@ -401,8 +399,12 @@ public abstract class Robot {
         return false;
     }
 
-    boolean allyMessage(int firstInt) throws GameActionException {
-        if (firstInt >>> (32 - headerLen) == header) {
+    int getHeader(int roundNumber) {
+        return arbitraryConstant * (teamNum + 1) * MAP_HEIGHT * MAP_WIDTH * roundNumber % ((1 << headerLen) - 1);
+    }
+    
+    boolean allyMessage(int firstInt, int roundNum) throws GameActionException {
+        if (firstInt >>> (32 - headerLen) == getHeader(roundNum)) {
             return true;
         } else {
             return false;

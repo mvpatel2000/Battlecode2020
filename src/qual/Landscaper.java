@@ -796,9 +796,9 @@ public class Landscaper extends Unit {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            if (allyMessage(msg[0])) {
+            if (allyMessage(msg[0], rn)) {
                 if (getSchema(msg[0]) == 6) {
-                    TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    TerraformMessage t = new TerraformMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if (t.type == 1 && t.id == rc.getID() % 1000) {
                         constructTerraformer();
                         return true;

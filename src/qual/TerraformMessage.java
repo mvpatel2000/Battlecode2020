@@ -8,16 +8,16 @@ public class TerraformMessage extends Message {
     int id; //last 3 digits (up to 10 bits) of the target robot's id
     int bitsPerID = 10;
 
-    public TerraformMessage(int myMapHeight, int myMapWidth, int myTeam) {
-        super(myMapHeight, myMapWidth, myTeam);
+    public TerraformMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
+        super(myMapHeight, myMapWidth, myTeam, roundNum);
         this.writeSchema(tSchema);
         type = -1;
         id = -1;
     }
 
     //Use for recieved message.
-    public TerraformMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
-        super(recieved, myMapHeight, myMapWidth, myTeam);
+    public TerraformMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
+        super(recieved, myMapHeight, myMapWidth, myTeam, roundNum);
         this.schema=tSchema;
         readType();
         readID();

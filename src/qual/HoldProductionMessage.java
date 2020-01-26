@@ -8,16 +8,16 @@ public class HoldProductionMessage extends Message {
     //int enemyHQy;
     //int bitsPerCoord = 6;
 
-    public HoldProductionMessage(int myMapHeight, int myMapWidth, int myTeam) {
-        super(myMapHeight, myMapWidth, myTeam);
+    public HoldProductionMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
+        super(myMapHeight, myMapWidth, myTeam, roundNum);
         this.writeSchema(prodMessage);
         //enemyHQx = -1;
         //enemyHQy = -1;
     }
 
     //Use for recieved message.
-    public HoldProductionMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
-        super(recieved, myMapHeight, myMapWidth, myTeam);
+    public HoldProductionMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
+        super(recieved, myMapHeight, myMapWidth, myTeam, roundNum);
         this.schema=prodMessage;
         //readEnemyHQLocation();
     }

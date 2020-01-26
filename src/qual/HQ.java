@@ -105,8 +105,8 @@ public class HQ extends Building {
                 System.out.println("[i] Producing extra miner");
                 minerCount++;
             } else {
-                System.out.println("[i] Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
-                System.out.println("[i] I have produced " + Integer.toString(minerCount));
+                //System.out.println("[i] Heuristic says " + Double.toString((5*soupSum)/(Math.cbrt(rc.getRoundNum()+1000)*300)) + " miners optimal");
+                //System.out.println("[i] I have produced " + Integer.toString(minerCount));
                 //System.out.println("I can't build miners");
                 //System.out.println("SoupSum " + Integer.toString(soupSum));
                 //System.out.println("MinerCount " + Integer.toString(minerCount));
@@ -149,7 +149,7 @@ public class HQ extends Building {
                 continue;
             for (int[] soupTile : accessibleSoupsPerTile) {
                 int dist = getCenterFromTileNumber(soupTile[0]).distanceSquaredTo(myLocation.add(dir));
-                System.out.println(dir + " " + dist);
+                //System.out.println(dir + " " + dist);
                 if (dist < score) {
                     optimalDir = dir;
                     score = dist;
@@ -238,7 +238,7 @@ public class HQ extends Building {
             }
         } else if(enemyAggression) {
             if (rc.getRoundNum() - turnAtEnemyAggression > 50 && !existsNearbyEnemy()) {
-                RushCommitMessage rm = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                RushCommitMessage rm = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                 rm.writeTypeOfCommit(3);
                 if(sendMessage(rm.getMessage(), 1)) {
                     System.out.println("[i] Telling allies enemy rush is done");
@@ -252,14 +252,17 @@ public class HQ extends Building {
     }
 
     void writeLocationMessage() throws GameActionException {
-        LocationMessage l = new LocationMessage(MAP_WIDTH, MAP_HEIGHT, teamNum);
+        int head = arbitraryConstant*(teamNum+1)*MAP_HEIGHT*MAP_WIDTH*rc.getRoundNum() % ((1 << headerLen) - 1);
+        System.out.println("Sending loc message with this header: " + Integer.toString(head));
+        LocationMessage l = new LocationMessage(MAP_WIDTH, MAP_HEIGHT, teamNum, rc.getRoundNum());
         l.writeInformation(myLocation.x, myLocation.y, 0); // 0 indicates our HQ
         sendMessage(l.getMessage(), 1);
     }
 
     void generateMessage() throws GameActionException {
-        if(rc.getRoundNum()%messageFrequency==messageModulus) {
-            MinePatchMessage m = new MinePatchMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+        int rn = rc.getRoundNum();
+        if(rn%messageFrequency==messageModulus) {
+            MinePatchMessage m = new MinePatchMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
             int numToSend = Math.min(m.MAX_PATCHES, accessibleSoupsPerTile.size());
             int lastPatchNum = 0;
             int lastWeight = 0;
@@ -286,8 +289,8 @@ public class HQ extends Building {
             sendMessage(m.getMessage(), 1);
         }
 
-        if(rc.getRoundNum()%100==0 && enemyHQLocation!=null) {
-            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+        if(rn%100==0 && enemyHQLocation!=null) {
+            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
             l.writeInformation(enemyHQLocation.x, enemyHQLocation.y, 1);
             if(sendMessage(l.getMessage(), 1)) {
                 System.out.println("[i] SENDING ENEMY HQ LOCATION");
@@ -317,14 +320,16 @@ public class HQ extends Building {
 
     void readMessages() throws GameActionException {
         //System.out.println("[i] reading messages...");
-        Transaction[] msgs = rc.getBlock(rc.getRoundNum()-1);
+        int rn  = rc.getRoundNum()-1;
+        Transaction[] msgs = rc.getBlock(rn);
         for (int i=0; i<msgs.length; i++) {
             int f = msgs[i].getMessage()[0];
             //sent from our team
-            if(allyMessage(f)) {
+            if(allyMessage(f, rn)) {
+                int[] msg = msgs[i].getMessage();
                 //soup message
                 if(getSchema(f)==1) {
-                    SoupMessage s = new SoupMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    SoupMessage s = new SoupMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if (s.soupThere==0) {
                         //delete from arraylist of soups
                         for(int j=0; j<accessibleSoupsPerTile.size(); j++) {
@@ -339,19 +344,19 @@ public class HQ extends Building {
                         addToSoupList(s.tile, powerToSoup(s.soupThere));
                     }
                 } else if(getSchema(f)==3) {
-                    HoldProductionMessage h = new HoldProductionMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                 } else if(getSchema(f)==4 && enemyHQLocation==null) {
-                    checkForEnemyHQLocationMessageSubroutine(msgs[i].getMessage());
+                    checkForEnemyHQLocationMessageSubroutine(msgs[i].getMessage(), rn);
                     if(ENEMY_HQ_LOCATION != null) {
                         System.out.println("[i] I know ENEMY HQ");
                         enemyHQLocation = ENEMY_HQ_LOCATION;
                         removeExtraneous(enemyHQLocation);
                     }
                 } else if(!enemyAggression && getSchema(f)==7) {
-                    RushCommitMessage r = new RushCommitMessage(msgs[i].getMessage(), MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if(r.typeOfCommit==2) {
                         System.out.println("[i] Enemy is Rushing!");
                         enemyAggression = true;

@@ -177,15 +177,15 @@ public class FulfillmentCenter extends Building {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            if (allyMessage(msg[0])) {
+            if (allyMessage(msg[0], rn)) {
                 if(getSchema(msg[0])==3) {
-                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     return true;
                 } else if (getSchema(msg[0])==7) {
-                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if(!enemyAggression) {
                         if(r.typeOfCommit==2) {
                             System.out.println("[i] Enemy is Rushing!");

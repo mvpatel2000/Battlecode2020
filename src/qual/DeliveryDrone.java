@@ -2674,7 +2674,7 @@ public class DeliveryDrone extends Unit {
                     if (enemyLocation != ENEMY_HQ_LOCATION) {
                         ENEMY_HQ_LOCATION = enemyRobot.getLocation();
                         enemyLocation = ENEMY_HQ_LOCATION;
-                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                         l.writeInformation(enemyLocation.x, enemyLocation.y, 1);
                         if (sendMessage(l.getMessage(), 1)) {
                             hasSentEnemyLoc = true;

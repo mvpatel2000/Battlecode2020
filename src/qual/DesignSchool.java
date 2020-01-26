@@ -240,7 +240,7 @@ public class DesignSchool extends Building {
     public boolean sendTerraformMessage(int i) throws GameActionException {
         System.out.println("[i] Sending terraform message");
         System.out.println("[i] ID: " + Integer.toString(i%1000));
-        TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+        TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
         return sendMessage(t.getMessage(), 1);
     }
@@ -262,19 +262,19 @@ public class DesignSchool extends Building {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            if (allyMessage(msg[0])) {
+            if (allyMessage(msg[0], rn)) {
                 if(getSchema(msg[0])==3) {
-                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                 } else if(getSchema(msg[0])==4 && trueEnemyHQLocation==null) {
-                    checkForEnemyHQLocationMessageSubroutine(msg);
+                    checkForEnemyHQLocationMessageSubroutine(msg, rn);
                     if(ENEMY_HQ_LOCATION != null) {
                         trueEnemyHQLocation = ENEMY_HQ_LOCATION;
                     }
                 } else if(getSchema(msg[0])==5 && (!firstRefineryExists || !firstFullfillmentCenterExists)) {
-                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if(b.typeBuilt==3) {
                         firstRefineryExists = true;
                     }
@@ -282,7 +282,7 @@ public class DesignSchool extends Building {
                         firstFullfillmentCenterExists = true;
                     }
                 } else if (getSchema(msg[0])==7) {
-                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if(!enemyAggression) {
                         if(r.typeOfCommit==2) {
                             System.out.println("[i] Enemy is Rushing!");
