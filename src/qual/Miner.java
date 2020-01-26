@@ -193,7 +193,7 @@ public class Miner extends Unit {
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9)
+        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
         if ((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0) {
             return false;
@@ -398,13 +398,13 @@ public class Miner extends Unit {
                     tryBuild(RobotType.NET_GUN, dir);
                 // } else if (dSchoolExists) {
                 //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
-                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 400) {
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else {
+                } else if (rc.getRoundNum() < 1700) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
                 if (!existsNetGun && rc.getRoundNum() > 500) {
-                    rc.buildRobot(RobotType.NET_GUN, dir);
+                    tryBuild(RobotType.NET_GUN, dir);
                 }
             }
         }

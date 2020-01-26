@@ -212,7 +212,7 @@ public class DesignSchool extends Building {
                 if (startOuterWallAt == 0) {
                     startOuterWallAt = rc.getRoundNum();
                 }
-                if (rc.getRoundNum() - startOuterWallAt < 200 && rc.getTeamSoup() < 400) {
+                if (rc.getRoundNum() - startOuterWallAt < 300 && rc.getTeamSoup() < 521) {
                     return;
                 }
                 Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
