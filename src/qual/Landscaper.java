@@ -96,6 +96,11 @@ public class Landscaper extends Unit {
     MapLocation enemyHQLocation = null;
     MapLocation enemyDSchoolLocation = null;
 
+    @Override
+    protected int getFleeRadius() {
+        return 2;
+    }
+
     public Landscaper(RobotController rc) throws GameActionException {
         super(rc);
         System.out.println(myLocation);
