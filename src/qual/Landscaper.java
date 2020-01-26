@@ -455,8 +455,8 @@ public class Landscaper extends Unit {
                             for (MapLocation digLoc : depositSiteExceptions) {
                                 if (digLoc != null && myLocation.isAdjacentTo(digLoc) && !myLocation.equals(digLoc) &&
                                         (!nearbyBotsMap.containsKey(digLoc) ||
-                                            (nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()) ||
-                                            (nearbyBotsMap.get(digLoc).type.equals(RobotType.DELIVERY_DRONE)))) {
+                                                (nearbyBotsMap.get(digLoc).team.equals(enemyTeam) && !nearbyBotsMap.get(digLoc).type.isBuilding()) ||
+                                                (nearbyBotsMap.get(digLoc).type.equals(RobotType.DELIVERY_DRONE)))) {
                                     System.out.println("Attempting to dig from pre-designated dig site " + digLoc.toString());
                                     tryDig(myLocation.directionTo(digLoc));
                                 }
@@ -845,7 +845,6 @@ public class Landscaper extends Unit {
         }
     }
 
-
     protected MapLocation findLatticeDepositSite(MapLocation hq, List<MapLocation> exceptions, int elevation) throws GameActionException {
         for (int[] d : visionSpiral) {
             MapLocation loc = add(myLocation, d);
@@ -864,6 +863,16 @@ public class Landscaper extends Unit {
             return loc;
         }
         return null;
+    }
+
+    public boolean isWalled() throws GameActionException {
+        for (Direction d : directions) {
+            RobotInfo x = nearbyBotsMap.get(myLocation.add(d));
+            if (!(Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(myLocation.add(d))) > 3)
+                    && !(x != null && x.getType().isBuilding()))
+                return false;
+        }
+        return true;
     }
 
     private int[][] visionSpiral = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2},
