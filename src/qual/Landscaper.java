@@ -186,9 +186,21 @@ public class Landscaper extends Unit {
         if (rc.getRoundNum() - bornTurn == 5) {
             readBirthMessage();
         }
+
         if (terraformer) {
             terraform();
         } else if (defensive) {
+
+            if(rc.getRoundNum()<300 && !enemyAggression) {
+                if(enemyAggressionCheck()) {
+                    turnAtEnemyAggression = rc.getRoundNum();
+                }
+            } else if(enemyAggression) {
+                if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                    enemyAggression = false;
+                }
+            }
+
             defense();
         } else if (aggressive) {
             aggro();
