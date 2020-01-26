@@ -402,7 +402,7 @@ public abstract class Robot {
     int getHeader(int roundNumber) {
         return arbitraryConstant * (teamNum + 1) * MAP_HEIGHT * MAP_WIDTH * roundNumber % ((1 << headerLen) - 1);
     }
-    
+
     boolean allyMessage(int firstInt, int roundNum) throws GameActionException {
         if (firstInt >>> (32 - headerLen) == getHeader(roundNum)) {
             return true;

@@ -92,7 +92,7 @@ public class DeliveryDrone extends Unit {
     @Override
     public void run() throws GameActionException {
         super.run();
-        
+
 
 
         updateVisitedTiles(myLocation);

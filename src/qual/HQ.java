@@ -25,6 +25,8 @@ public class HQ extends Building {
     int previousSoup = 200;
     MapLocation enemyHQLocation = null;
 
+    int turnAtEnemyAggression = -1;
+
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
         HEADQUARTERS_LOCATION = myLocation;
@@ -77,6 +79,9 @@ public class HQ extends Building {
         }
         super.run();
         netgun.shoot();
+        if(rc.getRoundNum()<300 && !enemyAggression) {
+            enemyAggressionCheck();
+        }
         minerCooldown--;
 
         dealWithEnemyRush();
