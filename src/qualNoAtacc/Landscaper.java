@@ -1,4 +1,4 @@
-package poseidon;
+package qualNoAtacc;
 
 import java.util.*;
 
@@ -171,7 +171,7 @@ public class Landscaper extends Unit {
     }
 
     public void constructTerraformer() throws GameActionException {
-        //System.out.println("[i] YAY, I'm A TERRAFORMER!");
+        System.out.println("[i] YAY, I'm A TERRAFORMER!");
         terraformer = true;
         spiralClockwise = rc.getRoundNum() % 2 == 0;
         reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
@@ -213,9 +213,9 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        // if (flee()) {
-        //     return;
-        // }
+        if (flee()) {
+            return;
+        }
         if (myLocation.isAdjacentTo(hqLocation) || getTerraformDigDirection() == Direction.CENTER) { // if I'm adjacent to HQ or in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);

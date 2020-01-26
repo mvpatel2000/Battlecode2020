@@ -1,4 +1,4 @@
-package qual;
+package qualNoAtacc;
 
 import battlecode.common.*;
 
