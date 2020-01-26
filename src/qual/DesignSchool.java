@@ -280,7 +280,7 @@ public class DesignSchool extends Building {
                     if(b.typeBuilt==3) {
                         firstRefineryExists = true;
                     }
-                    if(b.typeBuilt==2) {
+                    if(b.typeBuilt==1) {
                         firstFullfillmentCenterExists = true;
                     }
                 } else if (!enemyAggression && getSchema(msg[0])==7) {

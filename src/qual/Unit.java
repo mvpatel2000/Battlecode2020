@@ -170,6 +170,14 @@ public abstract class Unit extends Robot {
         navigate(speculation, true);
     }
 
+    public boolean isStuck() {
+        for (Direction d : directions) {
+            if (canMove(d))
+                return false;
+        }
+        return true;
+    }
+
     public Direction navigate(int speculation, boolean action) {
         System.out.println("Pathing to: " + state.target);
         if (historySet.getOrDefault(myLocation, 0) >= 3 && !myLocation.equals(pathStart)) {
