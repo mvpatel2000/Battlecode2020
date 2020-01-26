@@ -36,6 +36,9 @@ public class DeliveryDrone extends Unit {
     private boolean trapped;
     private boolean ferrying;
 
+    MapLocation defensiveDSchoolLocation = null;
+    MapLocation reservedForDSchoolBuild = null;
+
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
         for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
@@ -101,6 +104,8 @@ public class DeliveryDrone extends Unit {
         int distToNearest = enemyInfo.getDistToNearest();
         int droneCount = enemyInfo.getDroneCount();
 
+        updateDefensiveDSchoolLocation(nearby);
+
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
         if (ferrying) { // ferry ally onto lattice
@@ -138,13 +143,25 @@ public class DeliveryDrone extends Unit {
         checkEnemyLocMessage();
     }
 
+    public void updateDefensiveDSchoolLocation(RobotInfo[] nearby) throws GameActionException {
+        if (defensiveDSchoolLocation != null) {
+            return;
+        }
+        for (RobotInfo r : nearby) {
+            if (r.team.equals(allyTeam) && r.type.equals(RobotType.DESIGN_SCHOOL) && r.location.distanceSquaredTo(hqLocation) < 9) {
+                defensiveDSchoolLocation = r.location;
+                reservedForDSchoolBuild = defensiveDSchoolLocation.add(defensiveDSchoolLocation.directionTo(hqLocation).opposite().rotateRight());
+            }
+        }
+    }
+
     private void dropOntoLattice() throws GameActionException {
-        for (Direction d : directions) {
-            MapLocation loc = myLocation.add(d);
+        for (Direction di : directions) {
+            MapLocation loc = myLocation.add(di);
             int[] dxy = xydist(hqLocation, loc);
-            if (rc.senseFlooding(loc) || !rc.canDropUnit(d)) continue;
+            if (rc.senseFlooding(loc) || !rc.canDropUnit(di)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
-                if (loc.distanceSquaredTo(hqLocation) > 8) {
+                if (loc.distanceSquaredTo(hqLocation) > 8 && !loc.equals(reservedForDSchoolBuild)) {
                     dropToward(loc);
                     System.out.println("FERRYING TO " + loc);
                     return;
@@ -235,7 +252,7 @@ public class DeliveryDrone extends Unit {
                     && loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE
                     && loc.distanceSquaredTo(hqLocation) > 8)
                     || loc.distanceSquaredTo(hqLocation) == 4
-                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9)) {
+                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9) || loc.equals(reservedForDSchoolBuild)) {
                 if (loc.isAdjacentTo(myLocation)) {
                     tryPickUp(x);
                     ferrying = true;
