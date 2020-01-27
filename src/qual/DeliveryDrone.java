@@ -206,13 +206,15 @@ public class DeliveryDrone extends Unit {
             int[] dxy = xydist(hqLocation, loc);
             if ((rc.canSenseLocation(loc) && rc.senseFlooding(loc)) || !rc.canDropUnit(di)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
-                if (loc.distanceSquaredTo(hqLocation) > 8 && !loc.equals(reservedForDSchoolBuild)) {
+                if (loc.distanceSquaredTo(hqLocation) > 8 && !loc.equals(reservedForDSchoolBuild) &&
+                                loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE) {
                     dropToward(loc);
                     System.out.println("FERRYING TO " + loc);
                     return;
                 }
             }
         }
+        path(hqLocation);
     }
 
     private void checkIfDoneWithAMove(RobotInfo[] nearby) throws GameActionException {
