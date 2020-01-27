@@ -168,28 +168,48 @@ public class Miner extends Unit {
 
     @Override
     public boolean flee() throws GameActionException {
+        System.out.println("Fleeing! " + Clock.getBytecodeNum());
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
                 x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
 
-        if (adjacentDrones.length == 0)
+        if (adjacentDrones.length == 0) {
+            System.out.println("Decided not to flee. Flee Radius: " + getFleeRadius());
             return false;
+        }
 
         checkBuildBuildings(true);
 
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
+
+        if (canMove(escapeLeft.rotateLeft())) {
+            go(escapeLeft.rotateLeft());
+            rc.setIndicatorLine(myLocation, myLocation.add(escapeLeft.rotateLeft()), 255, 0,0 );
+            return true;
+        } else if (canMove(escapeRight.rotateRight())) {
+            go(escapeRight.rotateRight());
+            rc.setIndicatorLine(myLocation, myLocation.add(escapeRight.rotateRight()), 255, 0,0 );
+            return true;
+        }
+
+        System.out.println("Early escape diagonal " + Clock.getBytecodeNum());
+
+        // fan out starting from opposite
         while (!canMove(escapeLeft)) {
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
+                rc.setIndicatorLine(myLocation, myLocation.add(escapeRight), 255, 0,0 );
                 go(escapeRight);
                 return true;
             }
             escapeLeft = escapeLeft.rotateLeft();
         }
         if (canMove(escapeLeft)) {
+            rc.setIndicatorLine(myLocation, myLocation.add(escapeLeft), 255, 0,0 );
             go(escapeLeft);
             return true;
         }
+        System.out.println("Failed fleeing " + Clock.getBytecodeNum());
         return false;
     }
 
