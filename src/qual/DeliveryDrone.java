@@ -35,7 +35,7 @@ public class DeliveryDrone extends Unit {
 
     boolean attackDrone;
     final int DEFEND_TURN = 1100;
-    final int ATTACK_TURN = 2100;
+    final int ATTACK_TURN = 1875;
     final int POKE_TURN = 900;
 
     boolean carrying;
