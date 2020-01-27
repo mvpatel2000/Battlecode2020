@@ -20,6 +20,7 @@ public class DesignSchool extends Building {
     // int INNER_WALL_PAUSE_AT = 3;
     int WAIT_FOR_FIRST_VAPE_TILL = 600;
     int shouldHaveFirstVape = WAIT_FOR_FIRST_VAPE_TILL - 10;
+    boolean waitingForSecondVape = true;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -148,7 +149,7 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (rc.getTeamSoup() > 400 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
+            if (rc.getTeamSoup() >= 425 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
                 shouldHaveFirstVape = rc.getRoundNum();
                 System.out.println("We should have the first vape now!");
             }
@@ -163,7 +164,7 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 3) {
                     System.out.println("B");
                     spawnTerraformer();
-                } else if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
+                } else if (rc.getRoundNum() < shouldHaveFirstVape + 100) {
                     System.out.println("C");
                     return;
                 } else if ((rc.getRoundNum() >= 500 || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8) {
@@ -171,6 +172,9 @@ public class DesignSchool extends Building {
                     spawnInnerWaller();
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("E");
+                    spawnTerraformer();
+                } else if (numTerraformersMade < 25 && (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 500)) {
+                    System.out.println("F");
                     spawnTerraformer();
                 } else {
                     System.out.println("Done");
@@ -180,20 +184,29 @@ public class DesignSchool extends Building {
                 if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
                     System.out.println("A");
                     return;
-                } else if (numTerraformersMade < 3 && rc.getRoundNum() < 250) {
+                } else if (numTerraformersMade < 4 && rc.getRoundNum() < 250) {
                     System.out.println("B");
                     spawnTerraformer();
-                } else if (numTerraformersMade < 5) {
+                } else if (rc.getRoundNum() >= 300 && numLandscapersMade < 3) {
                     System.out.println("C");
-                    spawnTerraformer();
-                } else if (rc.getRoundNum() >= 250 && numLandscapersMade < 3) {
-                    System.out.println("D");
                     spawnInnerWaller();
-                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
+                } else if (rc.getRoundNum() < shouldHaveFirstVape + 350 || waitingForSecondVape) {
+                    if (rc.getTeamSoup() > 500) {
+                        waitingForSecondVape = false;
+                    }
+                    System.out.println("D");
+                    return;
+                } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 500) {
                     System.out.println("E");
                     spawnTerraformer();
-                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
+                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
                     System.out.println("F");
+                    spawnTerraformer();
+                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
+                    System.out.println("G");
+                    spawnTerraformer();
+                } else if (numTerraformersMade < 25 && (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 500)) {
+                    System.out.println("H");
                     spawnTerraformer();
                 } else {
                     System.out.println("Done");
