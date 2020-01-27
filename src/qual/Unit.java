@@ -198,10 +198,11 @@ public abstract class Unit extends Robot {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
                 x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
 
-        if (adjacentDrones.length == 0)
+        if (adjacentDrones.length == 0 || !rc.isReady())
             return false;
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
+        int ctr = 0;
         while (!canMove(escapeLeft)) {
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
@@ -209,6 +210,9 @@ public abstract class Unit extends Robot {
                 return true;
             }
             escapeLeft = escapeLeft.rotateLeft();
+            if (ctr > 1)
+                break;
+            ctr++;
         }
         if (canMove(escapeLeft)) {
             go(escapeLeft);

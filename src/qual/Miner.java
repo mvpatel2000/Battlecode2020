@@ -59,7 +59,7 @@ public class Miner extends Unit {
         aggro = false; // uncomment to disable aggro
         aggroDone = false;
 
-        terraformer = rc.getRoundNum() > 250;
+        terraformer = rc.getRoundNum() >= 150;
         // terraformer = rc.getRoundNum() < 10;
         // terraformer = false;
 
@@ -171,13 +171,32 @@ public class Miner extends Unit {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
                 x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
 
-        if (adjacentDrones.length == 0)
+        if (adjacentDrones.length == 0 || !rc.isReady()) {
             return false;
+        }
 
         checkBuildBuildings(true);
 
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
+
+        // for horizontal offsets, take a diagonal move to maximize distance
+        if (escapeLeft == Direction.NORTH || escapeLeft == Direction.EAST
+                || escapeLeft == Direction.WEST || escapeLeft == Direction.SOUTH) {
+            if (canMove(escapeLeft.rotateLeft())) {
+                go(escapeLeft.rotateLeft());
+                rc.setIndicatorLine(myLocation, myLocation.add(escapeLeft.rotateLeft()), 255, 0, 0);
+                return true;
+            } else if (canMove(escapeRight.rotateRight())) {
+                go(escapeRight.rotateRight());
+                rc.setIndicatorLine(myLocation, myLocation.add(escapeRight.rotateRight()), 255, 0, 0);
+                return true;
+            }
+        }
+
+
+        // fan out starting from opposite
+        int ctr = 0;
         while (!canMove(escapeLeft)) {
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
@@ -185,6 +204,9 @@ public class Miner extends Unit {
                 return true;
             }
             escapeLeft = escapeLeft.rotateLeft();
+            if (ctr > 1)
+                break;
+            ctr++;
         }
         if (canMove(escapeLeft)) {
             go(escapeLeft);
