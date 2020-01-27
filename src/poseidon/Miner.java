@@ -119,7 +119,7 @@ public class Miner extends Unit {
 
         findMessageFromAllies(rc.getRoundNum()-1);
 
-        if(rc.getRoundNum()<300 && !enemyAggression) {
+        if(rc.getRoundNum()<200 && !enemyAggression) {
             if(enemyAggressionCheck()) {
                 turnAtEnemyAggression = rc.getRoundNum();
             }
@@ -168,8 +168,29 @@ public class Miner extends Unit {
 
     @Override
     public boolean flee() throws GameActionException {
+        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
+                x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
+
+        if (adjacentDrones.length == 0)
+            return false;
+
         checkBuildBuildings(true);
-        return super.flee();
+
+        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
+        Direction escapeRight = escapeLeft;
+        while (!canMove(escapeLeft)) {
+            escapeRight = escapeRight.rotateRight();
+            if (canMove(escapeRight)) {
+                go(escapeRight);
+                return true;
+            }
+            escapeLeft = escapeLeft.rotateLeft();
+        }
+        if (canMove(escapeLeft)) {
+            go(escapeLeft);
+            return true;
+        }
+        return false;
     }
 
     public void terraform() throws GameActionException {
@@ -197,9 +218,10 @@ public class Miner extends Unit {
 
     // returns false if special valid grid square, otherwise true
     boolean checkGridExceptions(MapLocation location) throws GameActionException {
-        int x = Math.abs(location.y - hqLocation.y);
-        int y = Math.abs(location.x - hqLocation.x);
-        return !(x == 3 && y == 1 || x == 1 && y == 3);
+        int x = location.x - hqLocation.x;
+        int y = location.y - hqLocation.y;
+        // return !(x == 3 && y == 1 || x == 1 && y == 3);
+        return (x == -1 && y == 3 || x == 3 && y == 1 || x == 1 && y == -3 || x == -3 && y == -1);
     }
 
     //determines if location is on grid and not in landscaper slot
@@ -207,7 +229,7 @@ public class Miner extends Unit {
         if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
         if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
-            && checkGridExceptions(location)) {
+            && !checkGridExceptions(location)) {
             return false;
         }
         for (Direction d : directions) { // check location is not reservedForDSchoolBuild
@@ -250,7 +272,7 @@ public class Miner extends Unit {
             }
         }
         if(enemyAggression) {
-            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 200) {
                 enemyAggression = false;
                 return false;
             }
@@ -425,31 +447,27 @@ public class Miner extends Unit {
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
         boolean existsFulfillmentCenter = false;
+        boolean existsVaporator = false;
         for (RobotInfo robot : allyRobots) {
-            switch (robot.getType()) {
-                case NET_GUN:
-                    existsNetGun = true;
-                    break;
-                case FULFILLMENT_CENTER:
-                    existsFulfillmentCenter = true;
-                    break;
+            if ((!fleeing || robot.location.distanceSquaredTo(myLocation) <= 5) && robot.type.equals(RobotType.NET_GUN)) {
+                existsNetGun = true;
+            }
+            if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
+                existsFulfillmentCenter = true;
+            }
+            if (robot.type.equals(RobotType.VAPORATOR)) {
+                existsVaporator = true;
             }
         }
         for (Direction dir : directions) {
-            //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
             if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                if (!existsNetGun && rc.getRoundNum() > 350) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing && existsVaporator)) {
                     tryBuild(RobotType.NET_GUN, dir);
-                // } else if (dSchoolExists) {
-                //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else if (rc.getRoundNum() < 1700) {
+                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100)) {
                     tryBuild(RobotType.VAPORATOR, dir);
-                }
-                if (!existsNetGun && rc.getRoundNum() > 500) {
-                    tryBuild(RobotType.NET_GUN, dir);
                 }
             }
         }
@@ -685,7 +703,7 @@ public class Miner extends Unit {
         // }
         // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
         if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
-                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)
+                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 20)
                 && rc.getSoupCarrying() > 70) {
             System.out.println("Refinery Check: " + distToBase + " " + lastSoupLocation + " " + myLocation + " " + turnsToBase);
             //TODO: build a refinery smarter and in good direction.

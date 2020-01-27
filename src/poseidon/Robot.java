@@ -186,8 +186,15 @@ public abstract class Robot {
     }
 
     public boolean enemyAggressionCheck() throws GameActionException {
+        System.out.println("Enemy Aggression Check");
         if(enemyAggression == false) {
-            enemyAggression = existsNearbyEnemy();
+            RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+            for (RobotInfo botInfo : nearbyBots) {
+                if (!botInfo.type.equals(RobotType.DELIVERY_DRONE) && !botInfo.type.equals(RobotType.HQ) && botInfo.team.equals(enemyTeam)) {
+                    System.out.println("Found enemy aggression!");
+                    enemyAggression = true;
+                }
+            }
             if(enemyAggression) {
                 RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                 r.writeTypeOfCommit(2); //2 is enemy is attacking/rushing
@@ -387,6 +394,16 @@ public abstract class Robot {
 
     boolean existsNearbyEnemy() throws GameActionException {
         return rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam).length > 0;
+    }
+
+    boolean existsNearbyEnemyExcept(RobotType type) throws GameActionException {
+        RobotInfo[] nearbyBots = rc.senseNearbyRobots();
+        for (RobotInfo botInfo : nearbyBots) {
+            if (!botInfo.type.equals(type) && botInfo.team.equals(enemyTeam)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean existsNearbyEnemyBuilding() throws GameActionException {

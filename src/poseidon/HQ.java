@@ -80,7 +80,7 @@ public class HQ extends Building {
         }
         super.run();
         netgun.shoot();
-        if(rc.getRoundNum()<300 && !enemyAggression) {
+        if(rc.getRoundNum()<200 && !enemyAggression) {
             enemyAggressionCheck();
         }
         minerCooldown--;
@@ -243,7 +243,7 @@ public class HQ extends Building {
     }
 
     void dealWithEnemyRush() throws GameActionException {
-        if(rc.getRoundNum() < 300 && !enemyAggression) {
+        if(rc.getRoundNum() < 200 && !enemyAggression) {
             if(enemyAggressionCheck()) {
                 turnAtEnemyAggression = rc.getRoundNum();
             }
@@ -256,7 +256,7 @@ public class HQ extends Building {
                     enemyAggression = false;
                     turnAtEnemyAggression = -1;
                 }
-            } else if (rc.getRoundNum() - turnAtEnemyAggression > 300) {
+            } else if (rc.getRoundNum() - turnAtEnemyAggression > 200) {
                 enemyAggression = false;
             }
         }

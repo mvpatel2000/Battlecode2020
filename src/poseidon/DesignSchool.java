@@ -12,12 +12,14 @@ public class DesignSchool extends Building {
     boolean defensive;
     boolean primaryDefensive = false; // For now only the primary defensive d.school does anything.
     int numLandscapersMade;
-    int CLOSE_INNER_WALL_AT = 400;
+    // int CLOSE_INNER_WALL_AT = 400;
     int startOuterWallAt = 0;
     int numTerraformersMade = 0; // set to 0 to enable, set to 100 to disable
-    int NUM_TERRAFORMERS_INITIAL = 3;
-    int NUM_TERRAFORMERS_TOTAL = 18;
-    int INNER_WALL_PAUSE_AT = 3;
+    // int NUM_TERRAFORMERS_INITIAL = 3;
+    // int NUM_TERRAFORMERS_TOTAL = 18;
+    // int INNER_WALL_PAUSE_AT = 3;
+    int WAIT_FOR_FIRST_VAPE_TILL = 600;
+    int shouldHaveFirstVape = WAIT_FOR_FIRST_VAPE_TILL - 10;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -79,13 +81,13 @@ public class DesignSchool extends Building {
     }
 
     @Override
-    public void run() throws GameActionException  {
+    public void run() throws GameActionException {
         if(holdProduction || enemyAggression) {
             checkIfContinueHold();
         }
 
         if (defensive) {
-            if(rc.getRoundNum() < 300 && !enemyAggression) {
+            if(rc.getRoundNum() < 200 && !enemyAggression) {
                 if(enemyAggressionCheck()) {
                     turnAtEnemyAggression = rc.getRoundNum();
                 }
@@ -146,38 +148,62 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (numLandscapersMade == INNER_WALL_PAUSE_AT && numTerraformersMade < NUM_TERRAFORMERS_INITIAL) { // build terraformer
-                spawnTerraformer();
+            if (rc.getTeamSoup() > 400 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
+                shouldHaveFirstVape = rc.getRoundNum();
+                System.out.println("We should have the first vape now!");
             }
-            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
-                System.out.println("Ready to make inner wall landscaper");
-                spawnInnerWaller();
+            if (rc.getRoundNum() > shouldHaveFirstVape) {
+                //rc.setIndicatorDot(myLocation, 255, 255, 0);
             }
-            if (numLandscapersMade == 8 && numTerraformersMade < NUM_TERRAFORMERS_TOTAL && rc.getTeamSoup() > 528) {
-                spawnTerraformer();
+            if (enemyAggression) { // rush defense
+                System.out.println("Enemy aggression");
+                if (numLandscapersMade < 5) {
+                    System.out.println("A");
+                    spawnInnerWaller();
+                } else if (numTerraformersMade < 3) {
+                    System.out.println("B");
+                    spawnTerraformer();
+                } else if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
+                    System.out.println("C");
+                    return;
+                } else if ((rc.getRoundNum() >= 500 || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8) {
+                    System.out.println("D");
+                    spawnInnerWaller();
+                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
+                    System.out.println("E");
+                    spawnTerraformer();
+                } else {
+                    System.out.println("Done");
+                }
+            } else { // normal operation, greedier
+                System.out.println("No enemy aggression");
+                if (numTerraformersMade < 3 && rc.getRoundNum() < 250) {
+                    System.out.println("A");
+                    spawnTerraformer();
+                } else if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
+                    System.out.println("B");
+                    return;
+                } else if (numTerraformersMade < 5) {
+                    System.out.println("C");
+                    spawnTerraformer();
+                } else if (rc.getRoundNum() >= 250 && numLandscapersMade < 3) {
+                    System.out.println("D");
+                    spawnInnerWaller();
+                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
+                    System.out.println("E");
+                    spawnTerraformer();
+                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
+                    System.out.println("F");
+                    spawnTerraformer();
+                } else {
+                    System.out.println("Done");
+                }
             }
-            // else if(numLandscapersMade >= 8 && numLandscapersMade <= 19) { // WALL PHASE 2
-            //     System.out.println("Ready to make outer wall landscaper");
-            //     if (startOuterWallAt == 0) {
-            //         startOuterWallAt = rc.getRoundNum();
-            //     }
-            //     if (rc.getRoundNum() - startOuterWallAt < 300 && rc.getTeamSoup() < 521) {
-            //         return;
-            //     }
-            //     spawnOuterWaller();
-            // }
-            // else if(numLandscapersMade > 19 && numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
-            //     System.out.println("Building extra landscaper");
-            //     spawnOuterWaller();
-            // }
-            // else if(numLandscapersMade >= 22) {
-            //     System.out.println("My work is complete.  Goodbye, beautiful world...");
-            //     rc.disintegrate();
-            // }
         }
     }
 
     public void spawnTerraformer() throws GameActionException {
+        System.out.println("Attempting to spawn terraformer");
         Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
         for (int i = 8; i > 0; i--) {
             if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
@@ -193,6 +219,7 @@ public class DesignSchool extends Building {
     }
 
     public void spawnInnerWaller() throws GameActionException {
+        System.out.println("Attempting to spawn inner waller");
         // look for enemy d.school
         MapLocation enemyDSchoolLocation = null;
         RobotInfo[] nearbyBots = rc.senseNearbyRobots();
@@ -226,6 +253,7 @@ public class DesignSchool extends Building {
     }
 
     public void spawnOuterWaller() throws GameActionException {
+        System.out.println("Attempting to spawn outer waller");
         Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
         for (int i = 8; i > 0; i--) {
             if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
@@ -320,7 +348,7 @@ public class DesignSchool extends Building {
             }
         }
         if(enemyAggression) {
-            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 200) {
                 enemyAggression = false;
                 return false;
             }
