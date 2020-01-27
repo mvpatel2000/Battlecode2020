@@ -174,7 +174,8 @@ public class DeliveryDrone extends Unit {
                 chaseEnemy(nearest);
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()) { // drone attack-move
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
+                            && rc.getRoundNum() < SHRINK_SHELL_ROUND) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
