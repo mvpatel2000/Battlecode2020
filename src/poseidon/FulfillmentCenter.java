@@ -54,10 +54,11 @@ public class FulfillmentCenter extends Building {
             }
         }
 
-        if(!holdProduction && !enemyNetGun && rc.getRoundNum() - spawnTurn > 30) {
-            if (attackDroneCount + defenseDroneCount < 1) {
+        // build if no net guns and 30 turn cooldown finishes or we have extra soup
+        if(!holdProduction && !enemyNetGun && (rc.getRoundNum() - spawnTurn > 30 || !enemyAggression && (attackDroneCount+defenseDroneCount) < 1)) {
+            if (attackDroneCount + defenseDroneCount < 2) { // always build 2
                 buildDrone();
-            } else if (enemyAggression) {
+            } else if (enemyAggression) { // start drones if there are 2 landscapers
                 RobotInfo[] near = rc.senseNearbyRobots();
                 int numEnemLand = 0;
                 for(RobotInfo r : near) {
@@ -177,15 +178,15 @@ public class FulfillmentCenter extends Building {
         Transaction[] msgs = rc.getBlock(rn);
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
-            if (allyMessage(msg[0])) {
+            if (allyMessage(msg[0], rn)) {
                 if(getSchema(msg[0])==3) {
-                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    HoldProductionMessage h = new HoldProductionMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     //System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
                     return true;
                 } else if (getSchema(msg[0])==7) {
-                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum);
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if(!enemyAggression) {
                         if(r.typeOfCommit==2) {
                             //System.out.println("[i] Enemy is Rushing!");

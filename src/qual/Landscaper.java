@@ -124,11 +124,12 @@ public class Landscaper extends Unit {
         if (baseLocation != null) {
             System.out.println("Found my d.school: " + baseLocation.toString());
         } else {
-            for (int i = 0; i < MAP_HEIGHT; i++) {
-                for (int j = 0; j < MAP_WIDTH; j++) {
-                    rc.setIndicatorDot(new MapLocation(j, i), 255, 255, 0);
-                }
-            }
+            rc.setIndicatorDot(myLocation, 255, 255, 0);
+            // for (int i = 0; i < MAP_HEIGHT; i++) {
+            //     for (int j = 0; j < MAP_WIDTH; j++) {
+            //         rc.setIndicatorDot(new MapLocation(j, i), 255, 255, 0);
+            //     }
+            // }
         }
 
         // scan for HQ location
@@ -218,10 +219,13 @@ public class Landscaper extends Unit {
     }
 
     public void terraform() throws GameActionException {
+        rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
         if (flee()) {
             return;
         }
-        if (myLocation.isAdjacentTo(hqLocation)) { // if I'm in the inner wall, become a defender
+        if (myLocation.isAdjacentTo(hqLocation) ||
+                (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
+                // if I'm in the inner wall or in the outer wall after a certain point, become a defender
             terraformer = false;
             defensive = true;
             defense();
@@ -230,7 +234,6 @@ public class Landscaper extends Unit {
         if (getTerraformDigDirection() == Direction.CENTER) { // if I find myself in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);
-            rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
             return;
         } else {
             rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);

@@ -6,15 +6,15 @@ public class RushCommitMessage extends Message {
     int typeOfCommit; // 1 is rush commit standard, 2 is enemy is rushing/being aggressive, 3 is enemy has stopped rushing
     int bitsPerType = 3;
 
-    public RushCommitMessage(int myMapHeight, int myMapWidth, int myTeam) {
-        super(myMapHeight, myMapWidth, myTeam);
+    public RushCommitMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
+        super(myMapHeight, myMapWidth, myTeam, roundNum);
         this.writeSchema(rSchema);
         typeOfCommit = -1;
     }
 
     //Use for recieved message.
-    public RushCommitMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
-        super(recieved, myMapHeight, myMapWidth, myTeam);
+    public RushCommitMessage(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
+        super(recieved, myMapHeight, myMapWidth, myTeam, roundNum);
         this.schema=rSchema;
         readTypeOfCommit();
     }

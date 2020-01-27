@@ -178,13 +178,16 @@ public abstract class Unit extends Robot {
         return true;
     }
 
+    protected int getFleeRadius() {
+        return 24;
+    }
 
     /**
      * Flees from adjacent drone if it exists.
      */
     public boolean flee() throws GameActionException {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                x.getLocation().distanceSquaredTo(myLocation) <= 24).toArray(RobotInfo[]::new);
+                x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
 
         if (adjacentDrones.length == 0)
             return false;

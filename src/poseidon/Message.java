@@ -11,7 +11,7 @@ public class Message {
     final int MAP_HEIGHT;
     final int MAP_WIDTH;
     final int team;
-    final int arbitraryConstant = 94655; //make sure this is the same constant in Robot.java
+    final int arbitraryConstant = 64556; //make sure this is the same constant in Robot.java
 
     int headerLen = 16;
     final int header;
@@ -23,21 +23,21 @@ public class Message {
     //Only matters for recieved messages
     boolean origin;
 
-    public Message(int myMapHeight, int myMapWidth, int myTeam) {
+    public Message(int myMapHeight, int myMapWidth, int myTeam, int roundNumber) {
         actualMessage = new int[7];
         writtenTo = 0;
         MAP_HEIGHT = myMapHeight;
         MAP_WIDTH = myMapWidth;
         team = myTeam;
         origin = true;
-        header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
+        header = Math.floorMod(arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber, ((1 << headerLen) - 1));
         generateHeader();
     }
 
     //Use this constructor for messages recieved
     //Assuming the only messages using this constructor are ally messages
     //Check origin of incoming messages using method in Robot.java
-    public Message(int[] recieved, int myMapHeight, int myMapWidth, int myTeam) {
+    public Message(int[] recieved, int myMapHeight, int myMapWidth, int myTeam, int roundNumber) {
         if(recieved.length==7) {
             actualMessage = recieved;
         } else {
@@ -55,7 +55,7 @@ public class Message {
         MAP_WIDTH = myMapWidth;
         team = myTeam;
         origin = true;
-        header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH % ((1 << headerLen) - 1);
+        header = Math.floorMod(arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber, ((1 << headerLen) - 1));
         //origin = getOrigin();
         //schema = getSchema();
     }

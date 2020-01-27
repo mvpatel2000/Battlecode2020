@@ -6,7 +6,10 @@ import java.util.*;
 
 public class DeliveryDrone extends Unit {
 
-    private static final int START_FERRY = 400;
+    private static final int START_FERRY = 300;
+    private static final int FILL_WALL_ROUND = 500;
+    private static final int FILL_OUTER_ROUND = 1000;
+    public static final int SHRINK_SHELL_ROUND = 2600;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
 
@@ -35,6 +38,8 @@ public class DeliveryDrone extends Unit {
     boolean carryingCow;
     private boolean trapped;
     private boolean ferrying;
+    private boolean landscaping;
+    List<MapLocation> outerWall;
 
     MapLocation defensiveDSchoolLocation = null;
     MapLocation reservedForDSchoolBuild = null;
@@ -72,14 +77,25 @@ public class DeliveryDrone extends Unit {
         carryingCow = false;
         giveUpOnAMove = false;
         ferrying = false;
+        landscaping = false;
         nearbyNetGuns = new ArrayList<>();
+        outerWall = new ArrayList<>();
+        for (int i = -2; i <= 2; i++) {
+            for (int j = -2; j <= 2; j++) {
+                MapLocation loc = add(hqLocation, new int[]{i, j});
+                if (loc.equals(hqLocation))
+                    continue;
+                if (loc.distanceSquaredTo(hqLocation) == 4)
+                    continue;
+                outerWall.add(loc);
+            }
+        }
 
         attackDrone = false;
         Direction toBase = myLocation.directionTo(baseLocation);
         if (myLocation.distanceSquaredTo(hqLocation) > myLocation.add(toBase).add(toBase).distanceSquaredTo(hqLocation)) {
             attackDrone = true;
         }
-
 
         tilesVisited[getTileNumber(enemyLocation)] = 1;
         updateVisitedTiles(hqLocation);
@@ -89,11 +105,38 @@ public class DeliveryDrone extends Unit {
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
+    private boolean wallMissing() {
+        if (rc.getRoundNum() < FILL_WALL_ROUND)
+            return false;
+        for (MapLocation loc : outerWall) {
+            try {
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
+                    return true;
+            } catch (GameActionException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+    private boolean innerWallMissing() {
+        if (rc.getRoundNum() < FILL_WALL_ROUND)
+            return false;
+        for (Direction d : directions) {
+            MapLocation loc = hqLocation.add(d);
+            try {
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
+                    return true;
+            } catch (GameActionException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
     @Override
     public void run() throws GameActionException {
         super.run();
-        
-
 
         updateVisitedTiles(myLocation);
 
@@ -108,29 +151,31 @@ public class DeliveryDrone extends Unit {
 
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
-        if (ferrying) { // ferry ally onto lattice
+        if (landscaping && wallMissing()) {
+            dropOntoWall();
+        } if (ferrying) { // ferry ally onto lattice
             dropOntoLattice();
         } else if (carrying) { // go to water and drop
             if (carryingCow && nearest != null && !nearest.getType().equals(RobotType.COW))
                 dropToward(nearest.getLocation());
-            else if (goToWaterAndDrop())
-                return;
+            else
+                goToWaterAndDrop();
         } else {
-            if (droneCount > 6)
-                giveUpOnAMove = true;
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
                 attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
 
             if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
                 tryPickUp(nearest);
+            } else if (checkToLandscape(nearby)) {
             } else if (checkToFerry(nearby)) {
             } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
                     || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
                 chaseEnemy(nearest);
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove) { // drone attack-move
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
+                            && rc.getRoundNum() < SHRINK_SHELL_ROUND) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
@@ -191,6 +236,7 @@ public class DeliveryDrone extends Unit {
             carrying = false;
             carryingCow = false;
             ferrying = false;
+            landscaping = false;
         }
     }
 
@@ -235,6 +281,69 @@ public class DeliveryDrone extends Unit {
         }
     }
 
+    private void dropOntoWall() throws GameActionException {
+        if (innerWallMissing()) {
+            for (Direction d : directions) {
+                MapLocation loc = myLocation.add(d);
+                if (loc.isAdjacentTo(hqLocation) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
+                    System.out.println("DROP ONTO WALL: " + loc);
+                    dropToward(loc);
+                    return;
+                }
+            }
+        } else {
+            for (MapLocation loc : outerWall) {
+                if (loc.isAdjacentTo(myLocation) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
+                    System.out.println("DROP ONTO WALL: " + loc);
+                    dropToward(loc);
+                    return;
+                }
+            }
+        }
+        path(hqLocation);
+    }
+
+    private boolean checkToLandscape(RobotInfo[] nearby) throws GameActionException {
+        if (!rc.isReady() || myLocation.isAdjacentTo(hqLocation)
+                || myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE)
+            return landscaping;
+
+        if (rc.getRoundNum() < FILL_OUTER_ROUND && !innerWallMissing()) {
+            return landscaping;
+        }
+
+        if (innerWallMissing()) {
+            for (RobotInfo x : nearby) {
+                if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || x.getLocation().isAdjacentTo(hqLocation))
+                    continue;
+                MapLocation loc = x.getLocation();
+                if (loc.isAdjacentTo(myLocation)) {
+                    tryPickUp(x);
+                    ferrying = true;
+                    landscaping = true;
+                } else {
+                    path(loc);
+                }
+                return landscaping;
+            }
+        } else if (wallMissing()) {
+            for (RobotInfo x : nearby) {
+                if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || outerWall.contains(x.getLocation()))
+                    continue;
+                MapLocation loc = x.getLocation();
+                if (loc.isAdjacentTo(myLocation)) {
+                    tryPickUp(x);
+                    ferrying = true;
+                    landscaping = true;
+                } else {
+                    path(loc);
+                }
+                return landscaping;
+            }
+        }
+        return landscaping;
+    }
+
     private boolean checkToFerry(RobotInfo[] nearby) throws GameActionException {
         if (rc.getRoundNum() < START_FERRY)
             return false;
@@ -256,8 +365,8 @@ public class DeliveryDrone extends Unit {
                 if (loc.isAdjacentTo(myLocation)) {
                     tryPickUp(x);
                     ferrying = true;
-                    for (int i = 0; i < 50; i++)
-                        System.out.println("FERRY AT: " + loc);
+                    if (x.getType() == RobotType.LANDSCAPER)
+                        landscaping = true;
                 } else {
                     path(loc);
                 }
@@ -267,15 +376,21 @@ public class DeliveryDrone extends Unit {
         return ferrying;
     }
 
+    private boolean inShell() {
+        int[] dxy = xydist(myLocation, hqLocation);
+        int rad = rc.getRoundNum() < SHRINK_SHELL_ROUND ? 3 : 2;
+        return dxy[0] <= rad && dxy[1] == rad || dxy[0] == rad && dxy[1] <= rad;
+    }
+
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
         System.out.println("Handle Defense");
         destination = hqLocation;
-        if (rc.getRoundNum() < DEFEND_TURN) {
+        if (rc.getRoundNum() < 100) {
+            fuzzyMoveToLoc(hqLocation.add(hqLocation.directionTo(enemyLocation)));
+        } else if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
         } else {
-            int dx = Math.abs(destination.x - myLocation.x);
-            int dy = Math.abs(destination.y - myLocation.y);
-            if (!(dx <= 3 && dy == 3 || dx == 3 && dy <= 3))
+            if (!inShell())
                 path(destination, false);
         }
         nearestWaterLocation = updateNearestWaterLocation();
@@ -427,7 +542,8 @@ public class DeliveryDrone extends Unit {
 
         trapped = true;
 
-        outer: for (Direction d : directionsWithCenter) {
+        outer:
+        for (Direction d : directionsWithCenter) {
             for (RobotInfo n : nearbyNetGuns) {
                 if (n.getLocation().distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                     continue outer;
@@ -443,6 +559,17 @@ public class DeliveryDrone extends Unit {
 
     protected boolean canMove(MapLocation from, Direction in) {
         MapLocation to = from.add(in);
+        if (landscaping && wallMissing()) {
+            if (innerWallMissing()) {
+                if (to.isAdjacentTo(hqLocation))
+                    return false;
+            } else {
+                if (outerWall.contains(to))
+                    return false;
+            }
+        }
+        if (to.equals(reservedForDSchoolBuild))
+            return false;
         try {
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
@@ -2692,7 +2819,7 @@ public class DeliveryDrone extends Unit {
                     if (enemyLocation != ENEMY_HQ_LOCATION) {
                         ENEMY_HQ_LOCATION = enemyRobot.getLocation();
                         enemyLocation = ENEMY_HQ_LOCATION;
-                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum);
+                        LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                         l.writeInformation(enemyLocation.x, enemyLocation.y, 1);
                         if (sendMessage(l.getMessage(), 1)) {
                             hasSentEnemyLoc = true;
@@ -2713,9 +2840,9 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
                     if (nearest == null && (rc.getRoundNum() > 200 || enemyRobot.type != RobotType.COW)
-                            || nearest.type == RobotType.COW
-                            || (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
-                            || enemyRobot.type == RobotType.LANDSCAPER) {
+                            || nearest != null && nearest.type == RobotType.COW
+                            || nearest != null && (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
+                            || nearest != null && enemyRobot.type == RobotType.LANDSCAPER) {
                         System.out.print("Updating nearest target to ");
                         System.out.println(enemyRobot);
                         if (!(bSchool && enemyRobot.getType() == RobotType.COW)) {

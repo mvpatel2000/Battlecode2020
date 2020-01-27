@@ -6,9 +6,9 @@ import java.util.*;
 
 public class DeliveryDrone extends Unit {
 
-    private static final int START_FERRY = 300;
-    private static final int FILL_WALL_ROUND = 500;
-    private static final int FILL_OUTER_ROUND = 1000;
+    public static final int START_FERRY = 300;
+    public static final int FILL_WALL_ROUND = 500;
+    public static final int FILL_OUTER_ROUND = 1000;
     public static final int SHRINK_SHELL_ROUND = 2600;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
