@@ -24,6 +24,8 @@ public class Landscaper extends Unit {
     Direction lastPlotICompletedDirToHQ = null;
     int terraformHeight = 2;
     MapLocation reservedForDSchoolBuild = null;
+    MapLocation terraformTarget = null;
+    int pathingToTargetCounter = 0;
 
     // class variables used specifically by defensive landscapers:
     MapLocation hqLocation = null;
@@ -244,11 +246,12 @@ public class Landscaper extends Unit {
             reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
         } else {
             if (myLocation.distanceSquaredTo(hqLocation) <= LATTICE_SIZE) {
-                terraformer = true;
-                run();
+                if (!terraformer) {
+                    terraformer = true;
+                    run();
+                }
             } else {
                 aggressive = true;
-                run();
             }
         }
     }
@@ -277,14 +280,12 @@ public class Landscaper extends Unit {
                 // wait for my ride onto the lattice
                 return;
             }
-            rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
-            MapLocation target = findLatticeDepositSite();
-            while (target == null || isWalled()) {
-                terraformHeight += 2;
-                target = findLatticeDepositSite();
-            }
+            rc.setIndicatorDot(myLocation, 0, 255, 0);
 
-            if (myLocation.isAdjacentTo(target)) {
+            updateTerraformTarget();
+            rc.setIndicatorLine(myLocation, terraformTarget, 0, 255, 255);
+
+            if (myLocation.isAdjacentTo(terraformTarget)) {
                 if (rc.getDirtCarrying() == 0) {
                     Direction digDir = getTerraformDigDirection();
                     System.out.println("Trying to dig in direction " + digDir.toString());
@@ -292,14 +293,31 @@ public class Landscaper extends Unit {
                         return;
                     }
                 } else {
-                    System.out.println("Trying to deposit at " + target.toString());
-                    if (tryDeposit(myLocation.directionTo(target))) {
+                    System.out.println("Trying to deposit at " + terraformTarget.toString());
+                    if (tryDeposit(myLocation.directionTo(terraformTarget))) {
                         return;
                     }
                 }
             } else {
-                path(target);
+                path(terraformTarget);
+                pathingToTargetCounter++;
             }
+        }
+    }
+
+    public void updateTerraformTarget() throws GameActionException {
+        MapLocation target = findLatticeDepositSite();
+        while (target == null) {
+            terraformHeight += 2;
+            target = findLatticeDepositSite();
+        }
+        if (target != terraformTarget) {
+            terraformTarget = target;
+            pathingToTargetCounter = 0;
+        }
+        if (pathingToTargetCounter == 5) {
+            terraformHeight += 2;
+            pathingToTargetCounter = 0;
         }
     }
 
@@ -364,61 +382,68 @@ public class Landscaper extends Unit {
     }
 
     public void aggro() throws GameActionException {
-        // update d.school location
-        baseLocation = null;
-        for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
-            MapLocation t = myLocation.add(dir);
-            if (existsNearbyBotAt(t) && getNearbyBotAt(t).type.equals(RobotType.DESIGN_SCHOOL) && getNearbyBotAt(t).team.equals(allyTeam)) {
-                baseLocation = t;
-                break;
-            }
-        }
-
-        enemyDSchoolLocation = null;
-        for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
-            if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
-                enemyDSchoolLocation = r.getLocation();
-            }
-        }
-
-        Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
-
-        // if i can move closer to enemy d.school while being adjacent to enemy HQ, do it
-        if (enemyDSchoolLocation != null) {
-            Direction moveDir = Direction.CENTER;
-            int minDist = myLocation.distanceSquaredTo(enemyDSchoolLocation);
-            MapLocation moveLoc = myLocation;
-            for (Direction d : directions) {
-                MapLocation t = enemyHQLocation.add(d);
-                int newDist = enemyDSchoolLocation.distanceSquaredTo(t);
-                if (myLocation.isAdjacentTo(t) && newDist < minDist) {
-                    moveDir = d;
-                    minDist = newDist;
-                    moveLoc = t;
+        if (enemyHQLocation != null) {
+            // update d.school location
+            baseLocation = null;
+            for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
+                MapLocation t = myLocation.add(dir);
+                if (existsNearbyBotAt(t) && getNearbyBotAt(t).type.equals(RobotType.DESIGN_SCHOOL) && getNearbyBotAt(t).team.equals(allyTeam)) {
+                    baseLocation = t;
+                    break;
                 }
             }
-            if (moveLoc != myLocation) {
-                tryMove(myLocation.directionTo(moveLoc));
-            }
-        }
 
-        if (rc.getDirtCarrying() == 0) { // dig
-            if (baseLocation != null && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
-                System.out.println("Digging from d.school at " + baseLocation.toString());
-                tryDig(myLocation.directionTo(baseLocation));
-            } else {
-                for (RobotInfo botInfo : nearbyBots) {
-                    if (botInfo.team.equals(allyTeam) && botInfo.location.isAdjacentTo(myLocation) && botInfo.type.isBuilding()) { // heal net guns
-                        System.out.println("Digging from ally building at " + botInfo.location.toString());
-                        tryDig(myLocation.directionTo(botInfo.location));
+            enemyDSchoolLocation = null;
+            for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
+                if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
+                    enemyDSchoolLocation = r.getLocation();
+                }
+            }
+
+            Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
+
+            // if i can move closer to enemy d.school while being adjacent to enemy HQ, do it
+            if (enemyDSchoolLocation != null) {
+                Direction moveDir = Direction.CENTER;
+                int minDist = myLocation.distanceSquaredTo(enemyDSchoolLocation);
+                MapLocation moveLoc = myLocation;
+                for (Direction d : directions) {
+                    MapLocation t = enemyHQLocation.add(d);
+                    int newDist = enemyDSchoolLocation.distanceSquaredTo(t);
+                    if (myLocation.isAdjacentTo(t) && newDist < minDist) {
+                        moveDir = d;
+                        minDist = newDist;
+                        moveLoc = t;
                     }
                 }
-                System.out.println("Digging under myself");
-                tryDig(Direction.CENTER);
+                if (moveLoc != myLocation) {
+                    tryMove(myLocation.directionTo(moveLoc));
+                }
+            }
+
+            if (rc.getDirtCarrying() == 0) { // dig
+                if (baseLocation != null && rc.canDigDirt(myLocation.directionTo(baseLocation))) { // heal d.school
+                    System.out.println("Digging from d.school at " + baseLocation.toString());
+                    tryDig(myLocation.directionTo(baseLocation));
+                } else {
+                    for (RobotInfo botInfo : nearbyBots) {
+                        if (botInfo.team.equals(allyTeam) && botInfo.location.isAdjacentTo(myLocation) && botInfo.type.isBuilding()) { // heal net guns
+                            System.out.println("Digging from ally building at " + botInfo.location.toString());
+                            tryDig(myLocation.directionTo(botInfo.location));
+                        }
+                    }
+                    System.out.println("Digging under myself");
+                    tryDig(Direction.CENTER);
+                }
+            } else {
+                System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
+                tryDeposit(enemyHQDir);
             }
         } else {
-            System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
-            tryDeposit(enemyHQDir);
+            // flee
+            // if enemy HQ visible, a-move it
+            // if adjacent to enemy building, kill it
+            // path away from my HQ location until as far as possible and then path towards HQ location
         }
     }
 
@@ -453,6 +478,11 @@ public class Landscaper extends Unit {
         updateHoldPositionLoc();
         System.out.println("Updated holdPositionLoc to " + holdPositionLoc.toString());
         checkWallStage();
+
+        if (wallPhase == 3 && myLocation.distanceSquaredTo(hqLocation) >= 9 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND) {
+            terraformer = true;
+            run();
+        }
 
         for (Direction d : directions) {// zeroth priority: kill an an enemy building
             if (existsNearbyBotAt(myLocation.add(d))) {

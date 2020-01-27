@@ -481,7 +481,7 @@ public class Miner extends Unit {
         }
         for (Direction dir : directions) {
             if (onBuildingGridSquare(myLocation.add(dir))
-                    && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
+                    && rc.canSenseLocation(myLocation.add(dir)) && (rc.senseElevation(myLocation.add(dir)) > 2 || rc.getRoundNum() < 300)) {
                 if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing && existsVaporator)) {
                     tryBuild(RobotType.NET_GUN, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
