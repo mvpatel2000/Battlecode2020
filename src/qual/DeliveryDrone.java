@@ -10,6 +10,9 @@ public class DeliveryDrone extends Unit {
     public static final int FILL_WALL_ROUND = 500;
     public static final int FILL_OUTER_ROUND = 1000;
     public static final int SHRINK_SHELL_ROUND = 2600;
+    private static final int POKE_DURATION = 50;
+    private static final int POKE_RADIUS = 100;
+    private static final int POSTURE_POKE_TIME = 20;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
 
@@ -32,6 +35,7 @@ public class DeliveryDrone extends Unit {
     boolean attackDrone;
     final int DEFEND_TURN = 1100;
     final int ATTACK_TURN = 2100;
+    final int POKE_TURN = 900;
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -45,6 +49,7 @@ public class DeliveryDrone extends Unit {
     MapLocation defensiveDSchoolLocation = null;
     MapLocation reservedForDSchoolBuild = null;
     private boolean shrunk;
+    private boolean giveUpOnPoke;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -174,15 +179,16 @@ public class DeliveryDrone extends Unit {
                 tryPickUp(nearest);
             } else if (checkToLandscape(nearby)) {
             } else if (checkToFerry(nearby)) {
-            } else if (nearest != null && (rc.getRoundNum() < DEFEND_TURN
-                    || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN)) { // chase enemy unless defending
+            } else if (shouldPoke()) {
+                checkIfDoneWithPoke(nearby);
+                handlePoke();
+            } else if (shouldChase(nearest)) { // chase enemy unless defending
                 chaseEnemy(nearest);
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
-                    && rc.getRoundNum() < SHRINK_SHELL_ROUND) { // drone attack-move
+            } else if (shouldAMove()) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
-                handleAMove();
+                handleAMove(ATTACK_TURN);
             } else { // defend drone / go back to base
                 handleDefense(nearby);
             }
@@ -191,6 +197,30 @@ public class DeliveryDrone extends Unit {
         //Check every 100 turns for enemy location message sent in the previous 5 turns.
         //until you've read it and set the variable.
         checkEnemyLocMessage();
+    }
+
+    private void checkIfDoneWithPoke(RobotInfo[] nearby) throws GameActionException {
+        if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
+            if (Arrays.stream(nearby).noneMatch(x -> !x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER)) {
+                giveUpOnPoke = true;
+                handleDefense(nearby);
+            }
+        }
+    }
+
+    private boolean shouldChase(RobotInfo nearest) {
+        return nearest != null && (rc.getRoundNum() < DEFEND_TURN
+                || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN);
+    }
+
+    private boolean shouldAMove() {
+        return rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
+                && rc.getRoundNum() < SHRINK_SHELL_ROUND;
+    }
+
+    private boolean shouldPoke() {
+        return rc.getRoundNum() > POKE_TURN && rc.getRoundNum() < POKE_TURN + POKE_DURATION
+                && !giveUpOnPoke && myLocation.distanceSquaredTo(enemyLocation) < POKE_RADIUS;
     }
 
     public void updateDefensiveDSchoolLocation(RobotInfo[] nearby) throws GameActionException {
@@ -205,7 +235,7 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    private int countNearbyDrones() {
+    private int countAlliedDrones() {
         int i = 0;
         for (RobotInfo x : rc.senseNearbyRobots()) {
             if (x.getTeam().equals(allyTeam) && x.getType() == RobotType.DELIVERY_DRONE)
@@ -423,7 +453,18 @@ public class DeliveryDrone extends Unit {
         nearestWaterLocation = updateNearestWaterLocation();
     }
 
-    private void handleAMove() throws GameActionException {
+    private void handlePoke() throws GameActionException {
+        System.out.println("POKING " + enemyLocation);
+        if (giveUpOnPoke)
+            return;
+        if (rc.getRoundNum() > POKE_TURN + POSTURE_POKE_TIME) {
+            fuzzyMoveToLoc(enemyLocation);
+        } else if (rc.getRoundNum() > POKE_TURN) {
+            path(enemyLocation, true);
+        }
+    }
+
+    private void handleAMove(int attackTurn) throws GameActionException {
         if (giveUpOnAMove)
             return;
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
@@ -443,11 +484,11 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
-        if (rc.getRoundNum() > ATTACK_TURN) {
+        if (rc.getRoundNum() > attackTurn) {
             fuzzyMoveToLoc(enemyLocation);
-        } else if (rc.getRoundNum() > ATTACK_TURN - 25) {
+        } else if (rc.getRoundNum() > attackTurn - 25) {
             path(enemyLocation, true);
-        } else if (rc.getRoundNum() > ATTACK_TURN - 200) {
+        } else if (rc.getRoundNum() > attackTurn - 200) {
             spiral(enemyLocation, true);
         }
     }
@@ -602,7 +643,10 @@ public class DeliveryDrone extends Unit {
                     && !rc.isLocationOccupied(to)
                     && (trapped || nearbyNetGuns.stream().noneMatch(y ->
                     y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
-            ) && (trapped || enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+            ) && (trapped || enemyLocation == null || enemyLocation.distanceSquaredTo(to) > GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)
+                    && (!trapped
+                        || enemyLocation == null
+                        || to.distanceSquaredTo(enemyLocation) > from.distanceSquaredTo(enemyLocation));
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
