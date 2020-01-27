@@ -246,11 +246,12 @@ public class Landscaper extends Unit {
             reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
         } else {
             if (myLocation.distanceSquaredTo(hqLocation) <= LATTICE_SIZE) {
-                terraformer = true;
-                run();
+                if (!terraformer) {
+                    terraformer = true;
+                    run();
+                }
             } else {
                 aggressive = true;
-                run();
             }
         }
     }
