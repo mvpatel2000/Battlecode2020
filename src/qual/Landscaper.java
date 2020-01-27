@@ -22,7 +22,7 @@ public class Landscaper extends Unit {
     MapLocation[] depositSiteExceptions = {null, null, null, null, null};
     boolean spiralClockwise = true;
     Direction lastPlotICompletedDirToHQ = null;
-    int terraformHeight = 1;
+    int terraformHeight = 2;
     MapLocation reservedForDSchoolBuild = null;
 
     // class variables used specifically by defensive landscapers:
@@ -200,12 +200,12 @@ public class Landscaper extends Unit {
             terraform();
         } else if (defensive) {
 
-            if(rc.getRoundNum()<300 && !enemyAggression) {
+            if(rc.getRoundNum()<200 && !enemyAggression) {
                 if(enemyAggressionCheck()) {
                     turnAtEnemyAggression = rc.getRoundNum();
                 }
             } else if(enemyAggression) {
-                if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+                if(rc.getRoundNum() - turnAtEnemyAggression > 200) {
                     enemyAggression = false;
                 }
             }
@@ -798,10 +798,10 @@ public class Landscaper extends Unit {
     }
 
     void updateHoldPositionLoc() throws GameActionException {
+        currentlyInInnerWall = myLocation.isAdjacentTo(hqLocation);
         if (wallPhase < 2) {
             holdPositionLoc = null;
             boolean hqInDanger = false;
-            currentlyInInnerWall = false;
             if (innerWallFillOrder == null) {
                 innerWallFillOrder = directions;
             }
@@ -814,9 +814,6 @@ public class Landscaper extends Unit {
                     if (rc.canSenseLocation(t) && rc.senseElevation(t) >= rc.senseElevation(myLocation) - 8 && rc.senseElevation(t) <= rc.senseElevation(myLocation) + 8) {
                         holdPositionLoc = t;
                     }
-                }
-                if (t.equals(myLocation)) {
-                    currentlyInInnerWall = true;
                 }
                 if (existsNearbyBotAt(hqLocation) && getNearbyBotAt(hqLocation).getDirtCarrying() > 20) {
                     hqInDanger = true;
