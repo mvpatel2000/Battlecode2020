@@ -168,8 +168,29 @@ public class Miner extends Unit {
 
     @Override
     public boolean flee() throws GameActionException {
+        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
+                x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
+
+        if (adjacentDrones.length == 0)
+            return false;
+
         checkBuildBuildings(true);
-        return super.flee();
+
+        Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
+        Direction escapeRight = escapeLeft;
+        while (!canMove(escapeLeft)) {
+            escapeRight = escapeRight.rotateRight();
+            if (canMove(escapeRight)) {
+                go(escapeRight);
+                return true;
+            }
+            escapeLeft = escapeLeft.rotateLeft();
+        }
+        if (canMove(escapeLeft)) {
+            go(escapeLeft);
+            return true;
+        }
+        return false;
     }
 
     public void terraform() throws GameActionException {
@@ -197,9 +218,10 @@ public class Miner extends Unit {
 
     // returns false if special valid grid square, otherwise true
     boolean checkGridExceptions(MapLocation location) throws GameActionException {
-        int x = Math.abs(location.y - hqLocation.y);
-        int y = Math.abs(location.x - hqLocation.x);
-        return !(x == 3 && y == 1 || x == 1 && y == 3);
+        int x = location.x - hqLocation.x;
+        int y = location.y - hqLocation.y;
+        // return !(x == 3 && y == 1 || x == 1 && y == 3);
+        return (x == -1 && y == 3 || x == 3 && y == 1 || x == 1 && y == -3 || x == -3 && y == -1);
     }
 
     //determines if location is on grid and not in landscaper slot
@@ -439,7 +461,7 @@ public class Miner extends Unit {
             //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
             if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                if (!existsNetGun && rc.getRoundNum() > 350) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing)) {
                     tryBuild(RobotType.NET_GUN, dir);
                 // } else if (dSchoolExists) {
                 //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
@@ -447,9 +469,6 @@ public class Miner extends Unit {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
                 } else if (rc.getRoundNum() < 1700) {
                     tryBuild(RobotType.VAPORATOR, dir);
-                }
-                if (!existsNetGun && rc.getRoundNum() > 500) {
-                    tryBuild(RobotType.NET_GUN, dir);
                 }
             }
         }
