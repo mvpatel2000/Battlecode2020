@@ -1,4 +1,4 @@
-package qual;
+package qualAttacc;
 
 import battlecode.common.*;
 
@@ -16,7 +16,7 @@ public class DesignSchool extends Building {
     int startOuterWallAt = 0;
     int numTerraformersMade = 0; // set to 0 to enable, set to 100 to disable
     int NUM_TERRAFORMERS_INITIAL = 3;
-    int NUM_TERRAFORMERS_TOTAL = 18;
+    int NUM_TERRAFORMERS_TOTAL = 6;
     int INNER_WALL_PAUSE_AT = 3;
 
     //For halting production and resuming it.
@@ -149,27 +149,27 @@ public class DesignSchool extends Building {
             if (numLandscapersMade == INNER_WALL_PAUSE_AT && numTerraformersMade < NUM_TERRAFORMERS_INITIAL) { // build terraformer
                 spawnTerraformer();
             }
-            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
+            if ((numLandscapersMade < INNER_WALL_PAUSE_AT || ((rc.getRoundNum() >= CLOSE_INNER_WALL_AT || (firstRefineryExists && rc.getTeamSoup() >= 521)) && numLandscapersMade < 8))) { // WALL PHASE 0 AND 1
                 System.out.println("Ready to make inner wall landscaper");
                 spawnInnerWaller();
             }
-            if (numLandscapersMade == 8 && numTerraformersMade < NUM_TERRAFORMERS_TOTAL && rc.getTeamSoup() > 528) {
+            if (numLandscapersMade == 8 && numTerraformersMade < NUM_TERRAFORMERS_TOTAL) {
                 spawnTerraformer();
             }
-            // else if(numLandscapersMade >= 8 && numLandscapersMade <= 19) { // WALL PHASE 2
-            //     System.out.println("Ready to make outer wall landscaper");
-            //     if (startOuterWallAt == 0) {
-            //         startOuterWallAt = rc.getRoundNum();
-            //     }
-            //     if (rc.getRoundNum() - startOuterWallAt < 300 && rc.getTeamSoup() < 521) {
-            //         return;
-            //     }
-            //     spawnOuterWaller();
-            // }
-            // else if(numLandscapersMade > 19 && numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
-            //     System.out.println("Building extra landscaper");
-            //     spawnOuterWaller();
-            // }
+            else if(numLandscapersMade >= 8 && numLandscapersMade <= 19) { // WALL PHASE 2
+                System.out.println("Ready to make outer wall landscaper");
+                if (startOuterWallAt == 0) {
+                    startOuterWallAt = rc.getRoundNum();
+                }
+                if (rc.getRoundNum() - startOuterWallAt < 300 && rc.getTeamSoup() < 521) {
+                    return;
+                }
+                spawnOuterWaller();
+            }
+            else if(numLandscapersMade > 19 && numLandscapersMade < 22 && rc.getTeamSoup() > 400) {
+                System.out.println("Building extra landscaper");
+                spawnOuterWaller();
+            }
             // else if(numLandscapersMade >= 22) {
             //     System.out.println("My work is complete.  Goodbye, beautiful world...");
             //     rc.disintegrate();
@@ -241,10 +241,7 @@ public class DesignSchool extends Building {
         System.out.println("[i] Sending terraform message");
         System.out.println("[i] ID: " + Integer.toString(i%1000));
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
-
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
-        int[] mm = t.getMessage();
-
         return sendMessage(t.getMessage(), 1);
     }
 

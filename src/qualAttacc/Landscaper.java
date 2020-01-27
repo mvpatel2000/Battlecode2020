@@ -1,4 +1,4 @@
-package qual;
+package qualAttacc;
 
 import java.util.*;
 
@@ -22,7 +22,7 @@ public class Landscaper extends Unit {
     MapLocation[] depositSiteExceptions = {null, null, null, null, null};
     boolean spiralClockwise = true;
     Direction lastPlotICompletedDirToHQ = null;
-    int terraformHeight = 0;
+    int terraformHeight = 3;
     MapLocation reservedForDSchoolBuild = null;
 
     // class variables used specifically by defensive landscapers:
@@ -98,7 +98,7 @@ public class Landscaper extends Unit {
 
     @Override
     protected int getFleeRadius() {
-        return 8;
+        return 2;
     }
 
     public Landscaper(RobotController rc) throws GameActionException {
@@ -189,15 +189,11 @@ public class Landscaper extends Unit {
             rc.setIndicatorDot(myLocation, 0, 0, 0);
         }
 
-<<<<<<< HEAD
-        //System.out.print("Breakpoint 0.1: ");
-        //System.out.println(Clock.getBytecodeNum());
+        System.out.print("Breakpoint 0.1: ");
+        System.out.println(Clock.getBytecodeNum());
         nearbyBots = rc.senseNearbyRobots();
-        //System.out.print("Breakpoint 0.2: ");
-        //System.out.println(Clock.getBytecodeNum());
-=======
-        nearbyBots = rc.senseNearbyRobots();
->>>>>>> 7de14ceabdc6efa1d255c9d03654b79480b69f74
+        System.out.print("Breakpoint 0.2: ");
+        System.out.println(Clock.getBytecodeNum());
 
         if (rc.getRoundNum() - bornTurn == 5) {
             readBirthMessage();
@@ -264,6 +260,53 @@ public class Landscaper extends Unit {
             } else {
                 path(target);
             }
+
+            // Direction digDir = getTerraformDigDirection();
+            // MapLocation digLoc = myLocation.add(digDir);
+            // if (onBoundary(myLocation)) {
+            //     moveInDirection(myLocation.directionTo(new MapLocation((int) (MAP_WIDTH / 2), (int) (MAP_HEIGHT / 2))));
+            // } else {
+            //     if (rc.getDirtCarrying() == 0) { // dig
+            //         System.out.println("Trying to dig in direction " + digDir.toString());
+            //         tryDig(digDir);
+            //     } else {
+            //         boolean plotComplete = true;
+            //         for (Direction d : directionsWithCenter) {
+            //             MapLocation t = myLocation.add(d);
+            //             if (rc.onTheMap(t) && !t.equals(digLoc) && isNotDepositSiteException(t) && terraformerValidDepositHeight(rc.senseElevation(t)) &&
+            //                     (!existsNearbyBotAt(t) || !getNearbyBotAt(t).team.equals(allyTeam) || !getNearbyBotAt(t).type.isBuilding())) {
+            //                 System.out.println("Dumping dirt in direction " + d.toString());
+            //                 if (tryDeposit(d)) {
+            //                     plotComplete = false;
+            //                     lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
+            //                     System.out.println("Update lastPlotICompletedDirToHQ to " + lastPlotICompletedDirToHQ.toString());
+            //                 }
+            //             }
+            //         }
+            //         if (plotComplete) {
+            //             if (lastPlotICompletedDirToHQ == null || lastPlotICompletedDirToHQ == rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)))) { // completed this level of dirt
+            //                 lastPlotICompletedDirToHQ = myLocation.directionTo(hqLocation);
+            //                 terraformHeight += 2;
+            //                 System.out.println("Increasing height of dirt to " + Integer.toString(terraformHeight));
+            //             }
+            //             Direction moveDir;
+            //             if (myLocation.distanceSquaredTo(hqLocation) > 25) {
+            //                 moveDir = myLocation.directionTo(hqLocation);
+            //                 System.out.println("I'm too far from HQ now, moving back in");
+            //             } else {
+            //                 moveDir = rotateBySpiralDirection(rotateBySpiralDirection(myLocation.directionTo(hqLocation)));
+            //                 MapLocation t = myLocation.add(moveDir);
+            //                 if (onBoundary(t)) {
+            //                     System.out.println("At boundary, swapping spiral rotation");
+            //                     spiralClockwise = !spiralClockwise;
+            //                     moveDir = moveDir.opposite();
+            //                 }
+            //             }
+            //             System.out.println("Moving in direction " + moveDir.toString());
+            //             moveInDirection(moveDir);
+            //         }
+            //     }
+            // }
         }
     }
 
@@ -283,16 +326,16 @@ public class Landscaper extends Unit {
         path(myLocation.add(d));
     }
 
-    public boolean isDepositSiteException(MapLocation t) {
+    public boolean isNotDepositSiteException(MapLocation t) {
         for (MapLocation l : depositSiteExceptions) {
             if (t.equals(l)) {
-                return true;
+                return false;
             }
         }
         if (t.equals(reservedForDSchoolBuild)) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     public Direction getTerraformDigDirection() throws GameActionException {
@@ -377,8 +420,17 @@ public class Landscaper extends Unit {
                         tryDig(myLocation.directionTo(botInfo.location));
                     }
                 }
+
+                // if (rc.senseElevation(myLocation.add(Direction.CENTER)) < rc.senseElevation(myLocation.add(enemyHQDir.opposite()))) {
+                //     if (rc.canDigDirt(enemyHQDir.opposite()) && !isAdjacentToWater(myLocation.add(enemyHQDir.opposite())) && notTrappingAlly(enemyHQDir.opposite())) {
+                //         System.out.println("Digging in direction " + enemyHQDir.opposite().toString());
+                //         tryDig(enemyHQDir.opposite());
+                //     }
+                // }
+                // else {
                 System.out.println("Digging under myself");
                 tryDig(Direction.CENTER);
+                // }
             }
         } else {
             System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
@@ -412,9 +464,15 @@ public class Landscaper extends Unit {
         int hqDist = myLocation.distanceSquaredTo(hqLocation);
 
         // TODO: If we start exceeding bytecode limits, investigate ways to not do these two functions every turn.
+        System.out.print("Breakpoint 1: ");
+        System.out.println(Clock.getBytecodeNum());
         updateHoldPositionLoc();
+        System.out.print("Breakpoint 2: ");
+        System.out.println(Clock.getBytecodeNum());
         System.out.println("Updated holdPositionLoc to " + holdPositionLoc.toString());
         checkWallStage();
+        System.out.print("Breakpoint 3: ");
+        System.out.println(Clock.getBytecodeNum());
 
         for (Direction d : directions) {// zeroth priority: kill an an enemy building
             if (existsNearbyBotAt(myLocation.add(d))) {
@@ -667,7 +725,11 @@ public class Landscaper extends Unit {
     //     int b = 0;
 
     //     nearbyBots = rc.senseNearbyRobots();
+    //     System.out.print("Breakpoint 1.1: ");
+    //     System.out.println(Clock.getBytecodeNum());
     //     nearbyBotsMap.clear();
+    //     System.out.print("Breakpoint 1.2: ");
+    //     System.out.println(Clock.getBytecodeNum());
     //     int a = Clock.getBytecodeNum();
     //     forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
     //     for (RobotInfo botInfo : nearbyBots) {
@@ -873,6 +935,7 @@ public class Landscaper extends Unit {
     }
 
     protected MapLocation findLatticeDepositSite() throws GameActionException {
+        List<MapLocation> exceptions = Arrays.asList(reservedForDSchoolBuild);
         for (int[] d : visionSpiral) {
             MapLocation loc = add(myLocation, d);
             int dist = loc.distanceSquaredTo(hqLocation);
@@ -881,7 +944,7 @@ public class Landscaper extends Unit {
             int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
                 continue;
-            if (isDepositSiteException(loc) || !rc.canSenseLocation(loc))
+            if (exceptions.contains(loc) || !rc.canSenseLocation(loc))
                 continue;
             if (existsNearbyBotAt(loc) && getNearbyBotAt(loc).team.equals(allyTeam) && getNearbyBotAt(loc).type.isBuilding())
                 continue;

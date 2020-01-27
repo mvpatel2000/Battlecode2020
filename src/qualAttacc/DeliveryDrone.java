@@ -1,4 +1,4 @@
-package qual;
+package qualAttacc;
 
 import battlecode.common.*;
 
@@ -6,10 +6,9 @@ import java.util.*;
 
 public class DeliveryDrone extends Unit {
 
-    private static final int START_FERRY = 300;
+    private static final int START_FERRY = 400;
     private static final int FILL_WALL_ROUND = 500;
     private static final int FILL_OUTER_ROUND = 1000;
-    public static final int SHRINK_SHELL_ROUND = 2600;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
 
@@ -110,7 +109,7 @@ public class DeliveryDrone extends Unit {
             return false;
         for (MapLocation loc : outerWall) {
             try {
-                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc))
                     return true;
             } catch (GameActionException e) {
                 e.printStackTrace();
@@ -125,7 +124,7 @@ public class DeliveryDrone extends Unit {
         for (Direction d : directions) {
             MapLocation loc = hqLocation.add(d);
             try {
-                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc))
                     return true;
             } catch (GameActionException e) {
                 e.printStackTrace();
@@ -174,8 +173,7 @@ public class DeliveryDrone extends Unit {
                 chaseEnemy(nearest);
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
-            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
-                            && rc.getRoundNum() < SHRINK_SHELL_ROUND) { // drone attack-move
+            } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
@@ -378,16 +376,13 @@ public class DeliveryDrone extends Unit {
 
     private boolean inShell() {
         int[] dxy = xydist(myLocation, hqLocation);
-        int rad = rc.getRoundNum() < SHRINK_SHELL_ROUND ? 3 : 2;
-        return dxy[0] <= rad && dxy[1] == rad || dxy[0] == rad && dxy[1] <= rad;
+        return dxy[0] <= 3 && dxy[1] == 3 || dxy[0] == 3 && dxy[1] <= 3;
     }
 
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
         System.out.println("Handle Defense");
         destination = hqLocation;
-        if (rc.getRoundNum() < 100) {
-            fuzzyMoveToLoc(hqLocation.add(hqLocation.directionTo(enemyLocation)));
-        } else if (rc.getRoundNum() < DEFEND_TURN) {
+        if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
         } else {
             if (!inShell())
@@ -568,8 +563,6 @@ public class DeliveryDrone extends Unit {
                     return false;
             }
         }
-        if (to.equals(reservedForDSchoolBuild))
-            return false;
         try {
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
