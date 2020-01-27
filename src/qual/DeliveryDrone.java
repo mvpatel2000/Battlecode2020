@@ -9,6 +9,7 @@ public class DeliveryDrone extends Unit {
     private static final int START_FERRY = 300;
     private static final int FILL_WALL_ROUND = 500;
     private static final int FILL_OUTER_ROUND = 1000;
+    public static final int SHRINK_SHELL_ROUND = 2600;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
 
@@ -376,7 +377,8 @@ public class DeliveryDrone extends Unit {
 
     private boolean inShell() {
         int[] dxy = xydist(myLocation, hqLocation);
-        return dxy[0] <= 3 && dxy[1] == 3 || dxy[0] == 3 && dxy[1] <= 3;
+        int rad = rc.getRoundNum() < SHRINK_SHELL_ROUND ? 3 : 2;
+        return dxy[0] <= rad && dxy[1] == rad || dxy[0] == rad && dxy[1] <= rad;
     }
 
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
