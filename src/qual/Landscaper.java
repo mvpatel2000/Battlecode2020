@@ -22,7 +22,7 @@ public class Landscaper extends Unit {
     MapLocation[] depositSiteExceptions = {null, null, null, null, null};
     boolean spiralClockwise = true;
     Direction lastPlotICompletedDirToHQ = null;
-    int terraformHeight = 0;
+    int terraformHeight = 1;
     MapLocation reservedForDSchoolBuild = null;
 
     // class variables used specifically by defensive landscapers:
