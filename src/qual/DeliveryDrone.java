@@ -531,9 +531,8 @@ public class DeliveryDrone extends Unit {
                 cornerHolder = true;
             } else if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
                 fuzzyMoveToLoc(nearest.location);
-            } else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100) {
-                System.out.println("pathing recklessly");
-                path(nearest.location, true); // to nearest enemy.
+            } else if (rc.getRoundNum() < 100 && myLocation.distanceSquaredTo(hqLocation) < 64) {
+                path(nearest.location, false); // path recklessly
             } else {
                 path(nearest.location, true);
             }
