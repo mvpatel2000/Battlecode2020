@@ -563,6 +563,8 @@ public class DeliveryDrone extends Unit {
                     return false;
             }
         }
+        if (to.equals(reservedForDSchoolBuild))
+            return false;
         try {
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
