@@ -124,7 +124,14 @@ public class Landscaper extends Unit {
         if (baseLocation != null) {
             System.out.println("Found my d.school: " + baseLocation.toString());
         } else {
-            rc.setIndicatorDot(myLocation, 255, 255, 0);
+            for (RobotInfo r : nearbyBots) {
+                if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) {
+                    baseLocation = r.location;
+                }
+            }
+            if (baseLocation == null) {
+                rc.setIndicatorDot(myLocation, 255, 255, 0);
+            }
             // for (int i = 0; i < MAP_HEIGHT; i++) {
             //     for (int j = 0; j < MAP_WIDTH; j++) {
             //         rc.setIndicatorDot(new MapLocation(j, i), 255, 255, 0);
@@ -180,7 +187,9 @@ public class Landscaper extends Unit {
         System.out.println("[i] YAY, I'm A TERRAFORMER!");
         terraformer = true;
         spiralClockwise = rc.getRoundNum() % 2 == 0;
-        reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
+        if (baseLocation != null) {
+            reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
+        }
     }
 
     @Override
@@ -218,7 +227,27 @@ public class Landscaper extends Unit {
         }
     }
 
+    public void updateBaseLocationIfNull() throws GameActionException {
+        if (baseLocation != null) {
+            return;
+        }
+        for (RobotInfo r : nearbyBots) {
+            if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) {
+                baseLocation = r.location;
+            }
+        }
+        if (baseLocation != null) {
+            if (baseLocation.distanceSquaredTo(hqLocation) == 4) {
+                depositSiteExceptions[4] = baseLocation.add(baseLocation.directionTo(hqLocation).rotateLeft().rotateLeft());
+            }
+            innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
+            reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
+        }
+    }
+
     public void terraform() throws GameActionException {
+        updateBaseLocationIfNull();
+
         rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
         if (flee()) {
             return;
@@ -403,6 +432,8 @@ public class Landscaper extends Unit {
     }
 
     public void defense() throws GameActionException {
+        updateBaseLocationIfNull();
+
         Direction hqDir = myLocation.directionTo(hqLocation);
         int hqDist = myLocation.distanceSquaredTo(hqLocation);
 

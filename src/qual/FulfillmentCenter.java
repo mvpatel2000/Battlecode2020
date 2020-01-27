@@ -40,7 +40,7 @@ public class FulfillmentCenter extends Building {
             checkIfContinueHold();
         }
 
-        if(rc.getRoundNum() < 300 && !enemyAggression) {
+        if(rc.getRoundNum() < 200 && !enemyAggression) {
             if(enemyAggressionCheck()) {
                 turnAtEnemyAggression = rc.getRoundNum();
             }
@@ -146,7 +146,7 @@ public class FulfillmentCenter extends Building {
             }
         }
         if(enemyAggression) {
-            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 200) {
                 enemyAggression = false;
                 return false;
             }

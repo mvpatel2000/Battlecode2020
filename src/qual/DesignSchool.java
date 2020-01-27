@@ -147,25 +147,25 @@ public class DesignSchool extends Building {
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
             if (enemyAggression) { // rush defense
-                System.out.println("Enemy aggression");
+                // System.out.println("Enemy aggression");
                 if (numLandscapersMade < 5) {
                     spawnInnerWaller();
                 } else if (numTerraformersMade < 3) {
                     spawnTerraformer();
                 } else if (rc.getRoundNum() >= 500 || (firstRefineryExists && rc.getTeamSoup() >= 1000) && numLandscapersMade < 8) {
                     spawnInnerWaller();
-                } else if (numLandscapersMade == 8 && numTerraformersMade < 18 && rc.getTeamSoup() > 528) {
+                } else if (numLandscapersMade == 8 && numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     spawnTerraformer();
                 }
             } else { // normal operation, greedier
-                System.out.println("No enemy aggression");
+                // System.out.println("No enemy aggression");
                 if (numTerraformersMade < 5 && rc.getRoundNum() < 250) {
                     spawnTerraformer();
                 } else if (rc.getRoundNum() >= 250 && numLandscapersMade < 3) {
                     spawnInnerWaller();
                 } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
                     spawnTerraformer();
-                } else if (numTerraformersMade < 18 && rc.getTeamSoup() > 528) {
+                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     spawnTerraformer();
                 }
             }

@@ -229,7 +229,7 @@ public class Miner extends Unit {
         if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
             return false;
         if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
-            && checkGridExceptions(location)) {
+            && !checkGridExceptions(location)) {
             return false;
         }
         for (Direction d : directions) { // check location is not reservedForDSchoolBuild
@@ -447,6 +447,7 @@ public class Miner extends Unit {
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
         boolean existsFulfillmentCenter = false;
+        boolean existsVaporator = false;
         for (RobotInfo robot : allyRobots) {
             if ((!fleeing || robot.location.distanceSquaredTo(myLocation) <= 5) && robot.type.equals(RobotType.NET_GUN)) {
                 existsNetGun = true;
@@ -454,18 +455,18 @@ public class Miner extends Unit {
             if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
                 existsFulfillmentCenter = true;
             }
+            if (robot.type.equals(RobotType.VAPORATOR)) {
+                existsVaporator = true;
+            }
         }
         for (Direction dir : directions) {
-            //TODO: With grid, get rid of elevation turn checks and turn on onBuildingGridSquare
             if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && rc.senseElevation(myLocation.add(dir)) > 2) {
-                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing)) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing && existsVaporator)) {
                     tryBuild(RobotType.NET_GUN, dir);
-                // } else if (dSchoolExists) {
-                //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/25)) {
+                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100)) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
             }
