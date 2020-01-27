@@ -241,7 +241,10 @@ public class DesignSchool extends Building {
         System.out.println("[i] Sending terraform message");
         System.out.println("[i] ID: " + Integer.toString(i%1000));
         TerraformMessage t = new TerraformMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+
         t.writeTypeAndID(1, i%1000); //1 is landscaper, id is max 10 bits, hence mod 1000
+        int[] mm = t.getMessage();
+
         return sendMessage(t.getMessage(), 1);
     }
 

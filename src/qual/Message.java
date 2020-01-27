@@ -11,7 +11,7 @@ public class Message {
     final int MAP_HEIGHT;
     final int MAP_WIDTH;
     final int team;
-    final int arbitraryConstant = 15035; //make sure this is the same constant in Robot.java
+    final int arbitraryConstant = 64556; //make sure this is the same constant in Robot.java
 
     int headerLen = 16;
     final int header;
@@ -30,7 +30,7 @@ public class Message {
         MAP_WIDTH = myMapWidth;
         team = myTeam;
         origin = true;
-        header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber % ((1 << headerLen) - 1);
+        header = Math.floorMod(arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber, ((1 << headerLen) - 1));
         generateHeader();
     }
 
@@ -55,7 +55,7 @@ public class Message {
         MAP_WIDTH = myMapWidth;
         team = myTeam;
         origin = true;
-        header = arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber % ((1 << headerLen) - 1);
+        header = Math.floorMod(arbitraryConstant*(team+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber, ((1 << headerLen) - 1));
         //origin = getOrigin();
         //schema = getSchema();
     }

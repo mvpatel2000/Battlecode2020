@@ -189,11 +189,11 @@ public class Landscaper extends Unit {
             rc.setIndicatorDot(myLocation, 0, 0, 0);
         }
 
-        System.out.print("Breakpoint 0.1: ");
-        System.out.println(Clock.getBytecodeNum());
+        //System.out.print("Breakpoint 0.1: ");
+        //System.out.println(Clock.getBytecodeNum());
         nearbyBots = rc.senseNearbyRobots();
-        System.out.print("Breakpoint 0.2: ");
-        System.out.println(Clock.getBytecodeNum());
+        //System.out.print("Breakpoint 0.2: ");
+        //System.out.println(Clock.getBytecodeNum());
 
         if (rc.getRoundNum() - bornTurn == 5) {
             readBirthMessage();
