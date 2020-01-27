@@ -119,7 +119,7 @@ public class Miner extends Unit {
 
         findMessageFromAllies(rc.getRoundNum()-1);
 
-        if(rc.getRoundNum()<300 && !enemyAggression) {
+        if(rc.getRoundNum()<200 && !enemyAggression) {
             if(enemyAggressionCheck()) {
                 turnAtEnemyAggression = rc.getRoundNum();
             }
@@ -272,7 +272,7 @@ public class Miner extends Unit {
             }
         }
         if(enemyAggression) {
-            if(rc.getRoundNum() - turnAtEnemyAggression > 300) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 200) {
                 enemyAggression = false;
                 return false;
             }
@@ -448,13 +448,11 @@ public class Miner extends Unit {
         boolean existsNetGun = false;
         boolean existsFulfillmentCenter = false;
         for (RobotInfo robot : allyRobots) {
-            switch (robot.getType()) {
-                case NET_GUN:
-                    existsNetGun = true;
-                    break;
-                case FULFILLMENT_CENTER:
-                    existsFulfillmentCenter = true;
-                    break;
+            if ((!fleeing || robot.location.distanceSquaredTo(myLocation) <= 5) && robot.type.equals(RobotType.NET_GUN)) {
+                existsNetGun = true;
+            }
+            if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
+                existsFulfillmentCenter = true;
             }
         }
         for (Direction dir : directions) {
@@ -467,7 +465,7 @@ public class Miner extends Unit {
                 //     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else if (rc.getRoundNum() < 1700) {
+                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/25)) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
             }
