@@ -437,7 +437,7 @@ public class DeliveryDrone extends Unit {
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
         System.out.println("Handle Defense");
         destination = hqLocation;
-        if (rc.getRoundNum() < 125) {
+        if (rc.getRoundNum() < 200) {
             fuzzyMoveToLoc(hqLocation.add(hqLocation.directionTo(enemyLocation)));
         } else if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
