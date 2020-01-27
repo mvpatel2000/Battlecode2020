@@ -173,7 +173,7 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("E");
                     spawnTerraformer();
-                } else if (numTerraformersMade < 25 && (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 500)) {
+                } else if (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
                     System.out.println("F");
                     spawnTerraformer();
                 } else {
@@ -181,7 +181,7 @@ public class DesignSchool extends Building {
                 }
             } else { // normal operation, greedier
                 System.out.println("No enemy aggression");
-                if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
+                if (rc.getRoundNum() < shouldHaveFirstVape + 10 || rc.getRoundNum() < 160) {
                     System.out.println("A");
                     return;
                 } else if (numTerraformersMade < 4 && rc.getRoundNum() < 250) {
@@ -205,7 +205,7 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("G");
                     spawnTerraformer();
-                } else if (numTerraformersMade < 25 && (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 500)) {
+                } else if (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
                     System.out.println("H");
                     spawnTerraformer();
                 } else {

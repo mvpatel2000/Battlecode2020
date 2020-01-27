@@ -52,6 +52,7 @@ public class DeliveryDrone extends Unit {
     private boolean shrunk;
     private boolean giveUpOnPoke;
     private boolean cornerHolder;
+    private boolean alwaysAttack;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -160,9 +161,7 @@ public class DeliveryDrone extends Unit {
 
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
-        if (cornerHolder && underFire(myLocation)) {
-            cornerHolder = false;
-        }
+        checkIfDoneCornerHolding();
 
         if (shellDrone) {
             if (!inShell())
@@ -190,7 +189,7 @@ public class DeliveryDrone extends Unit {
                 handlePoke();
             } else if (shouldChase(nearest)) { // chase enemy unless defending
                 chaseEnemy(nearest);
-            } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
+            } else if (isAttackDrone()) { // attack drone
                 handleAttack();
             } else if (shouldAMove()) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
@@ -203,6 +202,22 @@ public class DeliveryDrone extends Unit {
         //Check every 100 turns for enemy location message sent in the previous 5 turns.
         //until you've read it and set the variable.
         checkEnemyLocMessage();
+    }
+
+    private void checkIfDoneCornerHolding() {
+        if (cornerHolder) {
+            if (underFire(myLocation)) {
+                cornerHolder = false;
+            }
+            int[] dxy = xydist(myLocation, enemyLocation);
+            if (dxy[0] != 3 || dxy[1] != 3) {
+                cornerHolder = false;
+            }
+        }
+    }
+
+    private boolean isAttackDrone() {
+        return attackDrone && (rc.getRoundNum() < DEFEND_TURN || alwaysAttack);
     }
 
     private void checkIfDoneWithPoke(RobotInfo[] nearby) throws GameActionException {
@@ -470,18 +485,17 @@ public class DeliveryDrone extends Unit {
 
     private void handlePoke() throws GameActionException {
         System.out.println("POKING " + enemyLocation);
-        cornerHolder = false;
+        alwaysAttack = true;
         if (giveUpOnPoke)
             return;
         if (rc.getRoundNum() > POKE_TURN + POSTURE_POKE_TIME) {
             fuzzyMoveToLoc(enemyLocation);
-        } else if (rc.getRoundNum() > POKE_TURN) {
+        } else if (rc.getRoundNum() > POKE_TURN && !cornerHolder) {
             path(enemyLocation, true);
         }
     }
 
     private void handleAMove(int attackTurn) throws GameActionException {
-        cornerHolder = false;
         if (giveUpOnAMove)
             return;
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
@@ -503,9 +517,9 @@ public class DeliveryDrone extends Unit {
         }
         if (rc.getRoundNum() > attackTurn) {
             fuzzyMoveToLoc(enemyLocation);
-        } else if (rc.getRoundNum() > attackTurn - 25) {
+        } else if (rc.getRoundNum() > attackTurn - 25 && !cornerHolder) {
             path(enemyLocation, true);
-        } else if (rc.getRoundNum() > attackTurn - 200) {
+        } else if (rc.getRoundNum() > attackTurn - 200 && !cornerHolder) {
             spiral(enemyLocation, true);
         }
     }
