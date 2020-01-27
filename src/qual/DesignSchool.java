@@ -177,12 +177,12 @@ public class DesignSchool extends Building {
                 }
             } else { // normal operation, greedier
                 System.out.println("No enemy aggression");
-                if (numTerraformersMade < 3 && rc.getRoundNum() < 250) {
+                if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
                     System.out.println("A");
-                    spawnTerraformer();
-                } else if (rc.getRoundNum() < shouldHaveFirstVape + 10) {
-                    System.out.println("B");
                     return;
+                } else if (numTerraformersMade < 3 && rc.getRoundNum() < 250) {
+                    System.out.println("B");
+                    spawnTerraformer();
                 } else if (numTerraformersMade < 5) {
                     System.out.println("C");
                     spawnTerraformer();

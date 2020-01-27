@@ -242,6 +242,14 @@ public class Landscaper extends Unit {
             }
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
+        } else {
+            if (myLocation.distanceSquaredTo(hqLocation) <= LATTICE_SIZE) {
+                terraformer = true;
+                run();
+            } else {
+                aggressive = true;
+                run();
+            }
         }
     }
 
@@ -589,23 +597,23 @@ public class Landscaper extends Unit {
                     Direction dump = Direction.CENTER;
                     int height = rc.senseElevation(myLocation.add(dump));
                     MapLocation candidateDumpLoc = myLocation.add(hqDir.rotateLeft());
-                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate left
+                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate left
                         dump = hqDir.rotateLeft();
                         height = rc.senseElevation(candidateDumpLoc);
                     }
                     candidateDumpLoc = myLocation.add(hqDir.rotateRight());
-                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate right
+                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate right
                         dump = hqDir.rotateRight();
                         height = rc.senseElevation(candidateDumpLoc);
                     }
                     if (hqDist == 1) {
                         candidateDumpLoc = myLocation.add(hqDir.rotateLeft().rotateLeft());
-                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate left
+                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate left
                             dump = hqDir.rotateLeft().rotateLeft();
                             height = rc.senseElevation(candidateDumpLoc);
                         }
                         candidateDumpLoc = myLocation.add(hqDir.rotateRight().rotateRight());
-                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height) { // check rotate right
+                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate right
                             dump = hqDir.rotateRight().rotateRight();
                             height = rc.senseElevation(candidateDumpLoc);
                         }
@@ -648,6 +656,15 @@ public class Landscaper extends Unit {
                 }
             }
         }
+    }
+
+    boolean isNotUselessDumpSpot(MapLocation l) { // useless dump spot is somewhere the water can't reach anyway if the HQ is close to the boundary
+        for (Direction d : cardinal) {
+            if (l.equals(hqLocation.add(d)) && onBoundary(l)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     boolean shouldLowerPile(MapLocation hqLocation, Direction d) throws GameActionException {
