@@ -265,6 +265,10 @@ public class Landscaper extends Unit {
             moveInDirection(d);
             return;
         } else {
+            if (isWalled() && myLocation.equals(reservedForDSchoolBuild)) {
+                // wait for my ride onto the lattice
+                return;
+            }
             rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
             MapLocation target = findLatticeDepositSite();
             while (target == null || isWalled()) {
@@ -899,7 +903,7 @@ public class Landscaper extends Unit {
         for (int[] d : visionSpiral) {
             MapLocation loc = add(myLocation, d);
             int dist = loc.distanceSquaredTo(hqLocation);
-            if (dist < 5)
+            if (dist < 5 || dist > LATTICE_SIZE)
                 continue;
             int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
@@ -907,8 +911,6 @@ public class Landscaper extends Unit {
             if (isDepositSiteException(loc) || !rc.canSenseLocation(loc))
                 continue;
             if (existsNearbyBotAt(loc) && getNearbyBotAt(loc).team.equals(allyTeam) && getNearbyBotAt(loc).type.isBuilding())
-                continue;
-            if (dist > LATTICE_SIZE)
                 continue;
             int height = rc.senseElevation(loc);
             if (height >= terraformHeight || height <= MIN_LATTICE_BUILD_HEIGHT)

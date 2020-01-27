@@ -186,11 +186,13 @@ public abstract class Robot {
     }
 
     public boolean enemyAggressionCheck() throws GameActionException {
+        System.out.println("Enemy Aggression Check");
         if(enemyAggression == false) {
             RobotInfo[] nearbyBots = rc.senseNearbyRobots();
             for (RobotInfo botInfo : nearbyBots) {
                 if (!botInfo.type.equals(RobotType.DELIVERY_DRONE) && !botInfo.type.equals(RobotType.HQ) && botInfo.team.equals(enemyTeam)) {
-                    return true;
+                    System.out.println("Found enemy aggression!");
+                    enemyAggression = true;
                 }
             }
             if(enemyAggression) {
