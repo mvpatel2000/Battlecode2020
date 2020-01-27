@@ -618,36 +618,17 @@ public class Landscaper extends Unit {
                         }
                     }
                     if (!foundDumpSite) {
-                        System.out.println("Dumping dirt under myself");
-                        if (tryDeposit(Direction.CENTER)) {
+                        Direction dump = innerWallLowestNearbyDirection();
+                        if (rc.senseElevation(myLocation.add(dump)) > GameConstants.getWaterLevel(rc.getRoundNum() + 10)) {
+                            dump = Direction.CENTER;
+                        }
+                        System.out.println("Dumping dirt in direction " + dump);
+                        if (tryDeposit(dump)) {
                             return;
                         }
                     }
                 } else { // inner wall tight; distribute to the lowest point of the inner wall around it
-                    Direction dump = Direction.CENTER;
-                    int height = rc.senseElevation(myLocation.add(dump));
-                    MapLocation candidateDumpLoc = myLocation.add(hqDir.rotateLeft());
-                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate left
-                        dump = hqDir.rotateLeft();
-                        height = rc.senseElevation(candidateDumpLoc);
-                    }
-                    candidateDumpLoc = myLocation.add(hqDir.rotateRight());
-                    if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate right
-                        dump = hqDir.rotateRight();
-                        height = rc.senseElevation(candidateDumpLoc);
-                    }
-                    if (hqDist == 1) {
-                        candidateDumpLoc = myLocation.add(hqDir.rotateLeft().rotateLeft());
-                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate left
-                            dump = hqDir.rotateLeft().rotateLeft();
-                            height = rc.senseElevation(candidateDumpLoc);
-                        }
-                        candidateDumpLoc = myLocation.add(hqDir.rotateRight().rotateRight());
-                        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate right
-                            dump = hqDir.rotateRight().rotateRight();
-                            height = rc.senseElevation(candidateDumpLoc);
-                        }
-                    }
+                    Direction dump = innerWallLowestNearbyDirection();
                     System.out.println("Dumping dirt in direction " + dump.toString());
                     if (tryDeposit(dump)) {
                         return;
@@ -686,6 +667,35 @@ public class Landscaper extends Unit {
                 }
             }
         }
+    }
+
+    Direction innerWallLowestNearbyDirection() throws GameActionException {
+        Direction hqDir = myLocation.directionTo(hqLocation);
+        Direction dump = Direction.CENTER;
+        int height = rc.senseElevation(myLocation.add(dump));
+        MapLocation candidateDumpLoc = myLocation.add(hqDir.rotateLeft());
+        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate left
+            dump = hqDir.rotateLeft();
+            height = rc.senseElevation(candidateDumpLoc);
+        }
+        candidateDumpLoc = myLocation.add(hqDir.rotateRight());
+        if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate right
+            dump = hqDir.rotateRight();
+            height = rc.senseElevation(candidateDumpLoc);
+        }
+        if (myLocation.distanceSquaredTo(hqLocation) == 1) {
+            candidateDumpLoc = myLocation.add(hqDir.rotateLeft().rotateLeft());
+            if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate left
+                dump = hqDir.rotateLeft().rotateLeft();
+                height = rc.senseElevation(candidateDumpLoc);
+            }
+            candidateDumpLoc = myLocation.add(hqDir.rotateRight().rotateRight());
+            if (rc.canSenseLocation(candidateDumpLoc) && rc.senseElevation(candidateDumpLoc) < height && isNotUselessDumpSpot(candidateDumpLoc)) { // check rotate right
+                dump = hqDir.rotateRight().rotateRight();
+                height = rc.senseElevation(candidateDumpLoc);
+            }
+        }
+        return dump;
     }
 
     boolean isNotUselessDumpSpot(MapLocation l) { // useless dump spot is somewhere the water can't reach anyway if the HQ is close to the boundary
@@ -957,7 +967,7 @@ public class Landscaper extends Unit {
                 continue;
             if (isDepositSiteException(loc) || !rc.canSenseLocation(loc))
                 continue;
-            if (existsNearbyBotAt(loc) && getNearbyBotAt(loc).team.equals(allyTeam) && getNearbyBotAt(loc).type.isBuilding())
+            if (existsNearbyBotAt(loc) && getNearbyBotAt(loc).team.equals(allyTeam) && getNearbyBotAt(loc).type.isBuilding() && (getNearbyBotAt(loc).getDirtCarrying() >= 5 || rc.getRoundNum() < 400))
                 continue;
             int height = rc.senseElevation(loc);
             if (height >= terraformHeight || height <= MIN_LATTICE_BUILD_HEIGHT)
