@@ -29,7 +29,7 @@ public abstract class Robot {
     final int messageModulus = 2;
     final int messageFrequency = 10;
     //for reading message headers
-    final int arbitraryConstant = 15035; //make sure this is the same constant in Message.java
+    final int arbitraryConstant = 64556; //make sure this is the same constant in Message.java
     final int headerLen = 16;
     final int schemaLen = 3;
 
@@ -400,7 +400,7 @@ public abstract class Robot {
     }
 
     int getHeader(int roundNumber) {
-        return arbitraryConstant * (teamNum + 1) * MAP_HEIGHT * MAP_WIDTH * roundNumber % ((1 << headerLen) - 1);
+        return Math.floorMod(arbitraryConstant*(teamNum+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber, ((1 << headerLen) - 1));
     }
 
     boolean allyMessage(int firstInt, int roundNum) throws GameActionException {

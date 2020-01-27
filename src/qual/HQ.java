@@ -263,8 +263,6 @@ public class HQ extends Building {
     }
 
     void writeLocationMessage() throws GameActionException {
-        int head = arbitraryConstant*(teamNum+1)*MAP_HEIGHT*MAP_WIDTH*rc.getRoundNum() % ((1 << headerLen) - 1);
-        System.out.println("Sending loc message with this header: " + Integer.toString(head));
         LocationMessage l = new LocationMessage(MAP_WIDTH, MAP_HEIGHT, teamNum, rc.getRoundNum());
         l.writeInformation(myLocation.x, myLocation.y, 0); // 0 indicates our HQ
         sendMessage(l.getMessage(), 1);
