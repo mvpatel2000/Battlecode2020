@@ -704,7 +704,7 @@ public class Miner extends Unit {
         // }
         // (far away from base or (current base is HQ and past round 100)) or (next to soup or couldn't path home)
         if ((distToBase > 64 || (baseLocation.equals(hqLocation) && rc.getRoundNum() > 100))
-                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 10)
+                && (lastSoupLocation != null && myLocation.distanceSquaredTo(lastSoupLocation) < 3 || turnsToBase > 20)
                 && rc.getSoupCarrying() > 70) {
             System.out.println("Refinery Check: " + distToBase + " " + lastSoupLocation + " " + myLocation + " " + turnsToBase);
             //TODO: build a refinery smarter and in good direction.
