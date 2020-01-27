@@ -701,7 +701,7 @@ public class Landscaper extends Unit {
 
     boolean isNotUselessDumpSpot(MapLocation l) { // useless dump spot is somewhere the water can't reach anyway if the HQ is close to the boundary
         for (Direction d : cardinal) {
-            if (l.equals(hqLocation.add(d)) && onBoundary(l)) {
+            if (l.equals(hqLocation.add(d)) && onBoundary(l) && !rc.onTheMap(hqLocation.add(d).add(d))) {
                 return false;
             }
         }
