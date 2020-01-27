@@ -39,10 +39,12 @@ public class DeliveryDrone extends Unit {
     private boolean trapped;
     private boolean ferrying;
     private boolean landscaping;
+    private boolean shellDrone;
     List<MapLocation> outerWall;
 
     MapLocation defensiveDSchoolLocation = null;
     MapLocation reservedForDSchoolBuild = null;
+    private boolean shrunk;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -151,9 +153,12 @@ public class DeliveryDrone extends Unit {
 
         System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
-        if (landscaping && wallMissing()) {
+        if (shellDrone) {
+            if (!inShell())
+                path(hqLocation);
+        } else if (landscaping && wallMissing()) {
             dropOntoWall();
-        } if (ferrying) { // ferry ally onto lattice
+        } else if (ferrying) { // ferry ally onto lattice
             dropOntoLattice();
         } else if (carrying) { // go to water and drop
             if (carryingCow && nearest != null && !nearest.getType().equals(RobotType.COW))
@@ -175,7 +180,7 @@ public class DeliveryDrone extends Unit {
             } else if (attackDrone && rc.getRoundNum() < DEFEND_TURN) { // attack drone
                 handleAttack();
             } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
-                            && rc.getRoundNum() < SHRINK_SHELL_ROUND) { // drone attack-move
+                    && rc.getRoundNum() < SHRINK_SHELL_ROUND) { // drone attack-move
                 checkIfDoneWithAMove(nearby);
                 handleAMove();
             } else { // defend drone / go back to base
@@ -200,6 +205,15 @@ public class DeliveryDrone extends Unit {
         }
     }
 
+    private int countNearbyDrones() {
+        int i = 0;
+        for (RobotInfo x : rc.senseNearbyRobots()) {
+            if (x.getTeam().equals(allyTeam) && x.getType() == RobotType.DELIVERY_DRONE)
+                i++;
+        }
+        return i;
+    }
+
     private void dropOntoLattice() throws GameActionException {
         for (Direction di : directions) {
             MapLocation loc = myLocation.add(di);
@@ -207,7 +221,7 @@ public class DeliveryDrone extends Unit {
             if ((rc.canSenseLocation(loc) && rc.senseFlooding(loc)) || !rc.canDropUnit(di)) continue;
             if (Math.max(dxy[0] % 3, dxy[1] % 3) > 0) {
                 if (loc.distanceSquaredTo(hqLocation) > 8 && !loc.equals(reservedForDSchoolBuild) &&
-                                loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE) {
+                        loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE) {
                     dropToward(loc);
                     System.out.println("FERRYING TO " + loc);
                     return;
@@ -378,10 +392,16 @@ public class DeliveryDrone extends Unit {
         return ferrying;
     }
 
-    private boolean inShell() {
+    private boolean inShell(int rad) {
         int[] dxy = xydist(myLocation, hqLocation);
-        int rad = rc.getRoundNum() < SHRINK_SHELL_ROUND ? 3 : 2;
         return dxy[0] <= rad && dxy[1] == rad || dxy[0] == rad && dxy[1] <= rad;
+    }
+
+    private boolean inShell() {
+        if (shrunk || rc.getRoundNum() >= SHRINK_SHELL_ROUND)
+            shrunk = true;
+        int rad = shrunk ? 2 : 3;
+        return inShell(rad);
     }
 
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
@@ -392,8 +412,13 @@ public class DeliveryDrone extends Unit {
         } else if (rc.getRoundNum() < DEFEND_TURN) {
             spiral(destination, false);
         } else {
-            if (!inShell())
-                path(destination, false);
+            if (!inShell()) {
+                if (inShell(1) || inShell(2))
+                    path(enemyLocation, false);
+                else
+                    path(destination, false);
+            } else
+                shellDrone = true;
         }
         nearestWaterLocation = updateNearestWaterLocation();
     }
