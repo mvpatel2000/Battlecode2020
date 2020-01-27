@@ -230,9 +230,10 @@ public class Landscaper extends Unit {
     }
 
     public void updateBaseLocationIfNull() throws GameActionException {
-        if (baseLocation != null) {
+        if (baseLocation != null && reservedForDSchoolBuild != null) {
             return;
         }
+        System.out.println("Updating base location");
         for (RobotInfo r : nearbyBots) {
             if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(allyTeam)) {
                 baseLocation = r.location;
@@ -962,6 +963,8 @@ public class Landscaper extends Unit {
             int dist = loc.distanceSquaredTo(hqLocation);
             if (dist < 5 || dist > LATTICE_SIZE)
                 continue;
+            if (rc.getRoundNum() > 1500 && myLocation.distanceSquaredTo(d) > 5)
+                return null;
             int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
                 continue;
