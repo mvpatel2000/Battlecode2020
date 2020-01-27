@@ -1,4 +1,4 @@
-package qual;
+package qualAtacc;
 
 import battlecode.common.*;
 
@@ -54,11 +54,10 @@ public class FulfillmentCenter extends Building {
             }
         }
 
-        // build if no net guns and 30 turn cooldown finishes or we have extra soup
-        if(!holdProduction && !enemyNetGun && (rc.getRoundNum() - spawnTurn > 30 || !enemyAggression && (attackDroneCount+defenseDroneCount) < 1)) {
-            if (attackDroneCount + defenseDroneCount < 2) { // always build 2
+        if(!holdProduction && !enemyNetGun && rc.getRoundNum() - spawnTurn > 30) {
+            if (attackDroneCount + defenseDroneCount < 1) {
                 buildDrone();
-            } else if (enemyAggression) { // start drones if there are 2 landscapers
+            } else if (enemyAggression) {
                 RobotInfo[] near = rc.senseNearbyRobots();
                 int numEnemLand = 0;
                 for(RobotInfo r : near) {
