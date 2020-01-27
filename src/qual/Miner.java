@@ -156,7 +156,7 @@ public class Miner extends Unit {
             }
         }
 
-        if (terraformer && rc.getRoundNum() > 300) {
+        if (terraformer) {
             terraform();
         } else {
             if (rc.isReady()) {
@@ -173,7 +173,7 @@ public class Miner extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        if (myLocation.distanceSquaredTo(hqLocation) > 16) {
+        if (myLocation.distanceSquaredTo(hqLocation) > 25) {
             path(hqLocation);
         } else {
             if (onBoundary(myLocation)) {
@@ -187,6 +187,13 @@ public class Miner extends Unit {
         }
     }
 
+    @Override
+    protected int getFleeRadius() {
+        if (terraformer) {
+            return 5;
+        }
+        return super.getFleeRadius();
+    }
 
     // returns false if special valid grid square, otherwise true
     boolean checkGridExceptions(MapLocation location) throws GameActionException {
@@ -629,7 +636,7 @@ public class Miner extends Unit {
                 if (rc.canSenseLocation(newLoc) && Math.abs(rc.senseElevation(myLocation) - rc.senseElevation(newLoc)) <= 3
                         && rc.senseElevation(newLoc) >= rc.senseElevation(loc) //&& onBuildingGridSquare(newLoc)
                         && hqLocation.distanceSquaredTo(newLoc) < 9 && hqLocation.distanceSquaredTo(newLoc) > 2
-                        && hqLocation.distanceSquaredTo(newLoc) != 5) {
+                        && hqLocation.distanceSquaredTo(newLoc) != 5 && !onBoundary(newLoc)) {
                     target = dir;
                     loc = newLoc;
                 }

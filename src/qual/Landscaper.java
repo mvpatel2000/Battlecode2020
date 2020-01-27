@@ -22,7 +22,7 @@ public class Landscaper extends Unit {
     MapLocation[] depositSiteExceptions = {null, null, null, null, null};
     boolean spiralClockwise = true;
     Direction lastPlotICompletedDirToHQ = null;
-    int terraformHeight = 3;
+    int terraformHeight = 0;
     MapLocation reservedForDSchoolBuild = null;
 
     // class variables used specifically by defensive landscapers:
@@ -189,11 +189,7 @@ public class Landscaper extends Unit {
             rc.setIndicatorDot(myLocation, 0, 0, 0);
         }
 
-        System.out.print("Breakpoint 0.1: ");
-        System.out.println(Clock.getBytecodeNum());
         nearbyBots = rc.senseNearbyRobots();
-        System.out.print("Breakpoint 0.2: ");
-        System.out.println(Clock.getBytecodeNum());
 
         if (rc.getRoundNum() - bornTurn == 5) {
             readBirthMessage();
@@ -408,15 +404,9 @@ public class Landscaper extends Unit {
         int hqDist = myLocation.distanceSquaredTo(hqLocation);
 
         // TODO: If we start exceeding bytecode limits, investigate ways to not do these two functions every turn.
-        System.out.print("Breakpoint 1: ");
-        System.out.println(Clock.getBytecodeNum());
         updateHoldPositionLoc();
-        System.out.print("Breakpoint 2: ");
-        System.out.println(Clock.getBytecodeNum());
         System.out.println("Updated holdPositionLoc to " + holdPositionLoc.toString());
         checkWallStage();
-        System.out.print("Breakpoint 3: ");
-        System.out.println(Clock.getBytecodeNum());
 
         for (Direction d : directions) {// zeroth priority: kill an an enemy building
             if (existsNearbyBotAt(myLocation.add(d))) {
@@ -669,11 +659,7 @@ public class Landscaper extends Unit {
     //     int b = 0;
 
     //     nearbyBots = rc.senseNearbyRobots();
-    //     System.out.print("Breakpoint 1.1: ");
-    //     System.out.println(Clock.getBytecodeNum());
     //     nearbyBotsMap.clear();
-    //     System.out.print("Breakpoint 1.2: ");
-    //     System.out.println(Clock.getBytecodeNum());
     //     int a = Clock.getBytecodeNum();
     //     forceInnerWallTakeoffAt = INNER_WALL_FORCE_TAKEOFF_DEFAULT;
     //     for (RobotInfo botInfo : nearbyBots) {
