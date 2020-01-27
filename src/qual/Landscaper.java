@@ -963,7 +963,7 @@ public class Landscaper extends Unit {
             int dist = loc.distanceSquaredTo(hqLocation);
             if (dist < 5 || dist > LATTICE_SIZE)
                 continue;
-            if (rc.getRoundNum() > 1500 && myLocation.distanceSquaredTo(d) > 5)
+            if (rc.getRoundNum() > 1500 && myLocation.distanceSquaredTo(loc) > 5)
                 return null;
             int[] dxy = xydist(loc, hqLocation);
             if (dxy[0] % 3 + dxy[1] % 3 == 0)
