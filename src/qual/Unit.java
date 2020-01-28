@@ -117,28 +117,37 @@ public abstract class Unit extends Robot {
     }
 
     protected boolean canMove(Direction in) {
-        MapLocation me = myLocation.add(in);
-        try {
-            return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me)
-                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(me));
-        } catch (GameActionException e) {
-            e.printStackTrace();
-            return false;
-        }
+        return canMove(myLocation, in);
     }
 
     protected boolean canMove(MapLocation from, Direction in) {
         MapLocation to = from.add(in);
         try {
             if (from.equals(myLocation)) {
-                return rc.canSenseLocation(to) && rc.canMove(in) && !rc.senseFlooding(to)
-                        && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(to));
+                if (rc.canSenseLocation(to) && rc.canMove(in) && !rc.senseFlooding(to)) {
+                    boolean done = true;
+                    for (RobotInfo x : getNearbyDrones()) {
+                        if (x.getLocation().isAdjacentTo(to)) {
+                            done = false;
+                            break;
+                        }
+                    }
+                    if (done) return true;
+                }
+                return false;
             }
-            return rc.canSenseLocation(to)
-                    && !rc.isLocationOccupied(to)
-                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4
-                    && !rc.senseFlooding(to)
-                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(to));
+            if (rc.canSenseLocation(to) && !rc.isLocationOccupied(to)
+                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4 && !rc.senseFlooding(to)) {
+                boolean done = true;
+                for (RobotInfo x : getNearbyDrones()) {
+                    if (x.getLocation().isAdjacentTo(to)) {
+                        done = false;
+                        break;
+                    }
+                }
+                if (done) return true;
+            }
+            return false;
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
