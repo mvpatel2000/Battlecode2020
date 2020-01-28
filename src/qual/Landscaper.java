@@ -620,7 +620,7 @@ public class Landscaper extends Unit {
                     }
                     if (!foundDumpSite) {
                         Direction dump = innerWallLowestNearbyDirection();
-                        if (rc.senseElevation(myLocation.add(dump)) > GameConstants.getWaterLevel(rc.getRoundNum() + 10)) {
+                        if (rc.senseElevation(myLocation.add(dump)) > GameConstants.getWaterLevel(rc.getRoundNum() + 10) && !isAdjacentToWater(myLocation.add(dump))) {
                             dump = Direction.CENTER;
                         }
                         System.out.println("Dumping dirt in direction " + dump);
