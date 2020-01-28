@@ -547,6 +547,8 @@ public class DeliveryDrone extends Unit {
             cornerHolder = true;
         } else if (myLocation.distanceSquaredTo(hqLocation) < 50) {
             spiral(enemyLocation, enemyAggression);
+        } else if (myLocation.distanceSquaredTo(enemyLocation) > 50 && rc.getRoundNum() < 150) { // early game surge
+            spiral(enemyLocation, false);
         } else {
             spiral(enemyLocation, true);
         }
