@@ -11,7 +11,7 @@ public class DeliveryDrone extends Unit {
     public static final int FILL_OUTER_ROUND = 1000;
     public static final int SHRINK_SHELL_ROUND = 2600;
     private static final int POKE_DURATION = 50;
-    private static final int POKE_RADIUS = 100;
+    private static final int POKE_RADIUS = 64;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
     long[] waterChecked = new long[64]; // align to top right
@@ -35,7 +35,7 @@ public class DeliveryDrone extends Unit {
 
     boolean attackDrone;
     final int DEFEND_TURN = 1100;
-    final int ATTACK_TURN = 2100;
+    final int ATTACK_TURN = 1875;
     final int POKE_TURN = 900;
 
     boolean carrying;
@@ -531,9 +531,8 @@ public class DeliveryDrone extends Unit {
                 cornerHolder = true;
             } else if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
                 fuzzyMoveToLoc(nearest.location);
-            } else if (!attackDrone && rc.getRoundNum() < DEFEND_TURN || myLocation.distanceSquaredTo(hqLocation) < 100) {
-                System.out.println("pathing recklessly");
-                path(nearest.location, true); // to nearest enemy.
+            } else if (rc.getRoundNum() < 100 && myLocation.distanceSquaredTo(hqLocation) < 64) {
+                path(nearest.location, false); // path recklessly
             } else {
                 path(nearest.location, true);
             }
