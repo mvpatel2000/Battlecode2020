@@ -2958,7 +2958,7 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
-                    if (nearest == null && (rc.getRoundNum() > 200 || enemyRobot.type != RobotType.COW)
+                    if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone || enemyRobot.type != RobotType.COW)
                             || nearest != null && nearest.type == RobotType.COW
                             || nearest != null && (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
                             || nearest != null && enemyRobot.type == RobotType.LANDSCAPER) {
