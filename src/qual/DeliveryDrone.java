@@ -15,7 +15,7 @@ public class DeliveryDrone extends Unit {
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
     private static final int GIVE_UP_DEFENSE = 50;
-    private static final int DEFENSE_FAR_RADIUS = 64;
+    private static final int DEFENSE_FAR_RADIUS = Landscaper.LATTICE_SIZE;
 
     final int DEFEND_TURN = 1100;
     final int ATTACK_TURN = 1875;
