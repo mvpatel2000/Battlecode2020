@@ -10,12 +10,14 @@ public class DeliveryDrone extends Unit {
     public static final int FILL_WALL_ROUND = 600;
     public static final int FILL_OUTER_ROUND = 1000;
     public static final int SHRINK_SHELL_ROUND = 2605;
-    private static final int POKE_DURATION = 50;
-    private static final int POKE_RADIUS = 35;
+    public static final int POKE_DURATION = 50;
+    public static final int POKE_RADIUS = 35;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
     private static final int GIVE_UP_DEFENSE = 50;
     private static final int DEFENSE_FAR_RADIUS = Landscaper.LATTICE_SIZE;
+    private static final int LANDSCAPE_GIVE_UP = 100;
+    public static final int POSTURE_TIME = 200;
 
     final int DEFEND_TURN = 1100;
     final int ATTACK_TURN = 1875;
@@ -61,6 +63,8 @@ public class DeliveryDrone extends Unit {
     private boolean cornerHolder;
     private boolean alwaysAttack;
     int defending = 0;
+    private boolean dropship;
+    private int carryCount = 0;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -76,6 +80,7 @@ public class DeliveryDrone extends Unit {
         }
         if (baseLocation == null)
             baseLocation = myLocation;
+        
 
         //initial message check
         //looking for locations broadcast before you were born
@@ -185,6 +190,7 @@ public class DeliveryDrone extends Unit {
 
         //System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
+        checkDropship();
         checkIfDoneCornerHolding();
         checkResetDefense();
 
@@ -194,7 +200,8 @@ public class DeliveryDrone extends Unit {
             checkShell();
         }
 
-        if (landscaping && wallMissing()) {
+        if (checkAggroDrop()) {
+        } else if (landscaping && wallMissing()) {
             dropOntoWall();
         } else if (ferrying) { // ferry ally onto lattice
             dropOntoLattice();
@@ -208,7 +215,7 @@ public class DeliveryDrone extends Unit {
                 attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
 
-            if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
+            if (shouldPickup(distToNearest)) { // pick up
                 tryPickUp(nearest);
             } else if (checkToLandscape(nearby)) {
             } else if (checkToFerry(nearby)) {
@@ -234,6 +241,45 @@ public class DeliveryDrone extends Unit {
         reportEnemyAgression();
 
         System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
+    }
+
+    private boolean checkAggroDrop() throws GameActionException {
+        if (!dropship || !rc.isReady())
+            return false;
+        for (Direction d : directions) {
+            MapLocation loc = myLocation.add(d);
+            if (rc.canDropUnit(d) && loc.isAdjacentTo(enemyLocation)) {
+                rc.dropUnit(d);
+                dropship = false;
+                System.out.println("AGGRO DROP: " + loc);
+                return true;
+            }
+        }
+        System.out.println("Can't drop");
+        return false;
+    }
+
+    private boolean shouldPickup(int distToNearest) {
+        return distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED && !dropship;
+    }
+
+    private void checkDropship() {
+        System.out.println("carry count: " + carryCount + " " + dropship);
+        if (landscaping) {
+            carryCount++;
+            if (carryCount > LANDSCAPE_GIVE_UP) {
+                becomeDropship();
+            }
+        } else {
+            carryCount = 0;
+        }
+    }
+
+    private void becomeDropship() {
+        dropship = true;
+        carrying = false;
+        landscaping = false;
+        ferrying = false;
     }
 
     private void reportEnemyAgression() throws GameActionException {
@@ -287,13 +333,7 @@ public class DeliveryDrone extends Unit {
 
     private void checkIfDoneWithPoke(RobotInfo[] nearby) throws GameActionException {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
-            boolean giveUp = true;
-            for (RobotInfo x : nearby) {
-                if (!x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER) {
-                    giveUp = false;
-                    break;
-                }
-            }
+            boolean giveUp = noLandscapersLeft(nearby);
             if (giveUp) {
                 giveUpOnPoke = true;
                 handleDefense(nearby);
@@ -301,13 +341,26 @@ public class DeliveryDrone extends Unit {
         }
     }
 
+    private boolean noLandscapersLeft(RobotInfo[] nearby) {
+        if (dropship)
+            return false;
+        boolean giveUp = true;
+        for (RobotInfo x : nearby) {
+            if (!x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER) {
+                giveUp = false;
+                break;
+            }
+        }
+        return giveUp;
+    }
+
     private boolean shouldChase(RobotInfo nearest) {
-        return nearest != null && (rc.getRoundNum() < DEFEND_TURN
+        return nearest != null && (rc.getRoundNum() < DEFEND_TURN && !dropship
                 || myLocation.distanceSquaredTo(hqLocation) < 100 || rc.getRoundNum() > ATTACK_TURN);
     }
 
     private boolean shouldAMove() {
-        return rc.getRoundNum() > ATTACK_TURN - 200 && !giveUpOnAMove && !inShell()
+        return rc.getRoundNum() > ATTACK_TURN - POSTURE_TIME && !giveUpOnAMove && !inShell()
                 && rc.getRoundNum() < SHRINK_SHELL_ROUND;
     }
 
@@ -356,7 +409,7 @@ public class DeliveryDrone extends Unit {
 
     private void checkIfDoneWithAMove(RobotInfo[] nearby) throws GameActionException {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
-            if (Arrays.stream(nearby).noneMatch(x -> !x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER)) {
+            if (noLandscapersLeft(nearby)) {
                 giveUpOnAMove = true;
                 handleDefense(nearby);
             }
@@ -441,7 +494,7 @@ public class DeliveryDrone extends Unit {
 
     private boolean checkToLandscape(RobotInfo[] nearby) throws GameActionException {
         if (!rc.isReady() || myLocation.isAdjacentTo(hqLocation)
-                || myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE)
+                || myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE || dropship)
             return landscaping;
 
         if (rc.getRoundNum() < FILL_OUTER_ROUND && !innerWallMissing()) {
@@ -450,6 +503,22 @@ public class DeliveryDrone extends Unit {
 
         if (rc.getRoundNum() > DEFEND_TURN && !shellDrone)
             return landscaping;
+
+        if (shellDrone && GameConstants.getWaterLevel(rc.getRoundNum()) > 10) {
+            for (Direction d : directions) {
+                MapLocation loc = myLocation.add(d);
+                if (outerWall.contains(loc)) {
+                    RobotInfo x = rc.senseRobotAtLocation(loc);
+                    if (x != null && x.getType().equals(RobotType.LANDSCAPER) && x.getTeam().equals(allyTeam)
+                        && GameConstants.getWaterLevel(rc.getRoundNum() + 1) >= rc.senseElevation(loc)) {
+                        tryPickUp(x);
+                        carrying = false;
+                        dropship = true;
+                        return true;
+                    }
+                }
+            }
+        }
 
         if (innerWallMissing() && !shellDrone) {
             for (RobotInfo x : nearby) {
@@ -492,7 +561,7 @@ public class DeliveryDrone extends Unit {
         System.out.println("FERRY CHECK");
         if (!rc.isReady()) return ferrying;
         if (myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE
-                || myLocation.isAdjacentTo(hqLocation))
+                || myLocation.isAdjacentTo(hqLocation) || dropship)
             return ferrying;
         for (RobotInfo x : nearby) {
             if (!x.getTeam().equals(allyTeam) || x.getType().equals(RobotType.DELIVERY_DRONE) || x.getType().isBuilding())
@@ -568,9 +637,24 @@ public class DeliveryDrone extends Unit {
     }
 
     private void handleAMove(RobotInfo nearest) throws GameActionException {
-        MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
-        if (giveUpOnAMove)
+        System.out.println("AMOVE");
+        if (giveUpOnAMove || !rc.isReady())
             return;
+        MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
+        if (!dropship) {
+            for (Direction d : directions) {
+                RobotInfo x = rc.senseRobotAtLocation(myLocation.add(d));
+                if (x.getTeam().equals(allyTeam)
+                        && x.getType().equals(RobotType.LANDSCAPER)
+                        && rc.canPickUpUnit(x.getID())
+                        && !outerWall.contains(x.getLocation())
+                        && !centerDigSites.contains(x.getLocation())) {
+                    tryPickUp(x);
+                    becomeDropship();
+                    return;
+                }
+            }
+        }
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
             RobotInfo enemy = rc.senseRobotAtLocation(enemyLocation);
             if (enemy == null || enemy.type != RobotType.HQ) {
