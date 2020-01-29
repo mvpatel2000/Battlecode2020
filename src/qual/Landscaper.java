@@ -668,7 +668,7 @@ public class Landscaper extends Unit {
             }
         }
     }
-
+    
     Direction innerWallLowestNearbyDirection() throws GameActionException {
         Direction hqDir = myLocation.directionTo(hqLocation);
         Direction dump = Direction.CENTER;

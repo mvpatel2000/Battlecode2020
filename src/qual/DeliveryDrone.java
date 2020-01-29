@@ -713,11 +713,12 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    protected void updateDrones() {
+    protected void updateEnemies() {
         nearbyNetGuns.clear();
         for (RobotInfo x : rc.senseNearbyRobots()) {
             if (!x.getTeam().equals(allyTeam) &&
-                    (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))) {
+                    (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+                    && x.getCooldownTurns() < 5) {
                 nearbyNetGuns.add(x);
             }
         }
