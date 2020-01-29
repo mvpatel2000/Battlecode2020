@@ -706,9 +706,9 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > ATTACK_TURN) {
             fuzzyMoveToLoc(enemyLocation);
         } else if (rc.getRoundNum() > ATTACK_TURN - 25 && !cornerHolder) {
-            path(enemyLocation, false);
+            path(enemyLocation, true);
         } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !cornerHolder) {
-            spiral(enemyLocation, false);
+            spiral(enemyLocation, true);
         }
     }
 
