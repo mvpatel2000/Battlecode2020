@@ -211,6 +211,8 @@ public class Landscaper extends Unit {
 
         if (rc.getRoundNum() > 700 && myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) { // I got dropped off somewhere outside the lattice
             aggressive = true;
+            terraformer = false;
+            defensive = false;
         }
 
         if (terraformer) {
@@ -270,6 +272,13 @@ public class Landscaper extends Unit {
             return;
         }
         superCanMove = false;
+
+        if (rc.getRoundNum() > 1100 && baseLocation != null) {
+            moveInDirection(myLocation.directionTo(baseLocation).opposite());
+        }
+        if (rc.getRoundNum() > 1100 && baseLocation == null) {
+            moveInDirection(myLocation.directionTo(hqLocation).opposite());
+        }
 
         int[] dxy = xydist(myLocation, hqLocation);
         if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site

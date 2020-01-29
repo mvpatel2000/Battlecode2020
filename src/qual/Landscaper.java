@@ -273,12 +273,18 @@ public class Landscaper extends Unit {
         }
         superCanMove = false;
 
+        if (rc.getRoundNum() > 1100 && baseLocation != null) {
+            moveInDirection(myLocation.directionTo(baseLocation).opposite());
+        }
+        if (rc.getRoundNum() > 1100 && baseLocation == null) {
+            moveInDirection(myLocation.directionTo(hqLocation).opposite());
+        }
+
         int[] dxy = xydist(myLocation, hqLocation);
         if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site
             superCanMove = true;
             path(hqLocation);
             superCanMove = false;
-            return;
         }
         if (myLocation.isAdjacentTo(hqLocation) ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
@@ -324,6 +330,11 @@ public class Landscaper extends Unit {
 
     public void updateTerraformTarget() throws GameActionException {
         if (rc.getRoundNum() > 1100) {
+            if (onBoundary(myLocation)) {
+                terraformTarget = myLocation;
+                terraformHeight = Integer.MAX_VALUE;
+                return;
+            }
             int tmp = terraformHeight;
             terraformHeight = rc.senseElevation(myLocation) - 1;
             MapLocation target = findLatticeDepositSite();
