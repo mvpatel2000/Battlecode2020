@@ -25,6 +25,7 @@ public class Miner extends Unit {
     boolean dSchoolExists;
     boolean fulfillmentCenterExists;
     boolean firstRefineryExists;
+    int vaporatorsBuilt = 0;
 
     boolean aggro; // true if the one aggro miner
     List<MapLocation> target; // possible enemy HQ locations (target.get(0) is the one after HQ found)
@@ -885,15 +886,17 @@ public class Miner extends Unit {
                         turnAtProductionHalt = rc.getRoundNum();
                         //rc.setIndicatorDot(enemyHQLocApprox, 255, 123, 55);
                     }
-                } else if ((!fulfillmentCenterExists || !dSchoolExists || !firstRefineryExists) && getSchema(msg[0]) == 5) {
+                } else if (getSchema(msg[0]) == 5) {
                     //drone has been built.
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
-                    if (b.typeBuilt == 1) {
+                    if (b.typeBuilt == 1 && !fulfillmentCenterExists) {
                         fulfillmentCenterExists = true;
-                    } else if (b.typeBuilt == 2) {
+                    } else if (b.typeBuilt == 2 && !dSchoolExists) {
                         dSchoolExists = true;
-                    } else if (b.typeBuilt == 3) {
+                    } else if (b.typeBuilt == 3 && !firstRefineryExists) {
                         firstRefineryExists = true;
+                    } else if (b.typeBuilt == 4) {
+                        vaporatorsBuilt += 1;
                     }
                 } else if(enemyHQLocation==null && getSchema(msg[0])==4) {
                     checkForEnemyHQLocationMessageSubroutine(msg, rn);
