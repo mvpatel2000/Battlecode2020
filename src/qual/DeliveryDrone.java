@@ -664,7 +664,7 @@ public class DeliveryDrone extends Unit {
         if (giveUpOnAMove || !rc.isReady())
             return;
         MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
-        if (!dropship) {
+        if (!dropship && crunchSuccess) {
             for (Direction d : directions) {
                 RobotInfo x = rc.senseRobotAtLocation(myLocation.add(d));
                 if (x != null && x.getTeam().equals(allyTeam)
