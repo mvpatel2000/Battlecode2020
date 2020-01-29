@@ -38,6 +38,7 @@ public abstract class Robot {
     public MapLocation HEADQUARTERS_LOCATION = null;
     public MapLocation ENEMY_HQ_LOCATION = null;
 
+    public int CRUNCH_THRESHOLD = 5;
     boolean enemyAggression = false;
     int turnAtEnemyAggression = -1;
     //discretized grid for communicating map information
@@ -475,6 +476,17 @@ public abstract class Robot {
         }
         return false;
     }
+
+    public boolean isAdjacentToWater(MapLocation t) throws GameActionException {
+        // is this location adjacent to water to the best of my knowledge
+        for (Direction d : directionsWithCenter) {
+            if (rc.canSenseLocation(t.add(d)) && rc.senseFlooding(t.add(d))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     int getHeader(int roundNumber) {
         return Math.floorMod(arbitraryConstant*(teamNum+1)*MAP_HEIGHT*MAP_WIDTH*roundNumber, ((1 << headerLen) - 1));

@@ -63,6 +63,10 @@ public abstract class Unit extends Robot {
         hasHistory = true;
     }
 
+    protected boolean canFuzz() {
+        return true;
+    }
+
     protected List<RobotInfo> getNearbyDrones() {
         return drones;
     }
@@ -198,21 +202,51 @@ public abstract class Unit extends Robot {
      * Flees from adjacent drone if it exists.
      */
     public boolean flee() throws GameActionException {
-        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
+        for (RobotInfo robotInfo : rc.senseNearbyRobots(6, allyTeam)) {
+            if (robotInfo.getType().equals(RobotType.NET_GUN)) {
+                return false;
+            }
+        }
+        
+        List<RobotInfo> list = new ArrayList<>();
+        for (RobotInfo x : getNearbyDrones()) {
+            if (x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()) {
+                list.add(x);
+            }
+        }
+        RobotInfo[] adjacentDrones = list.toArray(new RobotInfo[0]);
+
 
         if (adjacentDrones.length == 0 || !rc.isReady())
             return false;
+
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
+
+        // for horizontal offsets, take a diagonal move to maximize distance
+        if (escapeLeft == Direction.NORTH || escapeLeft == Direction.EAST
+                || escapeLeft == Direction.WEST || escapeLeft == Direction.SOUTH) {
+            if (canMove(escapeLeft.rotateLeft())) {
+                go(escapeLeft.rotateLeft());
+                //rc.setIndicatorLine(myLocation, myLocation.add(escapeLeft.rotateLeft()), 255, 0, 0);
+                return true;
+            } else if (canMove(escapeRight.rotateRight())) {
+                go(escapeRight.rotateRight());
+                //rc.setIndicatorLine(myLocation, myLocation.add(escapeRight.rotateRight()), 255, 0, 0);
+                return true;
+            }
+        }
+
         int ctr = 0;
         while (!canMove(escapeLeft)) {
+            System.out.println("Can't flee " + escapeLeft.toString());
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
                 go(escapeRight);
-                System.out.println("I am fleeing");
+                System.out.println("I am fleeing " + escapeRight.toString());
                 return true;
             }
+            System.out.println("Can't flee " + escapeRight.toString());
             escapeLeft = escapeLeft.rotateLeft();
             if (ctr > 1)
                 break;
@@ -220,7 +254,7 @@ public abstract class Unit extends Robot {
         }
         if (canMove(escapeLeft)) {
             go(escapeLeft);
-            System.out.println("I am fleeing");
+            System.out.println("I am fleeing " + escapeLeft.toString());
             return true;
         }
         System.out.println("I can't flee :(");
@@ -409,6 +443,9 @@ public abstract class Unit extends Robot {
     }
 
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
+        if (!canFuzz())
+            return false;
+
         int mindist = 50000;
         Direction bestdir = null;
         for (Direction dir : getDirections()) {

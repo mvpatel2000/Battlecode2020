@@ -6,7 +6,8 @@ public class RushCommitMessage extends Message {
     int typeOfCommit; // 1 is rush commit standard,
                       // 2 is enemy is rushing/being aggressive,
                       // 3 is enemy has stopped rushing,
-                      // 4 is drone success
+                      // 4 is individual drone success
+                      // 5 is team drone success
     int bitsPerType = 3;
 
     public RushCommitMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
