@@ -275,10 +275,10 @@ public class Landscaper extends Unit {
         }
         superCanMove = false;
 
-        if (rc.getRoundNum() > 1100 && baseLocation != null && rc.getRoundNum() % 3 == 0) {
+        if (rc.getRoundNum() > 1100 && baseLocation != null && (rc.getRoundNum() % 4 == 0 || rc.getRoundNum() < bornTurn + 50)) {
             moveInDirection(myLocation.directionTo(baseLocation).opposite());
         }
-        if (rc.getRoundNum() > 1100 && baseLocation == null && rc.getRoundNum() % 3 == 0) {
+        if (rc.getRoundNum() > 1100 && baseLocation == null && (rc.getRoundNum() % 4 == 0 || rc.getRoundNum() < bornTurn + 50)) {
             moveInDirection(myLocation.directionTo(hqLocation).opposite());
         }
 

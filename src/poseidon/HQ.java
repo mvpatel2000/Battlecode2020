@@ -29,7 +29,7 @@ public class HQ extends Building {
 
     int turnAtEnemyAggression = -1;
     int vaporatorsBuilt = 0;
-    boolean crunchSuccess = false;
+    int crunchSuccess = 0;
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
@@ -317,6 +317,13 @@ public class HQ extends Building {
                 //System.out.println("[i] SENDING WATER LOCATION");
             }
         }
+        if(rn==DeliveryDrone.ATTACK_COMM_TIME && crunchSuccess>=CRUNCH_THRESHOLD) {
+            RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+            r.writeTypeOfCommit(5);
+            if(sendMessage(r.getMessage(), 1)) {
+                //System.out.println("[i] Telling team crunch has succeeded!");
+            }
+        }
     }
 
     //Returns true if should continue halting production
@@ -391,9 +398,9 @@ public class HQ extends Building {
                         //System.out.println("[i] Enemy is Rushing!");
                         enemyAggression = true;
                         turnAtEnemyAggression = rc.getRoundNum();
-                    } else if (r.typeOfCommit==4 && !crunchSuccess) {
-                        //System.out.println("[i] Crunch Succeeded!");
-                        crunchSuccess = true;
+                    } else if (r.typeOfCommit==4 && crunchSuccess<CRUNCH_THRESHOLD) {
+                        crunchSuccess+=1;
+                        //System.out.println("[i] " + Integer.toString(crunchSuccess) + " drones say crunch succeeded!");
                     }
                 }
             }
