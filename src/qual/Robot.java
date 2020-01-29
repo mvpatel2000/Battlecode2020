@@ -38,6 +38,7 @@ public abstract class Robot {
     public MapLocation HEADQUARTERS_LOCATION = null;
     public MapLocation ENEMY_HQ_LOCATION = null;
 
+    public int CRUNCH_THRESHOLD = 5;
     boolean enemyAggression = false;
     int turnAtEnemyAggression = -1;
     //discretized grid for communicating map information
