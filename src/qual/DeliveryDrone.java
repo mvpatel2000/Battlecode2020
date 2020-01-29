@@ -538,7 +538,8 @@ public class DeliveryDrone extends Unit {
                 if (outerWall.contains(loc)) {
                     RobotInfo x = rc.senseRobotAtLocation(loc);
                     if (x != null && x.getType().equals(RobotType.LANDSCAPER) && x.getTeam().equals(allyTeam)
-                        && GameConstants.getWaterLevel(rc.getRoundNum() + 1) >= rc.senseElevation(loc)) {
+                        && GameConstants.getWaterLevel(rc.getRoundNum() + 1) >= rc.senseElevation(loc)
+                            && isAdjacentToWater(loc)) {
                         tryPickUp(x);
                         carrying = false;
                         dropship = true;
