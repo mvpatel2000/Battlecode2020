@@ -9,9 +9,9 @@ public class DeliveryDrone extends Unit {
     public static final int START_FERRY = 300;
     public static final int FILL_WALL_ROUND = 600;
     public static final int FILL_OUTER_ROUND = 1000;
-    public static final int SHRINK_SHELL_ROUND = 2600;
+    public static final int SHRINK_SHELL_ROUND = 2605;
     private static final int POKE_DURATION = 50;
-    private static final int POKE_RADIUS = 64;
+    private static final int POKE_RADIUS = 35;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
     long[] waterChecked = new long[64]; // align to top right
@@ -709,11 +709,12 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    protected void updateDrones() {
+    protected void updateEnemies() {
         nearbyNetGuns.clear();
         for (RobotInfo x : rc.senseNearbyRobots()) {
             if (!x.getTeam().equals(allyTeam) &&
-                    (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))) {
+                    (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+                    && x.getCooldownTurns() < 5) {
                 nearbyNetGuns.add(x);
             }
         }

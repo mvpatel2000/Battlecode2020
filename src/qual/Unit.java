@@ -39,7 +39,7 @@ public abstract class Unit extends Robot {
         state.setTarget(t);
     }
 
-    protected void updateDrones() {
+    protected void updateEnemies() {
         drones.clear();
         for (RobotInfo x : rc.senseNearbyRobots()) {
             if (!x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE) && !x.isCurrentlyHoldingUnit())
@@ -49,6 +49,10 @@ public abstract class Unit extends Robot {
 
     @Override
     public void run() throws GameActionException {
+<<<<<<< HEAD
+=======
+        updateEnemies();
+>>>>>>> 370447786c5f7fd3e6fb8c1761646b6fc4e5a87e
         myLocation = rc.getLocation();
         if (!rc.isReady()) {
             rc.setIndicatorDot(myLocation, 0, 0, 0);
