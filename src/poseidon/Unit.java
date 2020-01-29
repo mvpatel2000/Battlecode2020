@@ -39,7 +39,7 @@ public abstract class Unit extends Robot {
         state.setTarget(t);
     }
 
-    protected void updateDrones() {
+    protected void updateEnemies() {
         drones.clear();
         for (RobotInfo x : rc.senseNearbyRobots()) {
             if (!x.getTeam().equals(allyTeam) && x.getType().equals(RobotType.DELIVERY_DRONE) && !x.isCurrentlyHoldingUnit())
@@ -49,8 +49,11 @@ public abstract class Unit extends Robot {
 
     @Override
     public void run() throws GameActionException {
-        updateDrones();
         myLocation = rc.getLocation();
+        if (!rc.isReady()) {
+            //rc.setIndicatorDot(myLocation, 0, 0, 0);
+        }
+        updateEnemies();
         MapLocation me = myLocation;
         state.me = me;
         history.addFirst(me);
@@ -207,6 +210,7 @@ public abstract class Unit extends Robot {
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
                 go(escapeRight);
+                System.out.println("I am fleeing");
                 return true;
             }
             escapeLeft = escapeLeft.rotateLeft();
@@ -216,8 +220,10 @@ public abstract class Unit extends Robot {
         }
         if (canMove(escapeLeft)) {
             go(escapeLeft);
+            System.out.println("I am fleeing");
             return true;
         }
+        System.out.println("I can't flee :(");
         return false;
     }
 

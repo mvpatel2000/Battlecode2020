@@ -211,6 +211,8 @@ public class Landscaper extends Unit {
 
         if (rc.getRoundNum() > 700 && myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) { // I got dropped off somewhere outside the lattice
             aggressive = true;
+            terraformer = false;
+            defensive = false;
         }
 
         if (terraformer) {

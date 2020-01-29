@@ -175,7 +175,7 @@ public class Miner extends Unit {
             return false;
         }
 
-        checkBuildBuildings(true);
+        checkBuildBuildings(adjacentDrones[0].getLocation());
 
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
@@ -216,7 +216,7 @@ public class Miner extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        if (myLocation.distanceSquaredTo(hqLocation) > 25) {
+        if (myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE) {
             path(hqLocation);
         } else {
             if (onBoundary(myLocation)) {
@@ -248,7 +248,11 @@ public class Miner extends Unit {
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
+        return onBuildingGridSquare(location, 20);
+    }
+
+    boolean onBuildingGridSquare(MapLocation location, int max_radius) throws GameActionException {
+        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > max_radius)
             return false;
         if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
             && !checkGridExceptions(location)) {
@@ -460,36 +464,54 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        checkBuildBuildings(false);
+        checkBuildBuildings(null);
     }
 
-    public void checkBuildBuildings(boolean fleeing) throws GameActionException {
-        if (!rc.isReady() || (rc.getTeamSoup() < 500 && !fleeing))
+    public void checkBuildBuildings(MapLocation fleeing) throws GameActionException {
+        if (!rc.isReady() || (rc.getTeamSoup() < 500 && fleeing == null))
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
         boolean existsFulfillmentCenter = false;
+        boolean existsDesignSchool = false;
         boolean existsVaporator = false;
         for (RobotInfo robot : allyRobots) {
-            if ((!fleeing || robot.location.distanceSquaredTo(myLocation) <= 5) && robot.type.equals(RobotType.NET_GUN)) {
+            if ((fleeing == null && robot.location.distanceSquaredTo(myLocation) < 20 || robot.location.distanceSquaredTo(myLocation) < (myLocation.distanceSquaredTo(hqLocation) > 35 ? 7 : 5)) && robot.type.equals(RobotType.NET_GUN)) {
                 existsNetGun = true;
             }
             if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
                 existsFulfillmentCenter = true;
             }
+            if (robot.type.equals(RobotType.DESIGN_SCHOOL) && robot.location.distanceSquaredTo(myLocation) < 25) {
+                existsDesignSchool = true;
+            }
             if (robot.type.equals(RobotType.VAPORATOR)) {
                 existsVaporator = true;
             }
         }
-        for (Direction dir : directions) {
-            if (onBuildingGridSquare(myLocation.add(dir))
-                    && rc.canSenseLocation(myLocation.add(dir)) && (rc.senseElevation(myLocation.add(dir)) > 2 || rc.getRoundNum() < 300)) {
-                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing && existsVaporator)) {
+        Direction[] directionRotation = directions;
+        if (fleeing != null) {
+            directionRotation = directionsClosestTo(myLocation.directionTo(fleeing));
+        }
+        for (Direction dir : directionRotation) {
+            MapLocation t = myLocation.add(dir);
+            int radiusSquared = t.distanceSquaredTo(hqLocation);
+            if (onBuildingGridSquare(t, 48)
+                    && rc.canSenseLocation(t) && (rc.senseElevation(t) > 2 || rc.getRoundNum() < 300)) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 800 ? 48 : 35)) {
                     tryBuild(RobotType.NET_GUN, dir);
-                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 48) && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100)) {
-                    tryBuild(RobotType.VAPORATOR, dir);
+                } else if (!existsDesignSchool && rc.getRoundNum() > 1100 && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
+                    tryBuild(RobotType.DESIGN_SCHOOL, dir);
+                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
+                    boolean vbuild = tryBuild(RobotType.VAPORATOR, dir);
+                    //alert others vaporator has been built
+                    if (vbuild) {
+                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+                        b.writeTypeBuilt(4);
+                        sendMessage(b.getMessage(), 1);
+                    }
                 }
             }
         }
@@ -733,8 +755,9 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
+                boolean inDigSite = (candidateBuildLoc.x - hqLocation.x) % 3 == 0 && (candidateBuildLoc.y - hqLocation.y) % 3 == 0;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)
-                        && dSchoolExists) {
+                        && dSchoolExists && !inDigSite) {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     //send message if this is the first refinery built
                     if (!firstRefineryExists) {
