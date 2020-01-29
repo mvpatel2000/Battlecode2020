@@ -49,15 +49,11 @@ public abstract class Unit extends Robot {
 
     @Override
     public void run() throws GameActionException {
-<<<<<<< HEAD
-=======
-        updateEnemies();
->>>>>>> 370447786c5f7fd3e6fb8c1761646b6fc4e5a87e
         myLocation = rc.getLocation();
         if (!rc.isReady()) {
             rc.setIndicatorDot(myLocation, 0, 0, 0);
         }
-        updateDrones();
+        updateEnemies();
         MapLocation me = myLocation;
         state.me = me;
         history.addFirst(me);

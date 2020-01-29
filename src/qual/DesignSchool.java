@@ -181,7 +181,7 @@ public class DesignSchool extends Building {
                 }
             } else { // normal operation, greedier
                 System.out.println("No enemy aggression");
-                if (rc.getRoundNum() < shouldHaveFirstVape + 10 || rc.getRoundNum() < 160) {
+                if (rc.getRoundNum() < shouldHaveFirstVape + 10 || rc.getRoundNum() < 165) {
                     System.out.println("A");
                     return;
                 } else if (numTerraformersMade < 4 && rc.getRoundNum() < 250) {

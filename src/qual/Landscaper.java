@@ -246,7 +246,8 @@ public class Landscaper extends Unit {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
         } else {
-            if (!terraformer) {
+            if (!terraformer && defensive && rc.getRoundNum() < DeliveryDrone.FILL_OUTER_ROUND && myLocation.distanceSquaredTo(hqLocation) >= 9) {
+                // if you're outside the outer wall before drones start filling in the outer wall and you can't find your d.school, then you switch to being a terraformer
                 terraformer = true;
                 run();
             }
