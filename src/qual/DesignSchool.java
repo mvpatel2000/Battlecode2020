@@ -212,6 +212,8 @@ public class DesignSchool extends Building {
                     System.out.println("Done");
                 }
             }
+        } else {
+            spawnTerraformer();
         }
     }
 

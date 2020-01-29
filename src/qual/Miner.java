@@ -248,7 +248,11 @@ public class Miner extends Unit {
 
     //determines if location is on grid and not in landscaper slot
     boolean onBuildingGridSquare(MapLocation location) throws GameActionException {
-        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > 20)
+        return onBuildingGridSquare(location, 20);
+    }
+
+    boolean onBuildingGridSquare(MapLocation location, int max_radius) throws GameActionException {
+        if (location.distanceSquaredTo(hqLocation) < 9 || location.distanceSquaredTo(hqLocation) > max_radius)
             return false;
         if (((location.y - hqLocation.y) % 3 == 0 || (location.x - hqLocation.x) % 3 == 0)
             && !checkGridExceptions(location)) {
@@ -472,7 +476,7 @@ public class Miner extends Unit {
         boolean existsDesignSchool = false;
         boolean existsVaporator = false;
         for (RobotInfo robot : allyRobots) {
-            if ((fleeing == null || robot.location.distanceSquaredTo(myLocation) < 5) && robot.type.equals(RobotType.NET_GUN)) {
+            if ((fleeing == null && robot.location.distanceSquaredTo(myLocation) < 20 || robot.location.distanceSquaredTo(myLocation) < (myLocation.distanceSquaredTo(hqLocation) > 35 ? 7 : 5)) && robot.type.equals(RobotType.NET_GUN)) {
                 existsNetGun = true;
             }
             if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
@@ -490,15 +494,17 @@ public class Miner extends Unit {
             directionRotation = directionsClosestTo(myLocation.directionTo(fleeing));
         }
         for (Direction dir : directionRotation) {
-            if (onBuildingGridSquare(myLocation.add(dir))
-                    && rc.canSenseLocation(myLocation.add(dir)) && (rc.senseElevation(myLocation.add(dir)) > 2 || rc.getRoundNum() < 300)) {
-                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator)) {
+            MapLocation t = myLocation.add(dir);
+            int radiusSquared = t.distanceSquaredTo(hqLocation);
+            if (onBuildingGridSquare(t, 48)
+                    && rc.canSenseLocation(t) && (rc.senseElevation(t) > 2 || rc.getRoundNum() < 300)) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 800 ? 48 : 35)) {
                     tryBuild(RobotType.NET_GUN, dir);
-                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 32)) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
                 } else if (!existsDesignSchool && rc.getRoundNum() > 1100) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
-                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100)) {
+                } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }
             }
