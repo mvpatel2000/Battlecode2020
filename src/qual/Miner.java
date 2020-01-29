@@ -482,7 +482,7 @@ public class Miner extends Unit {
             if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
                 existsFulfillmentCenter = true;
             }
-            if (robot.type.equals(RobotType.DESIGN_SCHOOL)) {
+            if (robot.type.equals(RobotType.DESIGN_SCHOOL) && robot.location.distanceSquaredTo(myLocation) < 25) {
                 existsDesignSchool = true;
             }
             if (robot.type.equals(RobotType.VAPORATOR)) {
@@ -500,14 +500,14 @@ public class Miner extends Unit {
                     && rc.canSenseLocation(t) && (rc.senseElevation(t) > 2 || rc.getRoundNum() < 300)) {
                 if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 800 ? 48 : 35)) {
                     tryBuild(RobotType.NET_GUN, dir);
-                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 32)) {
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 48) && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else if (!existsDesignSchool && rc.getRoundNum() > 1100) {
+                } else if (!existsDesignSchool && rc.getRoundNum() > 1100 && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
                     boolean vbuild = tryBuild(RobotType.VAPORATOR, dir);
                     //alert others vaporator has been built
-                    if(vbuild) {
+                    if (vbuild) {
                         BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                         b.writeTypeBuilt(4);
                         sendMessage(b.getMessage(), 1);
