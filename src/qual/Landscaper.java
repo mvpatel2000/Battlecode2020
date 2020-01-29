@@ -306,6 +306,16 @@ public class Landscaper extends Unit {
     }
 
     public void updateTerraformTarget() throws GameActionException {
+        boolean stuck = true;
+        for (Direction d : directions) {
+            if (!rc.isLocationOccupied(myLocation.add(d))) {
+                stuck = false;
+            }
+        }
+        if (stuck) {
+            terraformTarget = myLocation;
+            return;
+        }
         MapLocation target = findLatticeDepositSite();
         while (target == null) {
             terraformHeight += 2;

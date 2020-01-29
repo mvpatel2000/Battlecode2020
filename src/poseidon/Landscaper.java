@@ -246,13 +246,9 @@ public class Landscaper extends Unit {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
         } else {
-            if (myLocation.distanceSquaredTo(hqLocation) <= LATTICE_SIZE) {
-                if (!terraformer) {
-                    terraformer = true;
-                    run();
-                }
-            } else {
-                aggressive = true;
+            if (!terraformer) {
+                terraformer = true;
+                run();
             }
         }
     }
@@ -263,6 +259,9 @@ public class Landscaper extends Unit {
         rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
         if (flee()) {
             return;
+        }
+        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) {
+            path(hqLocation);
         }
         if (myLocation.isAdjacentTo(hqLocation) ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
@@ -307,6 +306,16 @@ public class Landscaper extends Unit {
     }
 
     public void updateTerraformTarget() throws GameActionException {
+        boolean stuck = true;
+        for (Direction d : directions) {
+            if (!rc.isLocationOccupied(myLocation.add(d))) {
+                stuck = false;
+            }
+        }
+        if (stuck) {
+            terraformTarget = myLocation;
+            return;
+        }
         MapLocation target = findLatticeDepositSite();
         while (target == null) {
             terraformHeight += 2;
@@ -909,7 +918,7 @@ public class Landscaper extends Unit {
                     }
                 }
             }
-            if (getNearbyBotAt(hqLocation).getDirtCarrying() > 20 || existsNearbyEnemyOfType(RobotType.LANDSCAPER, 15)) {
+            if (existsNearbyBotAt(hqLocation) && getNearbyBotAt(hqLocation).getDirtCarrying() > 20 || existsNearbyEnemyOfType(RobotType.LANDSCAPER, 15)) {
                 hqInDanger = true;
             }
             if (currentlyInInnerWall && (hqInDanger || rc.senseElevation(myLocation) > rc.senseElevation(hqLocation) + 3)) { // override: if HQ is dying or i'm standing on a pillar and i'm already in the wall, just hold there

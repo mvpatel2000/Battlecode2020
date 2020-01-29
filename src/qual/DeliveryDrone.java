@@ -9,9 +9,9 @@ public class DeliveryDrone extends Unit {
     public static final int START_FERRY = 300;
     public static final int FILL_WALL_ROUND = 600;
     public static final int FILL_OUTER_ROUND = 1000;
-    public static final int SHRINK_SHELL_ROUND = 2600;
+    public static final int SHRINK_SHELL_ROUND = 2605;
     private static final int POKE_DURATION = 50;
-    private static final int POKE_RADIUS = 64;
+    private static final int POKE_RADIUS = 35;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
     private static final int GIVE_UP_DEFENSE = 100;
@@ -169,6 +169,7 @@ public class DeliveryDrone extends Unit {
 
     @Override
     public void run() throws GameActionException {
+        System.out.println("Cooldown at the start of the turn: " + String.valueOf(rc.getCooldownTurns()));
         super.run();
 
         updateVisitedTiles(myLocation);
@@ -246,6 +247,8 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
+
+        System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
 
     }
 
