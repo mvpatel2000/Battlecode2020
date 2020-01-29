@@ -501,10 +501,10 @@ public class Miner extends Unit {
             int radiusSquared = t.distanceSquaredTo(hqLocation);
             if (onBuildingGridSquare(t, 48)
                     && rc.canSenseLocation(t) && (rc.senseElevation(t) > 2 || rc.getRoundNum() < 300)) {
-                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 800 ? 48 : 35)) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 500 ? 48 : 34)) {
                     tryBuild(RobotType.NET_GUN, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 48) && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
-                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);35
                 } else if (!existsDesignSchool && rc.getTeamSoup() > 500 && rc.getRoundNum() > 800 && radiusSquared >= (rc.getRoundNum() < 900 ? 25 : 26) && radiusSquared <= (rc.getRoundNum() < 1100 ? 33 : 48)) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
