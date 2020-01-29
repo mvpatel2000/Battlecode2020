@@ -270,8 +270,11 @@ public class Landscaper extends Unit {
             return;
         }
         fleeing = false;
-        if (!canMove(Direction.CENTER)) {
+
+        int[] dxy = xydist(myLocation, hqLocation);
+        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site
             path(hqLocation);
+            return;
         }
         if (myLocation.isAdjacentTo(hqLocation) ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
