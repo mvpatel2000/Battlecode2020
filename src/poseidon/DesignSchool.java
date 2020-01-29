@@ -21,6 +21,7 @@ public class DesignSchool extends Building {
     int WAIT_FOR_FIRST_VAPE_TILL = 600;
     int shouldHaveFirstVape = WAIT_FOR_FIRST_VAPE_TILL - 10;
     boolean waitingForSecondVape = true;
+    int stuckCounter = 0;
 
     //For halting production and resuming it.
     boolean holdProduction = false;
@@ -46,12 +47,12 @@ public class DesignSchool extends Building {
     private void construct() throws GameActionException {
         checkForLocationMessage();
         hqLocation = HEADQUARTERS_LOCATION;
-        defensive = myLocation.distanceSquaredTo(hqLocation) <= 49; // arbitrary cutoff, but should be more than big enough.
+        defensive = myLocation.distanceSquaredTo(hqLocation) <= Landscaper.LATTICE_SIZE; // arbitrary cutoff, but should be more than big enough.
         if (defensive) {
             System.out.println("I am a defensive d.school. Found our HQ: " + hqLocation.toString());
 
             // Determine if I am the primary defensive d.school or if I am an extra.
-            primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER);
+            primaryDefensive = !existsNearbyAllyOfType(RobotType.LANDSCAPER) || rc.getRoundNum() < 300;
         }
         else {
             System.out.println("I am far from my HQ.");
@@ -171,13 +172,13 @@ public class DesignSchool extends Building {
                 } else if ((rc.getRoundNum() >= 500 || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8) {
                     System.out.println("D");
                     spawnInnerWaller();
-                } else if (vaporatorsBuilt < 4) {
+                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000) {
                     System.out.println("E");
                     return;
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("F");
                     spawnTerraformer();
-                } else if (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
+                } else if (rc.getRoundNum() >= 1100) {
                     System.out.println("G");
                     spawnTerraformer();
                 } else {
@@ -194,7 +195,7 @@ public class DesignSchool extends Building {
                 } else if (rc.getRoundNum() >= 300 && numLandscapersMade < 3) {
                     System.out.println("C");
                     spawnInnerWaller();
-                } else if (vaporatorsBuilt < 4) {
+                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000) {
                     System.out.println("D");
                     return;
                 } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 500) {
@@ -206,7 +207,7 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("G");
                     spawnTerraformer();
-                } else if (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
+                } else if (rc.getRoundNum() >= 1100) {
                     System.out.println("H");
                     spawnTerraformer();
                 } else {
@@ -214,7 +215,23 @@ public class DesignSchool extends Building {
                 }
             }
         } else {
-            spawnTerraformer();
+            boolean existPlacesToBuild = false;
+            for (Direction d : directions) {
+                if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
+                    existPlacesToBuild = true;
+                }
+            }
+            if (!existPlacesToBuild) {
+                System.out.println("I'm stuck.  Been stuck for " + Integer.toString(stuckCounter) + " turns before this.");
+                stuckCounter++;
+            } else {
+                stuckCounter = 0;
+            }
+            if (stuckCounter >= 20) {
+                rc.disintegrate();
+            }
+            System.out.println("I am an extra d.school.  Attempting to make terraformers!");
+            spawnTerraformerTowardsHQ();
         }
     }
 
@@ -254,6 +271,16 @@ public class DesignSchool extends Building {
                 break;
             } else {
                 spawnDir = spawnDir.rotateLeft();
+            }
+        }
+    }
+
+    public void spawnTerraformerTowardsHQ() throws GameActionException {
+        System.out.println("Attempting to spawn terraformer");
+        Direction spawnDir = myLocation.directionTo(hqLocation);
+        for (Direction d : directionsClosestTo(spawnDir)) {
+            if (buildTerraformer(d)) {
+                break;
             }
         }
     }
@@ -390,7 +417,7 @@ public class DesignSchool extends Building {
             }
         }
         if(enemyAggression) {
-            if(rc.getRoundNum() - turnAtEnemyAggression > 200) {
+            if(rc.getRoundNum() - turnAtEnemyAggression > 200 || (numLandscapersMade >= 2 && !existsNearbyEnemyBuilding())) {
                 enemyAggression = false;
                 return false;
             }
