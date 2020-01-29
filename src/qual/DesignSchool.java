@@ -194,7 +194,7 @@ public class DesignSchool extends Building {
                 } else if (rc.getRoundNum() >= 300 && numLandscapersMade < 3) {
                     System.out.println("C");
                     spawnInnerWaller();
-                } else if (numVapes < 4) {
+                } else if (vaporatorsBuilt < 4) {
                     System.out.println("D");
                     return;
                 } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 500) {
