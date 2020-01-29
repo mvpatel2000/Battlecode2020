@@ -530,6 +530,7 @@ public class DeliveryDrone extends Unit {
     }
 
     private boolean checkToLandscape(RobotInfo[] nearby) throws GameActionException {
+        System.out.println("LANDSCAPING");
         if (!rc.isReady() || myLocation.isAdjacentTo(hqLocation)
                 || myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE || dropship)
             return landscaping;
@@ -587,6 +588,7 @@ public class DeliveryDrone extends Unit {
     }
 
     private void pickUpLandscaper(RobotInfo x) throws GameActionException {
+        System.out.println("Landscaper pick up at: " + x.getLocation());
         tryPickUp(x);
         ferrying = true;
         landscaping = true;
