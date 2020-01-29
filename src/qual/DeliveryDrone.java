@@ -549,10 +549,7 @@ public class DeliveryDrone extends Unit {
                     if (x != null && x.getType().equals(RobotType.LANDSCAPER) && x.getTeam().equals(allyTeam)
                         && GameConstants.getWaterLevel(rc.getRoundNum() + 1) >= rc.senseElevation(loc)
                             && isAdjacentToWater(loc)) {
-                        tryPickUp(x);
-                        carrying = false;
-                        dropship = true;
-                        return true;
+                        pickUpLandscaper(x);
                     }
                 }
             }
@@ -564,9 +561,7 @@ public class DeliveryDrone extends Unit {
                     continue;
                 MapLocation loc = x.getLocation();
                 if (loc.isAdjacentTo(myLocation)) {
-                    tryPickUp(x);
-                    ferrying = true;
-                    landscaping = true;
+                    pickUpLandscaper(x);
                 } else {
                     path(loc);
                 }
@@ -581,9 +576,7 @@ public class DeliveryDrone extends Unit {
                     continue;
                 MapLocation loc = x.getLocation();
                 if (loc.isAdjacentTo(myLocation)) {
-                    tryPickUp(x);
-                    ferrying = true;
-                    landscaping = true;
+                    pickUpLandscaper(x);
                 } else {
                     path(loc);
                 }
@@ -591,6 +584,12 @@ public class DeliveryDrone extends Unit {
             }
         }
         return landscaping;
+    }
+
+    private void pickUpLandscaper(RobotInfo x) throws GameActionException {
+        tryPickUp(x);
+        ferrying = true;
+        landscaping = true;
     }
 
     private boolean checkToFerry(RobotInfo[] nearby) throws GameActionException {
