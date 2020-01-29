@@ -92,7 +92,7 @@ public class Landscaper extends Unit {
     boolean currentlyInInnerWall = false;
     int pauseDigAndWaitForAllyToPass = 0;
 
-    boolean fleeing = false;
+    boolean superCanMove = false;
 
     // class variables used by aggressive landscapers:
     boolean aggressive = false;
@@ -211,6 +211,8 @@ public class Landscaper extends Unit {
 
         if (rc.getRoundNum() > 700 && myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) { // I got dropped off somewhere outside the lattice
             aggressive = true;
+            terraformer = false;
+            defensive = false;
         }
 
         if (terraformer) {
@@ -264,14 +266,19 @@ public class Landscaper extends Unit {
         updateBaseLocationIfNull();
 
         rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
-        fleeing = true;
+        superCanMove = true;
         if (flee()) {
-            fleeing = false;
+            superCanMove = false;
             return;
         }
-        fleeing = false;
-        if (!canMove(Direction.CENTER)) {
+        superCanMove = false;
+
+        int[] dxy = xydist(myLocation, hqLocation);
+        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site
+            superCanMove = true;
             path(hqLocation);
+            superCanMove = false;
+            return;
         }
         if (myLocation.isAdjacentTo(hqLocation) ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
@@ -905,7 +912,7 @@ public class Landscaper extends Unit {
 
     @Override
     protected boolean canMove(MapLocation me, Direction d) {
-        if (fleeing) {
+        if (superCanMove) {
             return super.canMove(me, d);
         }
         if (terraformer) {

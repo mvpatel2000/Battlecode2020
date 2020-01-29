@@ -3,7 +3,7 @@ package poseidon;
 public class BuiltMessage extends Message {
 
     final int bSchema = 5;   //BuiltMessages are message type 5
-    int typeBuilt; // 1 is fulfillment center, 2 is d.school, 3 is refinery
+    int typeBuilt; // 1 is fulfillment center, 2 is d.school, 3 is refinery, 4 is vaporator
     int bitsPerType = 3;
 
     public BuiltMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
