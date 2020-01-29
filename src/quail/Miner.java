@@ -1,4 +1,4 @@
-package qual;
+package quail;
 
 import battlecode.common.*;
 
