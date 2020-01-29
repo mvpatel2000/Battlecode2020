@@ -872,8 +872,9 @@ public class DeliveryDrone extends Unit {
         nearestNetGun = null;
         for (RobotInfo x : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
             if ((x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
-                    && x.getCooldownTurns() < 7) {
+                    && x.getCooldownTurns() < 8) {
 //                nearbyNetGuns.add(x.location);
+                System.out.println("Adding..." + x.location + " " + x.getCooldownTurns());
                 addToGunList(x.location);
                 if (nearestNetGun == null ||
                         nearestNetGun.distanceSquaredTo(myLocation) > x.location.distanceSquaredTo(myLocation))
@@ -883,7 +884,7 @@ public class DeliveryDrone extends Unit {
         addToGunList(enemyLocation);
         if (nearestNetGun == null)
             nearestNetGun = enemyLocation;
-        nearbyNetGuns.printAll();
+//        nearbyNetGuns.printAll();
 
 //        System.out.println("End update enemies: " + Clock.getBytecodeNum());
 
@@ -935,8 +936,8 @@ public class DeliveryDrone extends Unit {
         if (to.equals(reservedForDSchoolBuild))
             return false;
         try {
-            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
-                + " " + !underFireExceptForNearest(to));
+//            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
+//                + " " + !underFireExceptForNearest(to));
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
                     && (trapped || !underFire(to))
