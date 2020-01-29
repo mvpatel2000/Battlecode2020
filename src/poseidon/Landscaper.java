@@ -282,24 +282,29 @@ public class Landscaper extends Unit {
             moveInDirection(myLocation.directionTo(hqLocation).opposite());
         }
 
-        int[] dxy = xydist(myLocation, hqLocation);
-        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site
-            superCanMove = true;
-            path(hqLocation);
-            superCanMove = false;
-            return;
-        }
+        // if I'm in the inner wall or in the outer wall after a certain point, become a waller
         if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() >= DeliveryDrone.FILL_WALL_ROUND ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
-            // if I'm in the inner wall or in the outer wall after a certain point, become a defender
             terraformer = false;
             defensive = true;
             defense();
             return;
         }
+
+        // if I flee into the inner wall before the wall is being filled, get out of it        
         if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() < DeliveryDrone.FILL_WALL_ROUND) {
             moveInDirection(myLocation.directionTo(hqLocation).opposite());
         }
+
+        // path towards HQ if in invalid spot
+        int[] dxy = xydist(myLocation, hqLocation);
+        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation) && rc.getRoundNum() < 800) { // if i'm far from HQ or in a dig site
+            superCanMove = true;
+            path(hqLocation);
+            superCanMove = false;
+            return;
+        }
+
         if (getTerraformDigDirection() == Direction.CENTER) { // if I find myself in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);
@@ -335,7 +340,7 @@ public class Landscaper extends Unit {
     }
 
     public void updateTerraformTarget() throws GameActionException {
-        if (rc.getRoundNum() > 1100) {
+        if (rc.getRoundNum() > 800) {
             if (onBoundary(myLocation)) {
                 terraformTarget = myLocation;
                 terraformHeight = Integer.MAX_VALUE;
@@ -730,7 +735,7 @@ public class Landscaper extends Unit {
                             return;
                         }
                     }
-                } else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 3) >= rc.senseElevation(myLocation))) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
+                } else if (rc.senseElevation(myLocation) > -10 && (rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT || GameConstants.getWaterLevel(rc.getRoundNum() + 3) >= rc.senseElevation(myLocation)) && rc.getRoundNum() < 2500) { // deposit under myself if i am not in a dig site and either the inner wall hasn't been force-closed yet or i'm about to die
                     System.out.println("Dumping dirt under myself");
                     if (tryDeposit(Direction.CENTER)) {
                         return;
@@ -1044,6 +1049,7 @@ public class Landscaper extends Unit {
     }
 
     protected MapLocation findLatticeDepositSite() throws GameActionException {
+
         for (int[] d : visionSpiral) {
             MapLocation loc = add(myLocation, d);
             int dist = loc.distanceSquaredTo(hqLocation);

@@ -298,7 +298,7 @@ public class Landscaper extends Unit {
 
         // path towards HQ if in invalid spot
         int[] dxy = xydist(myLocation, hqLocation);
-        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site
+        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation) && rc.getRoundNum() < 800) { // if i'm far from HQ or in a dig site
             superCanMove = true;
             path(hqLocation);
             superCanMove = false;
@@ -340,7 +340,7 @@ public class Landscaper extends Unit {
     }
 
     public void updateTerraformTarget() throws GameActionException {
-        if (rc.getRoundNum() > 1100) {
+        if (rc.getRoundNum() > 800) {
             if (onBoundary(myLocation)) {
                 terraformTarget = myLocation;
                 terraformHeight = Integer.MAX_VALUE;
