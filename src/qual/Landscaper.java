@@ -185,6 +185,8 @@ public class Landscaper extends Unit {
                 }
             }
         }
+
+        initialCheckForEnemyHQLocationMessage();
     }
 
     public void constructTerraformer() throws GameActionException {
@@ -708,7 +710,7 @@ public class Landscaper extends Unit {
             }
         }
     }
-    
+
     Direction innerWallLowestNearbyDirection() throws GameActionException {
         Direction hqDir = myLocation.directionTo(hqLocation);
         Direction dump = Direction.CENTER;
