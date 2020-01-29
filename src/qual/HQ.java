@@ -116,7 +116,7 @@ public class HQ extends Building {
                 System.out.println("[i] Producing extra miner");
                 minerCount++;*/
             } else {
-                if (rc.getRoundNum() > 150 + terraformCount * 30 && terraformCount < 3) {
+                if (rc.getRoundNum() > 150 + terraformCount * 60 && terraformCount < 3) {
                     if (tryBuild(RobotType.MINER, getBestMinerDirection())) {
                         terraformCount++;
                     }

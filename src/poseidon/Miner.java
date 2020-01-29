@@ -174,6 +174,7 @@ public class Miner extends Unit {
         if (adjacentDrones.length == 0 || !rc.isReady()) {
             return false;
         }
+        System.out.println("I am trying to flee!");
 
         checkBuildBuildings(adjacentDrones[0].getLocation());
 
@@ -212,6 +213,7 @@ public class Miner extends Unit {
             go(escapeLeft);
             return true;
         }
+        System.out.println("I couldn't flee :(");
         return false;
     }
 
