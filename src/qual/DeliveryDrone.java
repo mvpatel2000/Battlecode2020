@@ -572,13 +572,6 @@ public class DeliveryDrone extends Unit {
     }
 
     private void chaseEnemy(RobotInfo nearest) throws GameActionException {
-        boolean existsEnemyNetGun = false;
-        for (RobotInfo r : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
-            if (r.type == RobotType.NET_GUN) {
-                existsEnemyNetGun = true;
-                break;
-            }
-        }
         if (!cornerHolder) {
             int[] dxy = xydist(myLocation, enemyLocation);
             if (dxy[0] == 3 && dxy[1] == 3 && rc.getRoundNum() > HOLD_CORNER_ROUND && !underFire(myLocation)) {
@@ -586,7 +579,7 @@ public class DeliveryDrone extends Unit {
             } else if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
                 fuzzyMoveToLoc(nearest.location);
             } else if (rc.getRoundNum() < 200 && myLocation.distanceSquaredTo(hqLocation) < 100
-                    && !existsEnemyNetGun && !attackDrone) { // guard HQ
+                    && nearbyNetGuns.size() == 0 && !attackDrone) { // guard HQ
                 Direction optimalDir = null;
                 int optimalScore = Integer.MAX_VALUE;
                 for (Direction dir : directions) {
