@@ -610,7 +610,7 @@ public class DeliveryDrone extends Unit {
                 RobotInfo x = infos.get(0);
                 MapLocation loc = x.getLocation();
                 path(loc);
-                return landscaping;
+                return true;
             }
         } else if (wallMissing()) {
             List<RobotInfo> infos = new ArrayList<>();
@@ -633,7 +633,7 @@ public class DeliveryDrone extends Unit {
                 RobotInfo x = infos.get(0);
                 MapLocation loc = x.getLocation();
                 path(loc);
-                return landscaping;
+                return true;
             }
 
         }
