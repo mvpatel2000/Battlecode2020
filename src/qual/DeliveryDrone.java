@@ -1000,7 +1000,7 @@ public class DeliveryDrone extends Unit {
     private boolean safe = false;
 
     public void path(MapLocation target, boolean safe) throws GameActionException {
-        if (onBoundary(myLocation) && !isAttackDrone()) {
+        if (onBoundary(myLocation) && !isAttackDrone() && myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE) {
             setDestination(null);
         }
         this.safe = safe;
