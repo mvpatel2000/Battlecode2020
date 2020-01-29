@@ -464,7 +464,7 @@ public class Landscaper extends Unit {
             }
         } else {
             for (Direction d : directions) {
-                if (rc.isLocationOccupied(myLocation.add(d)) && rc.getNearbyBotAt(myLocation.add(d)).team.equals(enemyTeam) && rc.getNearbyBotAt(myLocation.add(d)).type.equals(RobotType.HQ)) {\
+                if (rc.isLocationOccupied(myLocation.add(d)) && getNearbyBotAt(myLocation.add(d)).team.equals(enemyTeam) && getNearbyBotAt(myLocation.add(d)).type.equals(RobotType.HQ)) {
                     enemyHQLocation = myLocation.add(d);
                 }
             }
@@ -988,29 +988,6 @@ public class Landscaper extends Unit {
                 }
             }
         }
-    }
-
-    protected MapLocation findLatticeDepositSite() throws GameActionException {
-        for (int[] d : visionSpiral) {
-            MapLocation loc = add(myLocation, d);
-            int dist = loc.distanceSquaredTo(hqLocation);
-            if (dist < 5 || dist > LATTICE_SIZE)
-                continue;
-            if (rc.getRoundNum() > 1500 && myLocation.distanceSquaredTo(loc) > 5)
-                return null;
-            int[] dxy = xydist(loc, hqLocation);
-            if (dxy[0] % 3 + dxy[1] % 3 == 0)
-                continue;
-            if (isDepositSiteException(loc) || !rc.canSenseLocation(loc))
-                continue;
-            if (existsNearbyBotAt(loc) && getNearbyBotAt(loc).team.equals(allyTeam) && getNearbyBotAt(loc).type.isBuilding() && (getNearbyBotAt(loc).getDirtCarrying() >= 5 || rc.getRoundNum() < 400))
-                continue;
-            int height = rc.senseElevation(loc);
-            if (height >= terraformHeight || height <= MIN_LATTICE_BUILD_HEIGHT)
-                continue;
-            return loc;
-        }
-        return null;
     }
 
     protected MapLocation findLatticeDepositSite() throws GameActionException {
