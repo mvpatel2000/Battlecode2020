@@ -286,7 +286,7 @@ public class Landscaper extends Unit {
             path(hqLocation);
             superCanMove = false;
         }
-        if (myLocation.isAdjacentTo(hqLocation) ||
+        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() > DeliveryDrone.FILL_WALL_ROUND ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
                 // if I'm in the inner wall or in the outer wall after a certain point, become a defender
             terraformer = false;
