@@ -431,6 +431,9 @@ public class DeliveryDrone extends Unit {
             return landscaping;
         }
 
+        if (rc.getRoundNum() > DEFEND_TURN && !shellDrone)
+            return landscaping;
+
         if (innerWallMissing()) {
             for (RobotInfo x : nearby) {
                 if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || x.getLocation().isAdjacentTo(hqLocation))
