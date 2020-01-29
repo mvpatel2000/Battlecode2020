@@ -672,6 +672,7 @@ public class DeliveryDrone extends Unit {
                         landscaping = true;
                 } else {
                     path(loc);
+                    return true;
                 }
                 return ferrying;
             }
