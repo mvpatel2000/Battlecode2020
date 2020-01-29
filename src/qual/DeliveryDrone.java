@@ -6,22 +6,23 @@ import java.util.*;
 
 public class DeliveryDrone extends Unit {
 
-    public static final int START_FERRY = 300;
-    public static final int FILL_WALL_ROUND = 600;
-    public static final int FILL_OUTER_ROUND = 1000;
-    public static final int SHRINK_SHELL_ROUND = 2605;
-    public static final int POKE_DURATION = 50;
-    public static final int POKE_RADIUS = 35;
-    private static final int POSTURE_POKE_TIME = 20;
-    private static final int HOLD_CORNER_ROUND = 600;
-    private static final int GIVE_UP_DEFENSE = 50;
-    private static final int DEFENSE_FAR_RADIUS = Landscaper.LATTICE_SIZE;
-    private static final int LANDSCAPE_GIVE_UP = 100;
-    public static final int POSTURE_TIME = 200;
+    protected static final int START_FERRY = 300;
+    protected static final int FILL_WALL_ROUND = 600;
+    protected static final int FILL_OUTER_ROUND = 1000;
+    protected static final int SHRINK_SHELL_ROUND = 2605;
+    protected static final int POKE_DURATION = 50;
+    protected static final int POKE_RADIUS = 35;
+    protected static final int POSTURE_POKE_TIME = 20;
+    protected static final int HOLD_CORNER_ROUND = 600;
+    protected static final int GIVE_UP_DEFENSE = 50;
+    protected static final int DEFENSE_FAR_RADIUS = Landscaper.LATTICE_SIZE;
+    protected static final int LANDSCAPE_GIVE_UP = 100;
+    protected static final int POSTURE_TIME = 200;
+    protected static final int DEFEND_TURN = 1100;
+    protected static final int ATTACK_TURN = 1875;
+    protected static final int POKE_TURN = 900;
+    protected static final int ATTACK_COMM_TIME = DeliveryDrone.ATTACK_TURN - DeliveryDrone.POSTURE_TIME - 5;
 
-    final int DEFEND_TURN = 1100;
-    final int ATTACK_TURN = 1875;
-    final int POKE_TURN = 900;
     long[] waterChecked = new long[64]; // align to top right
     long[] gunsChecked = new long[64];
     WaterList waterLocations = new WaterList();
@@ -43,9 +44,10 @@ public class DeliveryDrone extends Unit {
     int whichEnemyLocation;
     //enemy hq communication
     boolean hasSentEnemyLoc = false;
-    boolean crunchSuccess = false;
+    int crunchSuccess = 0;
     //water communication
     MapLocation commedWaterLocation = null;
+    private boolean sentCrunchSuccessMessage = false;
 
     boolean attackDrone;
 
@@ -215,8 +217,8 @@ public class DeliveryDrone extends Unit {
             else
                 goToWaterAndDrop();
         } else {
-            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
-                attackDrone = false;
+//            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
+//                attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
 
             if (shouldPickup(distToNearest)) { // pick up
@@ -243,7 +245,9 @@ public class DeliveryDrone extends Unit {
 
         //defensive drones report enemy aggression if they see it
         reportEnemyAgression();
-
+        System.out.println("Crunch success");
+        System.out.println(crunchSuccess);
+        System.out.println("Crunch success");
         System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
     }
 
@@ -339,12 +343,12 @@ public class DeliveryDrone extends Unit {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
             boolean giveUp = shouldRetreat(nearby);
             if (giveUp) {
-                if(nothingButBuildingsLeft(nearby) && !crunchSuccess) {
+                if(nothingButBuildingsLeft(nearby) && crunchSuccess<CRUNCH_THRESHOLD && !sentCrunchSuccessMessage) {
                     RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                     r.writeTypeOfCommit(4);
                     if(sendMessage(r.getMessage(), 1)) {
                         System.out.println("[i] Telling team crunch has succeeded!");
-                        crunchSuccess = true;
+                        sentCrunchSuccessMessage = true;
                     }
                 }
                 giveUpOnPoke = true;
@@ -356,7 +360,7 @@ public class DeliveryDrone extends Unit {
     private boolean nothingButBuildingsLeft(RobotInfo[] nearby) {
         boolean bleft = true;
         for (RobotInfo x : nearby) {
-            if (!x.getTeam().equals(allyTeam) && !x.getType().isBuilding()) {
+            if (x.getTeam().equals(enemyTeam) && !x.getType().isBuilding()) {
                 bleft = false;
                 break;
             }
@@ -390,6 +394,11 @@ public class DeliveryDrone extends Unit {
     private boolean shouldPoke() {
         return rc.getRoundNum() > POKE_TURN && rc.getRoundNum() < POKE_TURN + POKE_DURATION
                 && !giveUpOnPoke && myLocation.distanceSquaredTo(enemyLocation) < POKE_RADIUS;
+    }
+
+    @Override
+    protected boolean canFuzz() {
+        return !shellDrone;
     }
 
     public void updateDefensiveDSchoolLocation(RobotInfo[] nearby) throws GameActionException {
@@ -533,7 +542,8 @@ public class DeliveryDrone extends Unit {
                 if (outerWall.contains(loc)) {
                     RobotInfo x = rc.senseRobotAtLocation(loc);
                     if (x != null && x.getType().equals(RobotType.LANDSCAPER) && x.getTeam().equals(allyTeam)
-                        && GameConstants.getWaterLevel(rc.getRoundNum() + 1) >= rc.senseElevation(loc)) {
+                        && GameConstants.getWaterLevel(rc.getRoundNum() + 1) >= rc.senseElevation(loc)
+                            && isAdjacentToWater(loc)) {
                         tryPickUp(x);
                         carrying = false;
                         dropship = true;
@@ -664,8 +674,10 @@ public class DeliveryDrone extends Unit {
         if (giveUpOnAMove || !rc.isReady())
             return;
         MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
-        if (!dropship) {
+        if (!dropship && crunchSuccess>=CRUNCH_THRESHOLD) {
             for (Direction d : directions) {
+                if (!rc.canSenseLocation(myLocation.add(d)))
+                    continue;
                 RobotInfo x = rc.senseRobotAtLocation(myLocation.add(d));
                 if (x != null && x.getTeam().equals(allyTeam)
                         && x.getType().equals(RobotType.LANDSCAPER)
@@ -698,9 +710,9 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > ATTACK_TURN) {
             fuzzyMoveToLoc(enemyLocation);
         } else if (rc.getRoundNum() > ATTACK_TURN - 25 && !cornerHolder) {
-            path(enemyLocation, false);
+            path(enemyLocation, true);
         } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !cornerHolder) {
-            spiral(enemyLocation, false);
+            spiral(enemyLocation, true);
         }
     }
 
@@ -1277,10 +1289,13 @@ public class DeliveryDrone extends Unit {
                             turnAtEnemyAggression = -1;
                         }
                     } else if (r.typeOfCommit == 4) {
-                        if(!crunchSuccess) {
-                            System.out.println("[i] Drone crunch succeeded!");
-                            crunchSuccess = true;
+                        if(crunchSuccess<CRUNCH_THRESHOLD) {
+                            crunchSuccess+=1;
+                            System.out.println("[i] " + Integer.toString(crunchSuccess) + " drones say crunch succeeded!");
                         }
+                    } else if (r.typeOfCommit == 5) {
+                        crunchSuccess = CRUNCH_THRESHOLD;
+                        System.out.println("[i] HQ says drone crunch succeeded!");
                     }
                 }
             }

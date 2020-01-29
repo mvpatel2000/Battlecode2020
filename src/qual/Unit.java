@@ -63,6 +63,10 @@ public abstract class Unit extends Robot {
         hasHistory = true;
     }
 
+    protected boolean canFuzz() {
+        return true;
+    }
+
     protected List<RobotInfo> getNearbyDrones() {
         return drones;
     }
@@ -198,8 +202,20 @@ public abstract class Unit extends Robot {
      * Flees from adjacent drone if it exists.
      */
     public boolean flee() throws GameActionException {
-        RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
-                x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
+        for (RobotInfo robotInfo : rc.senseNearbyRobots(6, allyTeam)) {
+            if (robotInfo.getType().equals(RobotType.NET_GUN)) {
+                return false;
+            }
+        }
+        
+        List<RobotInfo> list = new ArrayList<>();
+        for (RobotInfo x : getNearbyDrones()) {
+            if (x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()) {
+                list.add(x);
+            }
+        }
+        RobotInfo[] adjacentDrones = list.toArray(new RobotInfo[0]);
+
 
         if (adjacentDrones.length == 0 || !rc.isReady())
             return false;
@@ -409,6 +425,9 @@ public abstract class Unit extends Robot {
     }
 
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
+        if (!canFuzz())
+            return false;
+
         int mindist = 50000;
         Direction bestdir = null;
         for (Direction dir : getDirections()) {
