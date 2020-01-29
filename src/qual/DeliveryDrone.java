@@ -644,7 +644,7 @@ public class DeliveryDrone extends Unit {
         if (!dropship) {
             for (Direction d : directions) {
                 RobotInfo x = rc.senseRobotAtLocation(myLocation.add(d));
-                if (x.getTeam().equals(allyTeam)
+                if (x != null && x.getTeam().equals(allyTeam)
                         && x.getType().equals(RobotType.LANDSCAPER)
                         && rc.canPickUpUnit(x.getID())
                         && !outerWall.contains(x.getLocation())
