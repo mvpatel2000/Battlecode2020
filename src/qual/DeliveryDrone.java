@@ -6,22 +6,23 @@ import java.util.*;
 
 public class DeliveryDrone extends Unit {
 
-    public static final int START_FERRY = 300;
-    public static final int FILL_WALL_ROUND = 600;
-    public static final int FILL_OUTER_ROUND = 1000;
-    public static final int SHRINK_SHELL_ROUND = 2605;
-    public static final int POKE_DURATION = 50;
-    public static final int POKE_RADIUS = 35;
-    private static final int POSTURE_POKE_TIME = 20;
-    private static final int HOLD_CORNER_ROUND = 600;
-    private static final int GIVE_UP_DEFENSE = 50;
-    private static final int DEFENSE_FAR_RADIUS = Landscaper.LATTICE_SIZE;
-    private static final int LANDSCAPE_GIVE_UP = 100;
-    public static final int POSTURE_TIME = 200;
+    protected static final int START_FERRY = 300;
+    protected static final int FILL_WALL_ROUND = 600;
+    protected static final int FILL_OUTER_ROUND = 1000;
+    protected static final int SHRINK_SHELL_ROUND = 2605;
+    protected static final int POKE_DURATION = 50;
+    protected static final int POKE_RADIUS = 35;
+    protected static final int POSTURE_POKE_TIME = 20;
+    protected static final int HOLD_CORNER_ROUND = 600;
+    protected static final int GIVE_UP_DEFENSE = 50;
+    protected static final int DEFENSE_FAR_RADIUS = Landscaper.LATTICE_SIZE;
+    protected static final int LANDSCAPE_GIVE_UP = 100;
+    protected static final int POSTURE_TIME = 200;
+    protected static final int DEFEND_TURN = 1100;
+    protected static final int ATTACK_TURN = 1875;
+    protected static final int POKE_TURN = 900;
+    protected static final int ATTACK_COMM_TIME = DeliveryDrone.ATTACK_TURN - DeliveryDrone.POSTURE_TIME - 5;
 
-    final int DEFEND_TURN = 1100;
-    final int ATTACK_TURN = 1875;
-    final int POKE_TURN = 900;
     long[] waterChecked = new long[64]; // align to top right
     long[] gunsChecked = new long[64];
     WaterList waterLocations = new WaterList();
@@ -244,7 +245,9 @@ public class DeliveryDrone extends Unit {
 
         //defensive drones report enemy aggression if they see it
         reportEnemyAgression();
-
+        System.out.println("Crunch success");
+        System.out.println(crunchSuccess);
+        System.out.println("Crunch success");
         System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
     }
 
@@ -357,7 +360,7 @@ public class DeliveryDrone extends Unit {
     private boolean nothingButBuildingsLeft(RobotInfo[] nearby) {
         boolean bleft = true;
         for (RobotInfo x : nearby) {
-            if (!x.getTeam().equals(allyTeam) && !x.getType().isBuilding()) {
+            if (x.getTeam().equals(enemyTeam) && !x.getType().isBuilding()) {
                 bleft = false;
                 break;
             }
@@ -670,7 +673,7 @@ public class DeliveryDrone extends Unit {
         if (giveUpOnAMove || !rc.isReady())
             return;
         MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
-        if (!dropship && crunchSuccess) {
+        if (!dropship && crunchSuccess>=CRUNCH_THRESHOLD) {
             for (Direction d : directions) {
                 if (!rc.canSenseLocation(myLocation.add(d)))
                     continue;
@@ -1286,9 +1289,12 @@ public class DeliveryDrone extends Unit {
                         }
                     } else if (r.typeOfCommit == 4) {
                         if(crunchSuccess<CRUNCH_THRESHOLD) {
-                            System.out.println("[i] Drone crunch succeeded!");
                             crunchSuccess+=1;
+                            System.out.println("[i] " + Integer.toString(crunchSuccess) + " drones say crunch succeeded!");
                         }
+                    } else if (r.typeOfCommit == 5) {
+                        crunchSuccess = CRUNCH_THRESHOLD;
+                        System.out.println("[i] HQ says drone crunch succeeded!");
                     }
                 }
             }

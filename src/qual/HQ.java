@@ -317,7 +317,13 @@ public class HQ extends Building {
                 System.out.println("[i] SENDING WATER LOCATION");
             }
         }
-        if()
+        if(rn==DeliveryDrone.ATTACK_COMM_TIME && crunchSuccess>=CRUNCH_THRESHOLD) {
+            RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+            r.writeTypeOfCommit(5);
+            if(sendMessage(r.getMessage(), 1)) {
+                System.out.println("[i] Telling team crunch has succeeded!");
+            }
+        }
     }
 
     //Returns true if should continue halting production
@@ -393,8 +399,8 @@ public class HQ extends Building {
                         enemyAggression = true;
                         turnAtEnemyAggression = rc.getRoundNum();
                     } else if (r.typeOfCommit==4 && crunchSuccess<CRUNCH_THRESHOLD) {
-                        System.out.println("[i] Crunch Succeeded!");
                         crunchSuccess+=1;
+                        System.out.println("[i] " + Integer.toString(crunchSuccess) + " drones say crunch succeeded!");
                     }
                 }
             }
