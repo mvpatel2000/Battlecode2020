@@ -28,6 +28,7 @@ public class DeliveryDrone extends Unit {
     int[] tilesVisited;
     int stuckCount;
     List<RobotInfo> nearbyNetGuns;
+    RobotInfo nearestNetGun = null;
 
     MapLocation nearestWaterLocation;
     MapLocation baseLocation;
@@ -724,18 +725,21 @@ public class DeliveryDrone extends Unit {
 
     protected void updateEnemies() {
         nearbyNetGuns.clear();
-        for (RobotInfo x : rc.senseNearbyRobots()) {
-            if (!x.getTeam().equals(allyTeam) &&
-                    (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
-                    && x.getCooldownTurns() < 5.) {
+        nearestNetGun = null;
+        for (RobotInfo x : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
+            if ((x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+                    && x.getCooldownTurns() < 7) {
                 nearbyNetGuns.add(x);
+                if (nearestNetGun == null ||
+                        nearestNetGun.location.distanceSquaredTo(myLocation) > x.location.distanceSquaredTo(myLocation))
+                    nearestNetGun = x;
             }
         }
 
         trapped = true;
 
         outer:
-        for (Direction d : directionsWithCenter) {
+        for (Direction d : cardinalCenter) {
             for (RobotInfo n : nearbyNetGuns) {
                 if (n.getLocation().distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                     continue outer;
@@ -781,7 +785,8 @@ public class DeliveryDrone extends Unit {
                     && (trapped || !underFire(to))
                     && (!trapped
                     || enemyLocation == null
-                    || to.distanceSquaredTo(enemyLocation) > from.distanceSquaredTo(enemyLocation));
+                    || (to.distanceSquaredTo(nearestNetGun.location) > from.distanceSquaredTo(nearestNetGun.location)
+                        && !underFireExceptForNearest(to)));
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
@@ -796,6 +801,17 @@ public class DeliveryDrone extends Unit {
         }
         return (enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
+
+    private boolean underFireExceptForNearest(MapLocation to) {
+        for (RobotInfo y : nearbyNetGuns) {
+            if (!y.location.equals(nearestNetGun.location) &&
+                    y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+                return true;
+            }
+        }
+        return (enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+    }
+
 
     protected Direction[] getDirections() {
         if (safe)
