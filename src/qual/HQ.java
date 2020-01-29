@@ -28,6 +28,7 @@ public class HQ extends Building {
     MapLocation commedWaterLocation = null;
 
     int turnAtEnemyAggression = -1;
+    int vaporatorsBuilt = 0;
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
@@ -376,6 +377,12 @@ public class HQ extends Building {
                         removeExtraneous(enemyHQLocation);
                     } else if(l.unitType==2) {
                         commedWaterLocation = new MapLocation(l.xLoc, l.yLoc);
+                    }
+                } else if(getSchema(f)==5) {
+                    BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    if(b.typeBuilt==4) {
+                        vaporatorsBuilt += 1;
+                        System.out.println("[i] We've built " + Integer.toString(vaporatorsBuilt) + " vaporators");
                     }
                 } else if(!enemyAggression && getSchema(f)==7) {
                     RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);

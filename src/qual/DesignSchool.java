@@ -28,6 +28,7 @@ public class DesignSchool extends Building {
     boolean firstFullfillmentCenterExists = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
+    int vaporatorsBuilt = 0;
     MapLocation trueEnemyHQLocation = null;
 
     // aggression variables
@@ -338,13 +339,15 @@ public class DesignSchool extends Building {
                     if(ENEMY_HQ_LOCATION != null) {
                         trueEnemyHQLocation = ENEMY_HQ_LOCATION;
                     }
-                } else if(getSchema(msg[0])==5 && (!firstRefineryExists || !firstFullfillmentCenterExists)) {
+                } else if(getSchema(msg[0])==5) {
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
-                    if(b.typeBuilt==3) {
+                    if(!firstRefineryExists && b.typeBuilt==3) {
                         firstRefineryExists = true;
-                    }
-                    if(b.typeBuilt==1) {
+                    } else if(!firstFullfillmentCenterExists && b.typeBuilt==1) {
                         firstFullfillmentCenterExists = true;
+                    } else if(b.typeBuilt==4) {
+                        vaporatorsBuilt += 1;
+                        System.out.println("[i] We've built " + Integer.toString(vaporatorsBuilt) + " vaporators");
                     }
                 } else if (getSchema(msg[0])==7) {
                     RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
