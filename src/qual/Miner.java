@@ -755,8 +755,9 @@ public class Miner extends Unit {
             for (Direction dir : directions) {
                 MapLocation candidateBuildLoc = myLocation.add(dir);
                 boolean outsideOuterWall = (candidateBuildLoc.x - hqLocation.x) > 3 || (candidateBuildLoc.x - hqLocation.x) < -3 || (candidateBuildLoc.y - hqLocation.y) > 3 || (candidateBuildLoc.y - hqLocation.y) < -3;
+                boolean inDigSite = (candidateBuildLoc.x - hqLocation.x) % 3 == 0 && (candidateBuildLoc.y - hqLocation.y) % 3 == 0;
                 if (outsideOuterWall && rc.isReady() && rc.canBuildRobot(RobotType.REFINERY, dir)
-                        && dSchoolExists) {
+                        && dSchoolExists && !inDigSite) {
                     rc.buildRobot(RobotType.REFINERY, dir);
                     //send message if this is the first refinery built
                     if (!firstRefineryExists) {
