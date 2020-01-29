@@ -256,7 +256,7 @@ public class DeliveryDrone extends Unit {
     }
 
     private void checkResetDefense() {
-        if (defending > rc.getRoundNum() - DEFEND_TURN)
+        if (defending > rc.getRoundNum() - DEFEND_TURN && rc.getRoundNum() > DEFEND_TURN)
             defending = 0;
     }
 
@@ -530,14 +530,14 @@ public class DeliveryDrone extends Unit {
     }
 
     private void handleDefense(RobotInfo[] nearby) throws GameActionException {
-        System.out.println("Handle Defense");
+        System.out.println("Handle Defense: " + defending + " " + cornerHolder);
         if (!cornerHolder) {
             destination = hqLocation;
             if (rc.getRoundNum() < 300) {
                 fuzzyMoveToLoc(hqLocation.add(hqLocation.directionTo(enemyLocation)));
             } else if (rc.getRoundNum() < DEFEND_TURN) {
                 defending++;
-                spiral(destination, false);
+                path(destination, false);
             } else {
                 if (!inShell()) {
                     defending++;
