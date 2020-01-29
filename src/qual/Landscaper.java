@@ -288,13 +288,16 @@ public class Landscaper extends Unit {
             path(hqLocation);
             superCanMove = false;
         }
-        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() > DeliveryDrone.FILL_WALL_ROUND ||
+        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() >= DeliveryDrone.FILL_WALL_ROUND ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
                 // if I'm in the inner wall or in the outer wall after a certain point, become a defender
             terraformer = false;
             defensive = true;
             defense();
             return;
+        }
+        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() < DeliveryDrone.FILL_WALL_ROUND) {
+            moveInDirection(myLocation.directionTo(hqLocation).opposite());
         }
         if (getTerraformDigDirection() == Direction.CENTER) { // if I find myself in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
