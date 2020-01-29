@@ -11,7 +11,7 @@ public class DeliveryDrone extends Unit {
     public static final int FILL_OUTER_ROUND = 1000;
     public static final int SHRINK_SHELL_ROUND = 2600;
     private static final int POKE_DURATION = 50;
-    private static final int POKE_RADIUS = 64;
+    private static final int POKE_RADIUS = 35;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
     long[] waterChecked = new long[64]; // align to top right
