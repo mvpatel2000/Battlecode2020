@@ -17,7 +17,9 @@ public abstract class Robot {
     /* constant for each game */
     Direction[] directions = {Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
     Direction[] cardinal = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+    Direction[] cardinalCenter = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     Direction[] directionsWithCenter = {Direction.CENTER, Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST};
+    Direction[][] dirsClosestTo = {{Direction.NORTH, Direction.NORTHWEST, Direction.NORTHEAST, Direction.WEST, Direction.EAST, Direction.SOUTHWEST, Direction.SOUTHEAST, Direction.SOUTH}, {Direction.NORTHWEST, Direction.WEST, Direction.NORTH, Direction.SOUTHWEST, Direction.NORTHEAST, Direction.SOUTH, Direction.EAST, Direction.SOUTHEAST}, {Direction.WEST, Direction.SOUTHWEST, Direction.NORTHWEST, Direction.SOUTH, Direction.NORTH, Direction.SOUTHEAST, Direction.NORTHEAST, Direction.EAST}, {Direction.SOUTHWEST, Direction.SOUTH, Direction.WEST, Direction.SOUTHEAST, Direction.NORTHWEST, Direction.EAST, Direction.NORTH, Direction.NORTHEAST}, {Direction.SOUTH, Direction.SOUTHEAST, Direction.SOUTHWEST, Direction.EAST, Direction.WEST, Direction.NORTHEAST, Direction.NORTHWEST, Direction.NORTH}, {Direction.SOUTHEAST, Direction.EAST, Direction.SOUTH, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.NORTH, Direction.WEST, Direction.NORTHWEST}, {Direction.EAST, Direction.NORTHEAST, Direction.SOUTHEAST, Direction.NORTH, Direction.SOUTH, Direction.NORTHWEST, Direction.SOUTHWEST, Direction.WEST}, {Direction.NORTHEAST, Direction.NORTH, Direction.EAST, Direction.NORTHWEST, Direction.SOUTHEAST, Direction.WEST, Direction.SOUTH, Direction.SOUTHWEST}};
     RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL, RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
     Team allyTeam;
     Team enemyTeam;
@@ -63,6 +65,29 @@ public abstract class Robot {
         MAP_HEIGHT = rc.getMapHeight();
         numRows = (MAP_HEIGHT + squareHeight - 1) / squareHeight;
         numCols = (MAP_WIDTH + squareWidth - 1) / squareWidth;
+    }
+
+    public Direction[] directionsClosestTo(Direction d) {
+        switch (d) {
+            case NORTH:
+                return dirsClosestTo[0];
+            case NORTHEAST:
+                return dirsClosestTo[1];
+            case EAST:
+                return dirsClosestTo[2];
+            case SOUTHEAST:
+                return dirsClosestTo[3];
+            case SOUTH:
+                return dirsClosestTo[4];
+            case SOUTHWEST:
+                return dirsClosestTo[5];
+            case WEST:
+                return dirsClosestTo[6];
+            case NORTHWEST:
+                return dirsClosestTo[7];
+            default:
+                return directions;
+        }
     }
 
     public Direction toward(MapLocation me, MapLocation dest) {

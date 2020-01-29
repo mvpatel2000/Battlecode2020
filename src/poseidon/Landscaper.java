@@ -92,6 +92,8 @@ public class Landscaper extends Unit {
     boolean currentlyInInnerWall = false;
     int pauseDigAndWaitForAllyToPass = 0;
 
+    boolean superCanMove = false;
+
     // class variables used by aggressive landscapers:
     boolean aggressive = false;
     boolean wallProxy = false;
@@ -207,6 +209,10 @@ public class Landscaper extends Unit {
             readBirthMessage();
         }
 
+        if (rc.getRoundNum() > 700 && myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) { // I got dropped off somewhere outside the lattice
+            aggressive = true;
+        }
+
         if (terraformer) {
             terraform();
         } else if (defensive) {
@@ -246,7 +252,8 @@ public class Landscaper extends Unit {
             innerWallFillOrder = computeInnerWallFillOrder(hqLocation, baseLocation);
             reservedForDSchoolBuild = baseLocation.add(baseLocation.directionTo(hqLocation).opposite().rotateRight());
         } else {
-            if (!terraformer) {
+            if (!terraformer && defensive && rc.getRoundNum() < DeliveryDrone.FILL_OUTER_ROUND && myLocation.distanceSquaredTo(hqLocation) >= 9) {
+                // if you're outside the outer wall before drones start filling in the outer wall and you can't find your d.school, then you switch to being a terraformer
                 terraformer = true;
                 run();
             }
@@ -257,11 +264,19 @@ public class Landscaper extends Unit {
         updateBaseLocationIfNull();
 
         rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
+        superCanMove = true;
         if (flee()) {
+            superCanMove = false;
             return;
         }
-        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) {
+        superCanMove = false;
+
+        int[] dxy = xydist(myLocation, hqLocation);
+        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE || dxy[0] % 3 + dxy[1] % 3 == 0 || onBoundary(myLocation)) { // if i'm far from HQ or in a dig site
+            superCanMove = true;
             path(hqLocation);
+            superCanMove = false;
+            return;
         }
         if (myLocation.isAdjacentTo(hqLocation) ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
@@ -306,16 +321,19 @@ public class Landscaper extends Unit {
     }
 
     public void updateTerraformTarget() throws GameActionException {
-        boolean stuck = true;
-        for (Direction d : directions) {
-            if (!rc.isLocationOccupied(myLocation.add(d))) {
-                stuck = false;
+        if (rc.getRoundNum() > 1100) {
+            int tmp = terraformHeight;
+            terraformHeight = rc.senseElevation(myLocation) - 1;
+            MapLocation target = findLatticeDepositSite();
+            if (myLocation.isAdjacentTo(target)) {
+                terraformTarget = target;
+            } else {
+                terraformHeight = rc.senseElevation(myLocation);
+                terraformTarget = myLocation;
             }
-        }
-        if (stuck) {
-            terraformTarget = myLocation;
             return;
         }
+
         MapLocation target = findLatticeDepositSite();
         while (target == null) {
             terraformHeight += 2;
@@ -450,6 +468,14 @@ public class Landscaper extends Unit {
                 tryDeposit(enemyHQDir);
             }
         } else {
+            for (Direction d : directions) {
+                if (rc.isLocationOccupied(myLocation.add(d)) && getNearbyBotAt(myLocation.add(d)).team.equals(enemyTeam) && getNearbyBotAt(myLocation.add(d)).type.equals(RobotType.HQ)) {
+                    enemyHQLocation = myLocation.add(d);
+                }
+            }
+            if (enemyHQLocation != null) {
+                aggro();
+            }
             // flee
             // if enemy HQ visible, a-move it
             // if adjacent to enemy building, kill it
@@ -678,7 +704,7 @@ public class Landscaper extends Unit {
             }
         }
     }
-
+    
     Direction innerWallLowestNearbyDirection() throws GameActionException {
         Direction hqDir = myLocation.directionTo(hqLocation);
         Direction dump = Direction.CENTER;
@@ -884,6 +910,9 @@ public class Landscaper extends Unit {
 
     @Override
     protected boolean canMove(MapLocation me, Direction d) {
+        if (superCanMove) {
+            return super.canMove(me, d);
+        }
         if (terraformer) {
             MapLocation to = me.add(d);
             if (me.distanceSquaredTo(hqLocation) > 8 && to.distanceSquaredTo(hqLocation) < 9)

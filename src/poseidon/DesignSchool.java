@@ -28,6 +28,7 @@ public class DesignSchool extends Building {
     boolean firstFullfillmentCenterExists = false;
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
+    int vaporatorsBuilt = 0;
     MapLocation trueEnemyHQLocation = null;
 
     // aggression variables
@@ -149,7 +150,7 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (rc.getTeamSoup() >= 425 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
+            if (rc.getTeamSoup() >= 460 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
                 shouldHaveFirstVape = rc.getRoundNum();
                 System.out.println("We should have the first vape now!");
             }
@@ -164,24 +165,27 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 3) {
                     System.out.println("B");
                     spawnTerraformer();
-                } else if (rc.getRoundNum() < shouldHaveFirstVape + 100) {
+                } else if (vaporatorsBuilt < 2) {
                     System.out.println("C");
                     return;
                 } else if ((rc.getRoundNum() >= 500 || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8) {
                     System.out.println("D");
                     spawnInnerWaller();
-                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
+                } else if (vaporatorsBuilt < 4) {
                     System.out.println("E");
+                    return;
+                } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
+                    System.out.println("F");
                     spawnTerraformer();
                 } else if (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
-                    System.out.println("F");
+                    System.out.println("G");
                     spawnTerraformer();
                 } else {
                     System.out.println("Done");
                 }
             } else { // normal operation, greedier
                 System.out.println("No enemy aggression");
-                if (rc.getRoundNum() < shouldHaveFirstVape + 10 || rc.getRoundNum() < 160) {
+                if (vaporatorsBuilt < 1 || rc.getRoundNum() <= 165) {
                     System.out.println("A");
                     return;
                 } else if (numTerraformersMade < 4 && rc.getRoundNum() < 250) {
@@ -190,10 +194,7 @@ public class DesignSchool extends Building {
                 } else if (rc.getRoundNum() >= 300 && numLandscapersMade < 3) {
                     System.out.println("C");
                     spawnInnerWaller();
-                } else if (rc.getRoundNum() < shouldHaveFirstVape + 350 || waitingForSecondVape) {
-                    if (rc.getTeamSoup() > 500) {
-                        waitingForSecondVape = false;
-                    }
+                } else if (vaporatorsBuilt < 4) {
                     System.out.println("D");
                     return;
                 } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 500) {
@@ -212,6 +213,8 @@ public class DesignSchool extends Building {
                     System.out.println("Done");
                 }
             }
+        } else {
+            spawnTerraformer();
         }
     }
 
@@ -338,13 +341,15 @@ public class DesignSchool extends Building {
                     if(ENEMY_HQ_LOCATION != null) {
                         trueEnemyHQLocation = ENEMY_HQ_LOCATION;
                     }
-                } else if(getSchema(msg[0])==5 && (!firstRefineryExists || !firstFullfillmentCenterExists)) {
+                } else if(getSchema(msg[0])==5) {
                     BuiltMessage b = new BuiltMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
-                    if(b.typeBuilt==3) {
+                    if(!firstRefineryExists && b.typeBuilt==3) {
                         firstRefineryExists = true;
-                    }
-                    if(b.typeBuilt==1) {
+                    } else if(!firstFullfillmentCenterExists && b.typeBuilt==1) {
                         firstFullfillmentCenterExists = true;
+                    } else if(b.typeBuilt==4) {
+                        vaporatorsBuilt += 1;
+                        //System.out.println("[i] We've built " + Integer.toString(vaporatorsBuilt) + " vaporators");
                     }
                 } else if (getSchema(msg[0])==7) {
                     RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
