@@ -175,7 +175,7 @@ public class Miner extends Unit {
             return false;
         }
 
-        checkBuildBuildings(true);
+        checkBuildBuildings(adjacentDrones[0].getLocation());
 
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
@@ -216,7 +216,7 @@ public class Miner extends Unit {
     }
 
     public void terraform() throws GameActionException {
-        if (myLocation.distanceSquaredTo(hqLocation) > 25) {
+        if (myLocation.distanceSquaredTo(hqLocation) > Landscaper.LATTICE_SIZE) {
             path(hqLocation);
         } else {
             if (onBoundary(myLocation)) {
@@ -460,34 +460,44 @@ public class Miner extends Unit {
     }
 
     public void checkBuildBuildings() throws GameActionException {
-        checkBuildBuildings(false);
+        checkBuildBuildings(null);
     }
 
-    public void checkBuildBuildings(boolean fleeing) throws GameActionException {
-        if (!rc.isReady() || (rc.getTeamSoup() < 500 && !fleeing))
+    public void checkBuildBuildings(MapLocation fleeing) throws GameActionException {
+        if (!rc.isReady() || (rc.getTeamSoup() < 500 && fleeing == null))
             return;
         RobotInfo[] allyRobots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), allyTeam);
         boolean existsNetGun = false;
         boolean existsFulfillmentCenter = false;
+        boolean existsDesignSchool = false;
         boolean existsVaporator = false;
         for (RobotInfo robot : allyRobots) {
-            if ((!fleeing || robot.location.distanceSquaredTo(myLocation) <= 5) && robot.type.equals(RobotType.NET_GUN)) {
+            if ((fleeing == null || robot.location.distanceSquaredTo(myLocation) < 5) && robot.type.equals(RobotType.NET_GUN)) {
                 existsNetGun = true;
             }
             if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
                 existsFulfillmentCenter = true;
             }
+            if (robot.type.equals(RobotType.DESIGN_SCHOOL)) {
+                existsDesignSchool = true;
+            }
             if (robot.type.equals(RobotType.VAPORATOR)) {
                 existsVaporator = true;
             }
         }
-        for (Direction dir : directions) {
+        Direction[] directionRotation = directions;
+        if (fleeing != null) {
+            directionRotation = directionsClosestTo(myLocation.directionTo(fleeing));
+        }
+        for (Direction dir : directionRotation) {
             if (onBuildingGridSquare(myLocation.add(dir))
                     && rc.canSenseLocation(myLocation.add(dir)) && (rc.senseElevation(myLocation.add(dir)) > 2 || rc.getRoundNum() < 300)) {
-                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing && existsVaporator)) {
+                if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator)) {
                     tryBuild(RobotType.NET_GUN, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+                } else if (!existsDesignSchool && rc.getRoundNum() > 1100) {
+                    tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100)) {
                     tryBuild(RobotType.VAPORATOR, dir);
                 }

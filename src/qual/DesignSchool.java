@@ -149,7 +149,7 @@ public class DesignSchool extends Building {
 
     public void defense() throws GameActionException {
         if (primaryDefensive && !holdProduction) { // primary defensive d.school.
-            if (rc.getTeamSoup() >= 425 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
+            if (rc.getTeamSoup() >= 460 && shouldHaveFirstVape == WAIT_FOR_FIRST_VAPE_TILL - 10) {
                 shouldHaveFirstVape = rc.getRoundNum();
                 System.out.println("We should have the first vape now!");
             }

@@ -25,6 +25,7 @@ public class HQ extends Building {
     int turnAtProductionHalt = -1;
     int previousSoup = 200;
     MapLocation enemyHQLocation = null;
+    MapLocation commedWaterLocation = null;
 
     int turnAtEnemyAggression = -1;
 
@@ -113,7 +114,7 @@ public class HQ extends Building {
                 //System.out.println("[i] Producing extra miner");
                 minerCount++;*/
             } else {
-                if (rc.getRoundNum() > 150 + terraformCount * 20 && terraformCount < 3) {
+                if (rc.getRoundNum() > 150 + terraformCount * 30 && terraformCount < 3) {
                     if (tryBuild(RobotType.MINER, getBestMinerDirection())) {
                         terraformCount++;
                     }
@@ -307,6 +308,13 @@ public class HQ extends Building {
                 //System.out.println("[i] SENDING ENEMY HQ LOCATION");
             }
         }
+        if(rn%100==1 && commedWaterLocation!=null) {
+            LocationMessage l = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+            l.writeInformation(commedWaterLocation.x, commedWaterLocation.y, 2);
+            if(sendMessage(l.getMessage(), 2)) {
+                //System.out.println("[i] SENDING WATER LOCATION");
+            }
+        }
     }
 
     //Returns true if should continue halting production
@@ -359,12 +367,15 @@ public class HQ extends Building {
                     //System.out.println("[i] HOLDING PRODUCTION!");
                     holdProduction = true;
                     turnAtProductionHalt = rc.getRoundNum();
-                } else if(getSchema(f)==4 && enemyHQLocation==null) {
-                    checkForEnemyHQLocationMessageSubroutine(msgs[i].getMessage(), rn);
-                    if(ENEMY_HQ_LOCATION != null) {
+                } else if((enemyHQLocation==null || commedWaterLocation==null) && getSchema(f)==4) {
+                    LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    if(l.unitType==1) { //enemy hq location message
+                        ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                         //System.out.println("[i] I know ENEMY HQ");
                         enemyHQLocation = ENEMY_HQ_LOCATION;
                         removeExtraneous(enemyHQLocation);
+                    } else if(l.unitType==2) {
+                        commedWaterLocation = new MapLocation(l.xLoc, l.yLoc);
                     }
                 } else if(!enemyAggression && getSchema(f)==7) {
                     RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);

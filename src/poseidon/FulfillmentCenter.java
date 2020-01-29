@@ -6,7 +6,7 @@ public class FulfillmentCenter extends Building {
 
     int attackDroneCount = 0;
     int defenseDroneCount = 0;
-    final double ATTACK_TO_DEFENSE_RATIO = .5;
+    final double ATTACK_TO_DEFENSE_RATIO = 2;
 
     MapLocation hqLocation = null;
 

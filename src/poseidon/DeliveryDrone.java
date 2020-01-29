@@ -30,8 +30,10 @@ public class DeliveryDrone extends Unit {
     boolean enemyVisited;
     MapLocation destination;
     int whichEnemyLocation;
-
+    //enemy hq communication
     boolean hasSentEnemyLoc = false;
+    //water communication
+    MapLocation commedWaterLocation = null;
 
     boolean attackDrone;
     final int DEFEND_TURN = 1100;
@@ -46,6 +48,7 @@ public class DeliveryDrone extends Unit {
     private boolean landscaping;
     private boolean shellDrone;
     List<MapLocation> outerWall;
+    List<MapLocation> centerDigSites;
 
     MapLocation defensiveDSchoolLocation = null;
     MapLocation reservedForDSchoolBuild = null;
@@ -68,8 +71,17 @@ public class DeliveryDrone extends Unit {
         }
         if (baseLocation == null)
             baseLocation = myLocation;
+
+        //initial message check
+        //looking for locations broadcast before you were born
+        //currently looks for allied hq location, enemy hq location, first water location.
         checkForLocationMessage();
         initialCheckForEnemyHQLocationMessage();
+        commedWaterLocation = initialCheckForWaterLocation();
+        if(commedWaterLocation != null) {
+            waterLocations.add(commedWaterLocation);
+        }
+
         if (ENEMY_HQ_LOCATION != null) {
             enemyLocation = ENEMY_HQ_LOCATION;
             //System.out.println("[i] I know enemy HQ");
@@ -90,14 +102,16 @@ public class DeliveryDrone extends Unit {
         landscaping = false;
         nearbyNetGuns = new ArrayList<>();
         outerWall = new ArrayList<>();
+        centerDigSites = new ArrayList<>();
         for (int i = -2; i <= 2; i++) {
             for (int j = -2; j <= 2; j++) {
                 MapLocation loc = add(hqLocation, new int[]{i, j});
                 if (loc.equals(hqLocation))
                     continue;
                 if (loc.distanceSquaredTo(hqLocation) == 4)
-                    continue;
-                outerWall.add(loc);
+                    centerDigSites.add(loc);
+                else
+                    outerWall.add(loc);
             }
         }
 
@@ -116,15 +130,19 @@ public class DeliveryDrone extends Unit {
     }
 
     private boolean wallMissing() {
-        if (rc.getRoundNum() < FILL_WALL_ROUND)
-            return false;
-        for (MapLocation loc : outerWall) {
-            try {
+        try {
+            if (rc.getRoundNum() < FILL_WALL_ROUND)
+                return false;
+            for (MapLocation loc : outerWall) {
                 if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
                     return true;
-            } catch (GameActionException e) {
-                e.printStackTrace();
             }
+            for (MapLocation loc : centerDigSites) {
+                if (rc.canSenseLocation(loc) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc))
+                    return true;
+            }
+        } catch (GameActionException e) {
+            e.printStackTrace();
         }
         return false;
     }
@@ -159,14 +177,17 @@ public class DeliveryDrone extends Unit {
 
         updateDefensiveDSchoolLocation(nearby);
 
-        System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
+        //System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
         checkIfDoneCornerHolding();
 
+        System.out.println("Starting if statement: " + Clock.getBytecodeNum());
+
         if (shellDrone) {
-            if (!inShell())
-                path(hqLocation);
-        } else if (landscaping && wallMissing()) {
+            checkShell();
+        }
+
+        if (landscaping && wallMissing()) {
             dropOntoWall();
         } else if (ferrying) { // ferry ally onto lattice
             dropOntoLattice();
@@ -186,22 +207,49 @@ public class DeliveryDrone extends Unit {
             } else if (checkToFerry(nearby)) {
             } else if (shouldPoke()) {
                 checkIfDoneWithPoke(nearby);
-                handlePoke();
+                handlePoke(nearest);
+            } else if (shouldAMove()) { // drone attack-move
+                checkIfDoneWithAMove(nearby);
+                handleAMove(nearest);
             } else if (shouldChase(nearest)) { // chase enemy unless defending
                 chaseEnemy(nearest);
             } else if (isAttackDrone()) { // attack drone
                 handleAttack();
-            } else if (shouldAMove()) { // drone attack-move
-                checkIfDoneWithAMove(nearby);
-                handleAMove(ATTACK_TURN);
             } else { // defend drone / go back to base
                 handleDefense(nearby);
             }
         }
 
-        //Check every 100 turns for enemy location message sent in the previous 5 turns.
-        //until you've read it and set the variable.
-        checkEnemyLocMessage();
+        //Enemy agression, headquarters, and water communication
+        findMessagesFromAllies(rc.getRoundNum()-1);
+
+        //defensive drones report enemy aggression if they see it
+        if(!attackDrone && rc.getRoundNum()<200 && !enemyAggression) {
+            if(enemyAggressionCheck()) {
+                turnAtEnemyAggression = rc.getRoundNum();
+            }
+        }
+
+        if(commedWaterLocation == null) {
+            System.out.println("I don't know water yet.");
+            if(waterLocations.nearest != null) {
+                LocationMessage lw = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+                lw.writeInformation(waterLocations.nearest.mapLocation.x, waterLocations.nearest.mapLocation.y, 2); // 2 is water.
+                if(sendMessage(lw.getMessage(), 1)) {
+                    //System.out.println("[i] Sending water location to allies...");
+                    commedWaterLocation = waterLocations.nearest.mapLocation;
+                }
+            }
+        }
+
+    }
+
+    private void checkShell() throws GameActionException {
+        if (!inShell()) {
+            shellDrone = false;
+            path(hqLocation);
+            shellDrone = true;
+        }
     }
 
     private void checkIfDoneCornerHolding() {
@@ -314,16 +362,6 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    private void checkEnemyLocMessage() throws GameActionException {
-        if (rc.getRoundNum() % 100 == 4 && enemyLocation != ENEMY_HQ_LOCATION) {
-            checkForEnemyHQLocationMessage(5);
-            if (ENEMY_HQ_LOCATION != null) {
-                enemyLocation = ENEMY_HQ_LOCATION;
-                //rc.setIndicatorDot(enemyLocation, 255, 83, 126);
-            }
-        }
-    }
-
     private void tryPickUp(RobotInfo nearest) throws GameActionException {
         if (rc.isReady()) {
             rc.pickUpUnit(nearest.getID());
@@ -367,6 +405,13 @@ public class DeliveryDrone extends Unit {
             }
         } else {
             for (MapLocation loc : outerWall) {
+                if (loc.isAdjacentTo(myLocation) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
+                    System.out.println("DROP ONTO WALL: " + loc);
+                    dropToward(loc);
+                    return;
+                }
+            }
+            for (MapLocation loc : centerDigSites) {
                 if (loc.isAdjacentTo(myLocation) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
                     System.out.println("DROP ONTO WALL: " + loc);
                     dropToward(loc);
@@ -434,7 +479,7 @@ public class DeliveryDrone extends Unit {
             if ((dxy[0] % 3 + dxy[1] % 3 == 0
                     && loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE
                     && loc.distanceSquaredTo(hqLocation) > 8)
-                    || loc.distanceSquaredTo(hqLocation) == 4
+                    || (loc.distanceSquaredTo(hqLocation) == 4 && !x.getType().equals(RobotType.LANDSCAPER))
                     || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9) || loc.equals(reservedForDSchoolBuild)) {
                 if (loc.isAdjacentTo(myLocation)) {
                     tryPickUp(x);
@@ -483,8 +528,9 @@ public class DeliveryDrone extends Unit {
         nearestWaterLocation = updateNearestWaterLocation();
     }
 
-    private void handlePoke() throws GameActionException {
+    private void handlePoke(RobotInfo nearest) throws GameActionException {
         System.out.println("POKING " + enemyLocation);
+        MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
         alwaysAttack = true;
         if (giveUpOnPoke)
             return;
@@ -495,7 +541,8 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    private void handleAMove(int attackTurn) throws GameActionException {
+    private void handleAMove(RobotInfo nearest) throws GameActionException {
+        MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
         if (giveUpOnAMove)
             return;
         if (ENEMY_HQ_LOCATION == null && rc.canSenseLocation(enemyLocation)) {
@@ -515,23 +562,16 @@ public class DeliveryDrone extends Unit {
                 }
             }
         }
-        if (rc.getRoundNum() > attackTurn) {
+        if (rc.getRoundNum() > ATTACK_TURN) {
             fuzzyMoveToLoc(enemyLocation);
-        } else if (rc.getRoundNum() > attackTurn - 25 && !cornerHolder) {
+        } else if (rc.getRoundNum() > ATTACK_TURN - 25 && !cornerHolder) {
             path(enemyLocation, true);
-        } else if (rc.getRoundNum() > attackTurn - 200 && !cornerHolder) {
+        } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !cornerHolder) {
             spiral(enemyLocation, true);
         }
     }
 
     private void chaseEnemy(RobotInfo nearest) throws GameActionException {
-        boolean existsEnemyNetGun = false;
-        for (RobotInfo r : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
-            if (r.type == RobotType.NET_GUN) {
-                existsEnemyNetGun = true;
-                break;
-            }
-        }
         if (!cornerHolder) {
             int[] dxy = xydist(myLocation, enemyLocation);
             if (dxy[0] == 3 && dxy[1] == 3 && rc.getRoundNum() > HOLD_CORNER_ROUND && !underFire(myLocation)) {
@@ -539,7 +579,7 @@ public class DeliveryDrone extends Unit {
             } else if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
                 fuzzyMoveToLoc(nearest.location);
             } else if (rc.getRoundNum() < 200 && myLocation.distanceSquaredTo(hqLocation) < 100
-                    && !existsEnemyNetGun && !attackDrone) { // guard HQ
+                    && nearbyNetGuns.size() == 0 && !attackDrone) { // guard HQ
                 Direction optimalDir = null;
                 int optimalScore = Integer.MAX_VALUE;
                 for (Direction dir : directions) {
@@ -655,13 +695,13 @@ public class DeliveryDrone extends Unit {
         int x = (int) (dx * cs - dy * sn);
         int y = (int) (dx * sn + dy * cs);
         if (myLocation.distanceSquaredTo(center) > 35) {
-            System.out.println("Spiral is pushing me in");
+            System.out.println("Spiral is pushing me in. Safe " + safe);
             path(center, safe);
         } else if (myLocation.distanceSquaredTo(center) < 20) {
-            System.out.println("Spiral is pushing me out");
+            System.out.println("Spiral is pushing me out. Safe: " + safe);
             path(myLocation.add(center.directionTo(myLocation)), safe);
         } else {
-            System.out.println("Spiraling to " + center.translate(x, y));
+            //System.out.println("Spiraling to " + center.translate(x, y));
             path(center.translate(x, y), safe);
         }
     }
@@ -693,6 +733,13 @@ public class DeliveryDrone extends Unit {
     }
 
     protected boolean canMove(MapLocation from, Direction in) {
+        if (safe) {
+            if (!Arrays.asList(cardinalDirections).contains(in)) {
+                return false;
+            }
+        }
+        if (shellDrone)
+            return false;
         MapLocation to = from.add(in);
         if (landscaping && wallMissing()) {
             if (innerWallMissing()) {
@@ -756,7 +803,7 @@ public class DeliveryDrone extends Unit {
             distanceToNearest = myLocation.distanceSquaredTo(nearest);
         }
 
-        System.out.println("start map scan " + Clock.getBytecodeNum());
+        //System.out.println("start map scan " + Clock.getBytecodeNum());
         for (int x = Math.max(myLocation.x - 5, 0); x <= Math.min(myLocation.x + 5, MAP_WIDTH - 1); x++) {
             //TODO: this ignores left most pt bc bit mask size 10. Switch too big to fit with 11. How to fix?
             for (int y : getLocationsToCheck(((waterChecked[x] >> Math.max(myLocation.y - 5, 0)) << Math.max(5 - myLocation.y, 0)) & 1023)) {
@@ -776,11 +823,11 @@ public class DeliveryDrone extends Unit {
                 return newLoc;
             }
         }
-        System.out.println("end map scan " + Clock.getBytecodeNum());
+        //System.out.println("end map scan " + Clock.getBytecodeNum());
 
-        System.out.println("start find nearest " + Clock.getBytecodeNum());
+        //System.out.println("start find nearest " + Clock.getBytecodeNum());
         nearest = waterLocations.findNearest();
-        System.out.println("end find nearest " + Clock.getBytecodeNum());
+        //System.out.println("end find nearest " + Clock.getBytecodeNum());
 
         if (nearest != null) {
             return nearest;
@@ -859,6 +906,9 @@ public class DeliveryDrone extends Unit {
                 }
                 oldPtr = ptr;
                 ptr = ptr.next;
+                if (Clock.getBytecodesLeft() < 800) {
+                    break;
+                }
             }
             return nearest != null ? nearest.mapLocation : null;
         }
@@ -870,6 +920,47 @@ public class DeliveryDrone extends Unit {
             public WaterLoc(MapLocation ml, WaterLoc n) {
                 mapLocation = ml;
                 next = n;
+            }
+        }
+    }
+
+    //Find message from allies given a round number rn
+    //Checks block of round number rn, loops through messages
+    //Currently: Checks for LocationMessage of Water from other Drones
+    public void findMessagesFromAllies(int rn) throws GameActionException {
+        Transaction[] msgs = rc.getBlock(rn);
+        for (Transaction transaction : msgs) {
+            int[] msg = transaction.getMessage();
+            if (allyMessage(msg[0], rn)) {
+                if(getSchema(msg[0])==4) {
+                    LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    if (l.unitType == 1 && enemyLocation != ENEMY_HQ_LOCATION) {
+                        ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
+                        enemyLocation = ENEMY_HQ_LOCATION;
+                        System.out.println("I know enemy HQ location");
+                        //rc.setIndicatorDot(enemyLocation, 255, 83, 126);
+                    } else if(l.unitType==2 && commedWaterLocation == null)  { //2 is water
+                        //System.out.println("[i] I know water location!");
+                        commedWaterLocation = new MapLocation(l.xLoc, l.yLoc);
+                        waterLocations.add(commedWaterLocation);
+                        //System.out.println(commedWaterLocation);
+                    }
+                } else if(getSchema(msg[0])==7) {
+                    RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
+                    if(r.typeOfCommit == 2) {
+                        if(!enemyAggression) {
+                            //System.out.println("[i] I know Enemy is Rushing!");
+                            enemyAggression = true;
+                            turnAtEnemyAggression = rc.getRoundNum();
+                        }
+                    } else if (r.typeOfCommit == 3) {
+                        if(enemyAggression) {
+                            //System.out.println("[i] Enemy has stopped rushing");
+                            enemyAggression = false;
+                            turnAtEnemyAggression = -1;
+                        }
+                    }
+                }
             }
         }
     }
@@ -2984,12 +3075,14 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
-                    if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone || enemyRobot.type != RobotType.COW)
+                    if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone && myLocation.distanceSquaredTo(hqLocation) < 64
+                                            || rc.getRoundNum() > 600 && !attackDrone
+                                            || enemyRobot.type != RobotType.COW)
                             || nearest != null && nearest.type == RobotType.COW
                             || nearest != null && (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
                             || nearest != null && enemyRobot.type == RobotType.LANDSCAPER) {
-                        System.out.print("Updating nearest target to ");
-                        System.out.println(enemyRobot);
+                        //System.out.print("Updating nearest target to ");
+                        //System.out.println(enemyRobot);
                         if (!(bSchool && enemyRobot.getType() == RobotType.COW)) {
                             nearest = enemyRobot;
                             distToNearest = distToEnemy;
