@@ -285,9 +285,8 @@ public class Landscaper extends Unit {
             superCanMove = true;
             path(hqLocation);
             superCanMove = false;
-            return;
         }
-        if (myLocation.isAdjacentTo(hqLocation) ||
+        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() > DeliveryDrone.FILL_WALL_ROUND ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
                 // if I'm in the inner wall or in the outer wall after a certain point, become a defender
             terraformer = false;
@@ -331,6 +330,11 @@ public class Landscaper extends Unit {
 
     public void updateTerraformTarget() throws GameActionException {
         if (rc.getRoundNum() > 1100) {
+            if (onBoundary(myLocation)) {
+                terraformTarget = myLocation;
+                terraformHeight = Integer.MAX_VALUE;
+                return;
+            }
             int tmp = terraformHeight;
             terraformHeight = rc.senseElevation(myLocation) - 1;
             MapLocation target = findLatticeDepositSite();
