@@ -29,7 +29,7 @@ public class HQ extends Building {
 
     int turnAtEnemyAggression = -1;
     int vaporatorsBuilt = 0;
-    boolean crunchSuccess = false;
+    int crunchSuccess = 0;
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
@@ -317,6 +317,7 @@ public class HQ extends Building {
                 System.out.println("[i] SENDING WATER LOCATION");
             }
         }
+        if()
     }
 
     //Returns true if should continue halting production
@@ -391,9 +392,9 @@ public class HQ extends Building {
                         System.out.println("[i] Enemy is Rushing!");
                         enemyAggression = true;
                         turnAtEnemyAggression = rc.getRoundNum();
-                    } else if (r.typeOfCommit==4 && !crunchSuccess) {
+                    } else if (r.typeOfCommit==4 && crunchSuccess<CRUNCH_THRESHOLD) {
                         System.out.println("[i] Crunch Succeeded!");
-                        crunchSuccess = true;
+                        crunchSuccess+=1;
                     }
                 }
             }

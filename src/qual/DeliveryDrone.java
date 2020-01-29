@@ -43,9 +43,10 @@ public class DeliveryDrone extends Unit {
     int whichEnemyLocation;
     //enemy hq communication
     boolean hasSentEnemyLoc = false;
-    boolean crunchSuccess = false;
+    int crunchSuccess = 0;
     //water communication
     MapLocation commedWaterLocation = null;
+    private boolean sentCrunchSuccessMessage = false;
 
     boolean attackDrone;
 
@@ -339,12 +340,12 @@ public class DeliveryDrone extends Unit {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
             boolean giveUp = shouldRetreat(nearby);
             if (giveUp) {
-                if(nothingButBuildingsLeft(nearby) && !crunchSuccess) {
+                if(nothingButBuildingsLeft(nearby) && crunchSuccess<CRUNCH_THRESHOLD && !sentCrunchSuccessMessage) {
                     RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                     r.writeTypeOfCommit(4);
                     if(sendMessage(r.getMessage(), 1)) {
                         System.out.println("[i] Telling team crunch has succeeded!");
-                        crunchSuccess = true;
+                        sentCrunchSuccessMessage = true;
                     }
                 }
                 giveUpOnPoke = true;
@@ -1284,9 +1285,9 @@ public class DeliveryDrone extends Unit {
                             turnAtEnemyAggression = -1;
                         }
                     } else if (r.typeOfCommit == 4) {
-                        if(!crunchSuccess) {
+                        if(crunchSuccess<CRUNCH_THRESHOLD) {
                             System.out.println("[i] Drone crunch succeeded!");
-                            crunchSuccess = true;
+                            crunchSuccess+=1;
                         }
                     }
                 }
