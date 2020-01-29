@@ -195,13 +195,13 @@ public class DesignSchool extends Building {
                 } else if (rc.getRoundNum() >= 300 && numLandscapersMade < 3) {
                     System.out.println("C");
                     spawnInnerWaller();
-                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000 && rc.getRoundNum() < 650) {
+                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000) {
                     System.out.println("D");
                     return;
-                } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250) {
+                } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 510) {
                     System.out.println("E");
                     spawnTerraformer();
-                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500 && rc.getTeamSoup() > 510) {
+                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
                     System.out.println("F");
                     spawnTerraformer();
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {

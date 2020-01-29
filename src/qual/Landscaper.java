@@ -275,7 +275,7 @@ public class Landscaper extends Unit {
         }
         superCanMove = false;
 
-        boolean shouldVibrate = (rc.getRoundNum() < bornTurn + 50) || (rc.getRoundNum() > 1100 && rc.getRoundNum() % 4 == 0) || (rc.getRoundNum() > 700 && rc.getRoundNum() < 1100 && rc.getRoundNum() % 6 == 0);
+        boolean shouldVibrate = (rc.getRoundNum() < bornTurn + 50) || (rc.getRoundNum() > 1100 && rc.getRoundNum() % 4 == 0) || (rc.getRoundNum() > 700 && rc.getRoundNum() < 1100 && rc.getRoundNum() % 3 == 0);
         if (shouldVibrate && baseLocation != null) {
             moveInDirection(myLocation.directionTo(baseLocation).opposite());
         } else if (shouldVibrate && baseLocation == null) {
