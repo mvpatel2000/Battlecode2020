@@ -248,9 +248,6 @@ public class DeliveryDrone extends Unit {
 
         //defensive drones report enemy aggression if they see it
         reportEnemyAgression();
-        System.out.println("Crunch success");
-        System.out.println(crunchSuccess);
-        System.out.println("Crunch success");
         System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
     }
 
@@ -956,8 +953,8 @@ public class DeliveryDrone extends Unit {
         if (to.equals(reservedForDSchoolBuild))
             return false;
         try {
-//            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
-//                + " " + !underFireExceptForNearest(to));
+            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
+                + " " + !underFireExceptForNearest(to));
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
                     && (trapped || !underFire(to))
@@ -1003,7 +1000,7 @@ public class DeliveryDrone extends Unit {
     private boolean safe = false;
 
     public void path(MapLocation target, boolean safe) throws GameActionException {
-        if (onBoundary(myLocation)) {
+        if (onBoundary(myLocation) && !isAttackDrone()) {
             setDestination(null);
         }
         this.safe = safe;
