@@ -392,6 +392,11 @@ public class DeliveryDrone extends Unit {
                 && !giveUpOnPoke && myLocation.distanceSquaredTo(enemyLocation) < POKE_RADIUS;
     }
 
+    @Override
+    protected boolean canFuzz() {
+        return !shellDrone;
+    }
+
     public void updateDefensiveDSchoolLocation(RobotInfo[] nearby) throws GameActionException {
         if (defensiveDSchoolLocation != null) {
             return;
@@ -595,7 +600,7 @@ public class DeliveryDrone extends Unit {
                     && loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE
                     && loc.distanceSquaredTo(hqLocation) > 8)
                     || (loc.distanceSquaredTo(hqLocation) == 4 && !x.getType().equals(RobotType.LANDSCAPER))
-                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9) || loc.equals(reservedForDSchoolBuild)) {
+                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9 && rc.getRoundNum() > FILL_WALL_ROUND) || loc.equals(reservedForDSchoolBuild)) {
                 if (loc.isAdjacentTo(myLocation)) {
                     tryPickUp(x);
                     ferrying = true;
@@ -664,8 +669,10 @@ public class DeliveryDrone extends Unit {
         if (giveUpOnAMove || !rc.isReady())
             return;
         MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
-        if (!dropship) {
+        if (!dropship && crunchSuccess) {
             for (Direction d : directions) {
+                if (!rc.canSenseLocation(myLocation.add(d)))
+                    continue;
                 RobotInfo x = rc.senseRobotAtLocation(myLocation.add(d));
                 if (x != null && x.getTeam().equals(allyTeam)
                         && x.getType().equals(RobotType.LANDSCAPER)

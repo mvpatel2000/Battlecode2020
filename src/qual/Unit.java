@@ -63,6 +63,10 @@ public abstract class Unit extends Robot {
         hasHistory = true;
     }
 
+    protected boolean canFuzz() {
+        return true;
+    }
+
     protected List<RobotInfo> getNearbyDrones() {
         return drones;
     }
@@ -409,6 +413,9 @@ public abstract class Unit extends Robot {
     }
 
     boolean fuzzyMoveToLoc(MapLocation target) throws GameActionException {
+        if (!canFuzz())
+            return false;
+
         int mindist = 50000;
         Direction bestdir = null;
         for (Direction dir : getDirections()) {
