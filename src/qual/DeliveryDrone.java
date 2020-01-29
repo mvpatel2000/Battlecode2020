@@ -265,7 +265,7 @@ public class DeliveryDrone extends Unit {
 
     private void checkDropship() {
         System.out.println("carry count: " + carryCount + " " + dropship);
-        if (landscaping) {
+        if (landscaping && !shellDrone) {
             carryCount++;
             if (carryCount > LANDSCAPE_GIVE_UP) {
                 becomeDropship();
