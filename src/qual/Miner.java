@@ -954,7 +954,7 @@ public class Miner extends Unit {
             MapLocation[] tileLocs = getAllCellsFromTileNumber(tnum);
             for (MapLocation m : tileLocs) {
                 // it's ok not to scan full range. Otherwise, you might never delete something. Also HQ scans.
-                if (rc.canSenseLocation(m) && !rc.senseFlooding(m)) {
+                if (rc.canSenseLocation(m) && !rc.senseFlooding(m) && isAccessible(m)) {
                     soupTotal += rc.senseSoup(m);
                 }
             }
