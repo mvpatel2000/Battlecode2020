@@ -392,6 +392,11 @@ public class DeliveryDrone extends Unit {
                 && !giveUpOnPoke && myLocation.distanceSquaredTo(enemyLocation) < POKE_RADIUS;
     }
 
+    @Override
+    protected boolean canFuzz() {
+        return !shellDrone;
+    }
+
     public void updateDefensiveDSchoolLocation(RobotInfo[] nearby) throws GameActionException {
         if (defensiveDSchoolLocation != null) {
             return;
