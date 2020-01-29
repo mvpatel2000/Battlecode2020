@@ -194,6 +194,8 @@ public class DeliveryDrone extends Unit {
         int distToNearest = enemyInfo.getDistToNearest();
         int droneCount = enemyInfo.getDroneCount();
 
+        System.out.println("Nearest enemy: " + distToNearest);
+
         updateDefensiveDSchoolLocation(nearby);
 
         //System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
@@ -220,12 +222,11 @@ public class DeliveryDrone extends Unit {
             else
                 goToWaterAndDrop();
         } else {
-//            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
-//                attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
 
             if (shouldPickup(distToNearest)) { // pick up
                 tryPickUp(nearest);
+            } else if (checkToPickupMiner()) {
             } else if (checkToLandscape(nearby)) {
             } else if (checkToFerry(nearby)) {
             } else if (shouldPoke()) {
@@ -249,6 +250,24 @@ public class DeliveryDrone extends Unit {
         //defensive drones report enemy aggression if they see it
         reportEnemyAgression();
         System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
+    }
+
+    private boolean checkToPickupMiner() throws GameActionException {
+        if (!rc.isReady() || isDropship())
+            return false;
+        for (Direction d : directions) {
+            MapLocation loc = myLocation.add(d);
+            if (rc.canSenseLocation(loc)) {
+                RobotInfo x = rc.senseRobotAtLocation(loc);
+                if (x != null && x.getType().equals(RobotType.MINER) && x.getTeam().equals(enemyTeam)) {
+                    if (rc.canPickUpUnit(x.getID())) {
+                        tryPickUp(x);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private void checkToDisintegrate() {
