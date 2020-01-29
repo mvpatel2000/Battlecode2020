@@ -14,8 +14,8 @@ public class DeliveryDrone extends Unit {
     private static final int POKE_RADIUS = 35;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
-    private static final int GIVE_UP_DEFENSE = 100;
-    private static final int DEFENSE_FAR_RADIUS = 48;
+    private static final int GIVE_UP_DEFENSE = 50;
+    private static final int DEFENSE_FAR_RADIUS = 64;
 
     final int DEFEND_TURN = 1100;
     final int ATTACK_TURN = 1875;
@@ -43,7 +43,6 @@ public class DeliveryDrone extends Unit {
     MapLocation commedWaterLocation = null;
 
     boolean attackDrone;
-
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -84,7 +83,7 @@ public class DeliveryDrone extends Unit {
         checkForLocationMessage();
         initialCheckForEnemyHQLocationMessage();
         commedWaterLocation = initialCheckForWaterLocation();
-        if(commedWaterLocation != null) {
+        if (commedWaterLocation != null) {
             waterLocations.add(commedWaterLocation);
         }
 
@@ -170,7 +169,7 @@ public class DeliveryDrone extends Unit {
 
     @Override
     public void run() throws GameActionException {
-        System.out.println("Cooldown at the start of the turn: " + String.valueOf(rc.getCooldownTurns()));
+        // System.out.println("Cooldown at the start of the turn: " + String.valueOf(rc.getCooldownTurns()));
         super.run();
 
         updateVisitedTiles(myLocation);
@@ -187,6 +186,7 @@ public class DeliveryDrone extends Unit {
         //System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
         checkIfDoneCornerHolding();
+        checkResetDefense();
 
         System.out.println("Starting if statement: " + Clock.getBytecodeNum());
 
@@ -228,29 +228,37 @@ public class DeliveryDrone extends Unit {
         }
 
         //Enemy agression, headquarters, and water communication
-        findMessagesFromAllies(rc.getRoundNum()-1);
+        findMessagesFromAllies(rc.getRoundNum() - 1);
 
         //defensive drones report enemy aggression if they see it
-        if(!attackDrone && rc.getRoundNum()<200 && !enemyAggression) {
-            if(enemyAggressionCheck()) {
+        reportEnemyAgression();
+
+        System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
+    }
+
+    private void reportEnemyAgression() throws GameActionException {
+        if (!attackDrone && rc.getRoundNum() < 200 && !enemyAggression) {
+            if (enemyAggressionCheck()) {
                 turnAtEnemyAggression = rc.getRoundNum();
             }
         }
 
-        if(commedWaterLocation == null) {
+        if (commedWaterLocation == null) {
             System.out.println("I don't know water yet.");
-            if(waterLocations.nearest != null) {
+            if (waterLocations.nearest != null) {
                 LocationMessage lw = new LocationMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
                 lw.writeInformation(waterLocations.nearest.mapLocation.x, waterLocations.nearest.mapLocation.y, 2); // 2 is water.
-                if(sendMessage(lw.getMessage(), 1)) {
+                if (sendMessage(lw.getMessage(), 1)) {
                     System.out.println("[i] Sending water location to allies...");
                     commedWaterLocation = waterLocations.nearest.mapLocation;
                 }
             }
         }
+    }
 
-        System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
-
+    private void checkResetDefense() {
+        if (defending > rc.getRoundNum() - DEFEND_TURN)
+            defending = 0;
     }
 
     private void checkShell() throws GameActionException {
@@ -443,7 +451,7 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > DEFEND_TURN && !shellDrone)
             return landscaping;
 
-        if (innerWallMissing()) {
+        if (innerWallMissing() && !shellDrone) {
             for (RobotInfo x : nearby) {
                 if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || x.getLocation().isAdjacentTo(hqLocation))
                     continue;
@@ -529,6 +537,7 @@ public class DeliveryDrone extends Unit {
             if (rc.getRoundNum() < 300) {
                 fuzzyMoveToLoc(hqLocation.add(hqLocation.directionTo(enemyLocation)));
             } else if (rc.getRoundNum() < DEFEND_TURN) {
+                defending++;
                 spiral(destination, false);
             } else {
                 if (!inShell()) {
@@ -764,7 +773,7 @@ public class DeliveryDrone extends Unit {
 
         MapLocation to = from.add(in);
 
-        if (defending > GIVE_UP_DEFENSE && to.distanceSquaredTo(hqLocation) < DEFENSE_FAR_RADIUS
+        if (defending > GIVE_UP_DEFENSE && to.distanceSquaredTo(hqLocation) < DEFENSE_FAR_RADIUS && !onBoundary(from)
                 && to.distanceSquaredTo(hqLocation) <= from.distanceSquaredTo(hqLocation) && !underFire(from)) {
             return false;
         }
@@ -973,29 +982,29 @@ public class DeliveryDrone extends Unit {
         for (Transaction transaction : msgs) {
             int[] msg = transaction.getMessage();
             if (allyMessage(msg[0], rn)) {
-                if(getSchema(msg[0])==4) {
+                if (getSchema(msg[0]) == 4) {
                     LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
                     if (l.unitType == 1 && enemyLocation != ENEMY_HQ_LOCATION) {
                         ENEMY_HQ_LOCATION = new MapLocation(l.xLoc, l.yLoc);
                         enemyLocation = ENEMY_HQ_LOCATION;
                         System.out.println("I know enemy HQ location");
                         rc.setIndicatorDot(enemyLocation, 255, 83, 126);
-                    } else if(l.unitType==2 && commedWaterLocation == null)  { //2 is water
+                    } else if (l.unitType == 2 && commedWaterLocation == null) { //2 is water
                         System.out.println("[i] I know water location!");
                         commedWaterLocation = new MapLocation(l.xLoc, l.yLoc);
                         waterLocations.add(commedWaterLocation);
                         //System.out.println(commedWaterLocation);
                     }
-                } else if(getSchema(msg[0])==7) {
+                } else if (getSchema(msg[0]) == 7) {
                     RushCommitMessage r = new RushCommitMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, rn);
-                    if(r.typeOfCommit == 2) {
-                        if(!enemyAggression) {
+                    if (r.typeOfCommit == 2) {
+                        if (!enemyAggression) {
                             System.out.println("[i] I know Enemy is Rushing!");
                             enemyAggression = true;
                             turnAtEnemyAggression = rc.getRoundNum();
                         }
                     } else if (r.typeOfCommit == 3) {
-                        if(enemyAggression) {
+                        if (enemyAggression) {
                             System.out.println("[i] Enemy has stopped rushing");
                             enemyAggression = false;
                             turnAtEnemyAggression = -1;
@@ -3117,8 +3126,8 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
                     if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone && myLocation.distanceSquaredTo(hqLocation) < 64
-                                            || rc.getRoundNum() > 600 && !attackDrone
-                                            || enemyRobot.type != RobotType.COW)
+                            || rc.getRoundNum() > 600 && !attackDrone
+                            || enemyRobot.type != RobotType.COW)
                             || nearest != null && nearest.type == RobotType.COW
                             || nearest != null && (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
                             || nearest != null && enemyRobot.type == RobotType.LANDSCAPER) {
