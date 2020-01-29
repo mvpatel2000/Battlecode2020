@@ -50,6 +50,7 @@ public class DeliveryDrone extends Unit {
     //water communication
     MapLocation commedWaterLocation = null;
     private boolean sentCrunchSuccessMessage = false;
+    int birth;
 
     boolean attackDrone;
 
@@ -62,6 +63,7 @@ public class DeliveryDrone extends Unit {
     private boolean shellDrone;
     List<MapLocation> outerWall;
     List<MapLocation> centerDigSites;
+    int disintegrate = 0;
 
     MapLocation defensiveDSchoolLocation = null;
     MapLocation reservedForDSchoolBuild = null;
@@ -144,6 +146,7 @@ public class DeliveryDrone extends Unit {
 
         whichEnemyLocation = 0;
         nearestWaterLocation = updateNearestWaterLocation();
+        birth = rc.getRoundNum();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
@@ -274,8 +277,12 @@ public class DeliveryDrone extends Unit {
         if (!shellDrone
                 && myLocation.distanceSquaredTo(hqLocation) < 9
                 && rc.getRoundNum() > SELF_DESTUCT_ROUND
-                && rc.getRoundNum() < SHRINK_SHELL_ROUND)
-            rc.disintegrate();
+                && rc.getRoundNum() < SHRINK_SHELL_ROUND) {
+            if (disintegrate++ > 10)
+                rc.disintegrate();
+        } else {
+            disintegrate = 0;
+        }
     }
 
     private boolean checkAggroDrop() throws GameActionException {
@@ -421,7 +428,7 @@ public class DeliveryDrone extends Unit {
 
     private boolean shouldAMove() {
         return rc.getRoundNum() > ATTACK_TURN - POSTURE_TIME && !giveUpOnAMove && !shellDrone
-                && rc.getRoundNum() < SHRINK_SHELL_ROUND;
+                && rc.getRoundNum() < SHRINK_SHELL_ROUND && birth < ATTACK_TURN;
     }
 
     private boolean shouldPoke() {
@@ -570,6 +577,8 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > DEFEND_TURN && !shellDrone)
             return landscaping;
 
+        System.out.println("LAND SCAN: water level");
+
         if (shellDrone && GameConstants.getWaterLevel(rc.getRoundNum()) > 10) {
             for (Direction d : directions) {
                 MapLocation loc = myLocation.add(d);
@@ -584,33 +593,54 @@ public class DeliveryDrone extends Unit {
             }
         }
 
+
         if (innerWallMissing() && !shellDrone) {
+            System.out.println("LAND SCAN: inner wall");
+            List<RobotInfo> infos = new ArrayList<>();
             for (RobotInfo x : nearby) {
                 if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || x.getLocation().isAdjacentTo(hqLocation))
                     continue;
+                infos.add(x);
+            }
+            for (RobotInfo x : infos) {
                 MapLocation loc = x.getLocation();
                 if (loc.isAdjacentTo(myLocation)) {
                     pickUpLandscaper(x);
-                } else {
-                    path(loc);
+                    return landscaping;
                 }
+            }
+            if (infos.size() > 0) {
+                RobotInfo x = infos.get(0);
+                MapLocation loc = x.getLocation();
+                path(loc);
                 return landscaping;
             }
         } else if (wallMissing()) {
+            System.out.println("LAND SCAN: outer wall");
+            List<RobotInfo> infos = new ArrayList<>();
             for (RobotInfo x : nearby) {
+                System.out.println(x.getLocation() + " " + outerWall.contains(x.getLocation()) + " " + centerDigSites.contains(x.getLocation()));
                 if (!x.getTeam().equals(allyTeam)
                         || !x.getType().equals(RobotType.LANDSCAPER)
                         || outerWall.contains(x.getLocation())
                         || centerDigSites.contains(x.getLocation()))
                     continue;
+                infos.add(x);
+            }
+            for (RobotInfo x : infos) {
                 MapLocation loc = x.getLocation();
                 if (loc.isAdjacentTo(myLocation)) {
                     pickUpLandscaper(x);
-                } else {
-                    path(loc);
+                    return landscaping;
                 }
+            }
+            if (infos.size() > 0) {
+                RobotInfo x = infos.get(0);
+                MapLocation loc = x.getLocation();
+                path(loc);
                 return landscaping;
             }
+
         }
         return landscaping;
     }
