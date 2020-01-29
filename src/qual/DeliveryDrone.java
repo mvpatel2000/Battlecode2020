@@ -592,7 +592,7 @@ public class DeliveryDrone extends Unit {
                     && loc.distanceSquaredTo(hqLocation) < Landscaper.LATTICE_SIZE
                     && loc.distanceSquaredTo(hqLocation) > 8)
                     || (loc.distanceSquaredTo(hqLocation) == 4 && !x.getType().equals(RobotType.LANDSCAPER))
-                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9) || loc.equals(reservedForDSchoolBuild)) {
+                    || (x.getType().equals(RobotType.MINER) && loc.distanceSquaredTo(hqLocation) < 9 && rc.getRoundNum() > FILL_WALL_ROUND) || loc.equals(reservedForDSchoolBuild)) {
                 if (loc.isAdjacentTo(myLocation)) {
                     tryPickUp(x);
                     ferrying = true;
