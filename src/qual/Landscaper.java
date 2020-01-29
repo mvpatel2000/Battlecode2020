@@ -637,6 +637,18 @@ public class Landscaper extends Unit {
                 } else if (rc.getDirtCarrying() < RobotType.LANDSCAPER.dirtLimit) { // dig dirt
                     boolean foundDigSite = false;
                     int hqElevation = rc.senseElevation(hqLocation);
+                    for (Direction d : directions) { // heal enemy buildings at higher priority
+                        if (rc.canSenseLocation(myLocation.add(d))) {
+                            RobotInfo r = rc.senseRobotAtLocation(myLocation.add(d));
+                            if (r != null && r.team == allyTeam && r.type.isBuilding() && r.dirtCarrying > 5) {
+                                foundDigSite = true;
+                                System.out.println("Digging from ALLY BUILDING in direction " + myLocation.directionTo(myLocation.add(d)));
+                                if (tryDig(myLocation.directionTo(myLocation.add(d)))) {
+                                    return;
+                                }
+                            }
+                        }
+                    }
                     for (Direction d : directions) { // dig down after killing an enemy rush building (empty inner wall tile with elev > HQ)
                         if (!rc.onTheMap(hqLocation.add(d))) {
                             continue;
