@@ -577,8 +577,6 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > DEFEND_TURN && !shellDrone)
             return landscaping;
 
-        System.out.println("LAND SCAN: water level");
-
         if (shellDrone && GameConstants.getWaterLevel(rc.getRoundNum()) > 10) {
             for (Direction d : directions) {
                 MapLocation loc = myLocation.add(d);
@@ -595,7 +593,6 @@ public class DeliveryDrone extends Unit {
 
 
         if (innerWallMissing() && !shellDrone) {
-            System.out.println("LAND SCAN: inner wall");
             List<RobotInfo> infos = new ArrayList<>();
             for (RobotInfo x : nearby) {
                 if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || x.getLocation().isAdjacentTo(hqLocation))
@@ -616,10 +613,8 @@ public class DeliveryDrone extends Unit {
                 return landscaping;
             }
         } else if (wallMissing()) {
-            System.out.println("LAND SCAN: outer wall");
             List<RobotInfo> infos = new ArrayList<>();
             for (RobotInfo x : nearby) {
-                System.out.println(x.getLocation() + " " + outerWall.contains(x.getLocation()) + " " + centerDigSites.contains(x.getLocation()));
                 if (!x.getTeam().equals(allyTeam)
                         || !x.getType().equals(RobotType.LANDSCAPER)
                         || outerWall.contains(x.getLocation())
