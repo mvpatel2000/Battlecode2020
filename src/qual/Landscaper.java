@@ -97,7 +97,7 @@ public class Landscaper extends Unit {
     // class variables used by aggressive landscapers:
     boolean aggressive = false;
     boolean wallProxy = false;
-    MapLocation enemyHQLocation = null;
+    MapLocation aggroTarget = null;
     MapLocation enemyDSchoolLocation = null;
 
     @Override
@@ -176,8 +176,8 @@ public class Landscaper extends Unit {
                 if (rc.canSenseLocation(enemyHQCandidateLoc)) {
                     System.out.println("I am an aggressive landscaper");
                     aggressive = true;
-                    enemyHQLocation = enemyHQCandidateLoc;
-                    if (enemyHQLocation.isAdjacentTo(myLocation)) {
+                    aggroTarget = enemyHQCandidateLoc;
+                    if (enemyHQCandidateLoc.isAdjacentTo(myLocation)) {
                         System.out.println("I am in the enemy wall :o");
                         wallProxy = true;
                     }
@@ -275,10 +275,10 @@ public class Landscaper extends Unit {
         }
         superCanMove = false;
 
-        if (rc.getRoundNum() > 1100 && baseLocation != null) {
+        if (rc.getRoundNum() > 1100 && baseLocation != null && rc.getRoundNum() % 3 == 0) {
             moveInDirection(myLocation.directionTo(baseLocation).opposite());
         }
-        if (rc.getRoundNum() > 1100 && baseLocation == null) {
+        if (rc.getRoundNum() > 1100 && baseLocation == null && rc.getRoundNum() % 3 == 0) {
             moveInDirection(myLocation.directionTo(hqLocation).opposite());
         }
 
@@ -287,14 +287,18 @@ public class Landscaper extends Unit {
             superCanMove = true;
             path(hqLocation);
             superCanMove = false;
+            return;
         }
-        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() > DeliveryDrone.FILL_WALL_ROUND ||
+        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() >= DeliveryDrone.FILL_WALL_ROUND ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
-                // if I'm in the inner wall or in the outer wall after a certain point, become a defender
+            // if I'm in the inner wall or in the outer wall after a certain point, become a defender
             terraformer = false;
             defensive = true;
             defense();
             return;
+        }
+        if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() < DeliveryDrone.FILL_WALL_ROUND) {
+            moveInDirection(myLocation.directionTo(hqLocation).opposite());
         }
         if (getTerraformDigDirection() == Direction.CENTER) { // if I find myself in a dig site, get out of there
             Direction d = hqLocation.directionTo(myLocation);
@@ -399,6 +403,15 @@ public class Landscaper extends Unit {
          *  3 4 5 -
          *  x 1 2 x
          */
+        for (Direction d : directions) {
+            if (existsNearbyBotAt(myLocation.add(d))) {
+                RobotInfo bot = getNearbyBotAt(myLocation.add(d));
+                if (bot.team.equals(allyTeam) && bot.type.isBuilding() && bot.getDirtCarrying() > 5) {
+                    return d;
+                }
+            }
+        }
+
         int k = 3 * ((((myLocation.y - hqLocation.y) % 3) + 3) % 3) + ((((myLocation.x - hqLocation.x) % 3) + 3) % 3);
         switch (k) {
             case 0:
@@ -425,7 +438,7 @@ public class Landscaper extends Unit {
     }
 
     public void aggro() throws GameActionException {
-        if (enemyHQLocation != null) {
+        if (aggroTarget != null) {
             // update d.school location
             baseLocation = null;
             for (Direction dir : directions) {                   // Marginally cheaper than sensing in radius 2
@@ -436,31 +449,33 @@ public class Landscaper extends Unit {
                 }
             }
 
-            enemyDSchoolLocation = null;
-            for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
-                if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
-                    enemyDSchoolLocation = r.getLocation();
-                }
-            }
-
-            Direction enemyHQDir = myLocation.directionTo(enemyHQLocation);
-
-            // if i can move closer to enemy d.school while being adjacent to enemy HQ, do it
-            if (enemyDSchoolLocation != null) {
-                Direction moveDir = Direction.CENTER;
-                int minDist = myLocation.distanceSquaredTo(enemyDSchoolLocation);
-                MapLocation moveLoc = myLocation;
-                for (Direction d : directions) {
-                    MapLocation t = enemyHQLocation.add(d);
-                    int newDist = enemyDSchoolLocation.distanceSquaredTo(t);
-                    if (myLocation.isAdjacentTo(t) && newDist < minDist) {
-                        moveDir = d;
-                        minDist = newDist;
-                        moveLoc = t;
+            if (rc.getRoundNum() < 400) { // rush code
+                enemyDSchoolLocation = null;
+                for (RobotInfo r : nearbyBots) { // TODO: merge with previous loop
+                    if (r.type.equals(RobotType.DESIGN_SCHOOL) && r.team.equals(enemyTeam)) {
+                        enemyDSchoolLocation = r.getLocation();
                     }
                 }
-                if (moveLoc != myLocation) {
-                    tryMove(myLocation.directionTo(moveLoc));
+
+                Direction aggroDir = myLocation.directionTo(aggroTarget);
+
+                // if i can move closer to enemy d.school while being adjacent to enemy HQ, do it
+                if (enemyDSchoolLocation != null) {
+                    Direction moveDir = Direction.CENTER;
+                    int minDist = myLocation.distanceSquaredTo(enemyDSchoolLocation);
+                    MapLocation moveLoc = myLocation;
+                    for (Direction d : directions) {
+                        MapLocation t = aggroTarget.add(d);
+                        int newDist = enemyDSchoolLocation.distanceSquaredTo(t);
+                        if (myLocation.isAdjacentTo(t) && newDist < minDist) {
+                            moveDir = d;
+                            minDist = newDist;
+                            moveLoc = t;
+                        }
+                    }
+                    if (moveLoc != myLocation) {
+                        tryMove(myLocation.directionTo(moveLoc));
+                    }
                 }
             }
 
@@ -479,22 +494,37 @@ public class Landscaper extends Unit {
                     tryDig(Direction.CENTER);
                 }
             } else {
-                System.out.println("Depositing under enemy HQ at " + myLocation.directionTo(enemyHQLocation));
-                tryDeposit(enemyHQDir);
+                System.out.println("Depositing under enemy target at " + myLocation.directionTo(aggroTarget));
+                tryDeposit(myLocation.directionTo(aggroTarget));
+                if (!existsNearbyBotAt(aggroTarget)) {
+                    aggroTarget = null;
+                }
             }
         } else {
+            MapLocation enemyHQLocation = null;
             for (Direction d : directions) {
-                if (rc.isLocationOccupied(myLocation.add(d)) && getNearbyBotAt(myLocation.add(d)).team.equals(enemyTeam) && getNearbyBotAt(myLocation.add(d)).type.equals(RobotType.HQ)) {
-                    enemyHQLocation = myLocation.add(d);
+                if (rc.isLocationOccupied(myLocation.add(d))) {
+                    RobotInfo bot = getNearbyBotAt(myLocation.add(d));
+                    if (bot.team.equals(enemyTeam) && bot.type.isBuilding()) {
+                        aggroTarget = myLocation.add(d);
+                    }
+                    if (bot.type.equals(RobotType.HQ)) {
+                        enemyHQLocation = myLocation.add(d);
+                    }
                 }
             }
             if (enemyHQLocation != null) {
-                aggro();
+                aggroTarget = enemyHQLocation;
             }
-            // flee
-            // if enemy HQ visible, a-move it
-            // if adjacent to enemy building, kill it
-            // path away from my HQ location until as far as possible and then path towards HQ location
+            if (aggroTarget != null) {
+                aggro();
+            } else {
+                if (ENEMY_HQ_LOCATION != null) {
+                    path(ENEMY_HQ_LOCATION);
+                } else {
+                    moveInDirection(myLocation.directionTo(hqLocation).opposite());
+                }
+            }
         }
     }
 
