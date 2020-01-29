@@ -186,12 +186,12 @@ public abstract class Robot {
     }
 
     public boolean enemyAggressionCheck() throws GameActionException {
-        System.out.println("Enemy Aggression Check");
+        //System.out.println("[i] Enemy Aggression Check");
         if(enemyAggression == false) {
             RobotInfo[] nearbyBots = rc.senseNearbyRobots();
             for (RobotInfo botInfo : nearbyBots) {
                 if (!botInfo.type.equals(RobotType.DELIVERY_DRONE) && !botInfo.type.equals(RobotType.HQ) && botInfo.team.equals(enemyTeam)) {
-                    System.out.println("Found enemy aggression!");
+                    System.out.println("[i] Found enemy aggression!");
                     enemyAggression = true;
                 }
             }
@@ -271,6 +271,31 @@ public abstract class Robot {
                 }
             }
         }
+    }
+
+    public MapLocation initialCheckForWaterLocation() throws GameActionException {
+        int rn = rc.getRoundNum();
+        int start = 100*(rn/100);
+        for (int i = start+1; i<start+5; i++) {
+            if (i < rn) {
+                Transaction[] msgs = rc.getBlock(i);
+                for (Transaction transaction : msgs) {
+                    int[] msg = transaction.getMessage();
+                    if (allyMessage(msg[0], i)) {
+                        if (getSchema(msg[0]) == 4) {
+                            LocationMessage l = new LocationMessage(msg, MAP_HEIGHT, MAP_WIDTH, teamNum, i);
+                            if (l.unitType == 2) {
+                                MapLocation wl = new MapLocation(l.xLoc, l.yLoc);
+                                System.out.println("[i] Discovered water location");
+                                System.out.println(wl);
+                                return wl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public void checkForEnemyHQLocationMessageSubroutine(int[] msg, int roundNum) throws GameActionException {

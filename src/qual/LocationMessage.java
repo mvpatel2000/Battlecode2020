@@ -6,7 +6,7 @@ public class LocationMessage extends Message {
     int xLoc;
     int yLoc;
     int bitsPerLoc = 6;
-    int unitType;   //0 is our HQ, 1 is enemy HQ
+    int unitType;   //0 is our HQ, 1 is enemy HQ, 2 is water
     int bitsPerUnitType = 6;
 
     public LocationMessage(int myMapHeight, int myMapWidth, int myTeam, int roundNum) {
