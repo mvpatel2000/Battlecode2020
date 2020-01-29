@@ -92,6 +92,8 @@ public class Landscaper extends Unit {
     boolean currentlyInInnerWall = false;
     int pauseDigAndWaitForAllyToPass = 0;
 
+    boolean fleeing = false;
+
     // class variables used by aggressive landscapers:
     boolean aggressive = false;
     boolean wallProxy = false;
@@ -207,6 +209,10 @@ public class Landscaper extends Unit {
             readBirthMessage();
         }
 
+        if (rc.getRoundNum() > 700 && myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) { // I got dropped off somewhere outside the lattice
+            aggressive = true;
+        }
+
         if (terraformer) {
             terraform();
         } else if (defensive) {
@@ -258,10 +264,13 @@ public class Landscaper extends Unit {
         updateBaseLocationIfNull();
 
         rc.setIndicatorDot(rc.getLocation(), 0, 255, 0);
+        fleeing = true;
         if (flee()) {
+            fleeing = false;
             return;
         }
-        if (myLocation.distanceSquaredTo(hqLocation) > LATTICE_SIZE) {
+        fleeing = false;
+        if (!canMove(Direction.CENTER)) {
             path(hqLocation);
         }
         if (myLocation.isAdjacentTo(hqLocation) ||
@@ -307,16 +316,19 @@ public class Landscaper extends Unit {
     }
 
     public void updateTerraformTarget() throws GameActionException {
-        boolean stuck = true;
-        for (Direction d : directions) {
-            if (!rc.isLocationOccupied(myLocation.add(d))) {
-                stuck = false;
+        if (rc.getRoundNum() > 1100) {
+            int tmp = terraformHeight;
+            terraformHeight = rc.senseElevation(myLocation) - 1;
+            MapLocation target = findLatticeDepositSite();
+            if (myLocation.isAdjacentTo(target)) {
+                terraformTarget = target;
+            } else {
+                terraformHeight = rc.senseElevation(myLocation);
+                terraformTarget = myLocation;
             }
-        }
-        if (stuck) {
-            terraformTarget = myLocation;
             return;
         }
+
         MapLocation target = findLatticeDepositSite();
         while (target == null) {
             terraformHeight += 2;
@@ -451,6 +463,14 @@ public class Landscaper extends Unit {
                 tryDeposit(enemyHQDir);
             }
         } else {
+            for (Direction d : directions) {
+                if (rc.isLocationOccupied(myLocation.add(d)) && getNearbyBotAt(myLocation.add(d)).team.equals(enemyTeam) && getNearbyBotAt(myLocation.add(d)).type.equals(RobotType.HQ)) {
+                    enemyHQLocation = myLocation.add(d);
+                }
+            }
+            if (enemyHQLocation != null) {
+                aggro();
+            }
             // flee
             // if enemy HQ visible, a-move it
             // if adjacent to enemy building, kill it
@@ -885,6 +905,9 @@ public class Landscaper extends Unit {
 
     @Override
     protected boolean canMove(MapLocation me, Direction d) {
+        if (fleeing) {
+            return super.canMove(me, d);
+        }
         if (terraformer) {
             MapLocation to = me.add(d);
             if (me.distanceSquaredTo(hqLocation) > 8 && to.distanceSquaredTo(hqLocation) < 9)

@@ -29,8 +29,8 @@ public class DeliveryDrone extends Unit {
     final Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     int[] tilesVisited;
     int stuckCount;
-    List<RobotInfo> nearbyNetGuns;
-    RobotInfo nearestNetGun = null;
+    List<MapLocation> nearbyNetGuns;
+    MapLocation nearestNetGun = null;
 
     MapLocation nearestWaterLocation;
     MapLocation baseLocation;
@@ -822,19 +822,22 @@ public class DeliveryDrone extends Unit {
         for (RobotInfo x : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
             if ((x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
                     && x.getCooldownTurns() < 7) {
-                nearbyNetGuns.add(x);
+                nearbyNetGuns.add(x.location);
                 if (nearestNetGun == null ||
-                        nearestNetGun.location.distanceSquaredTo(myLocation) > x.location.distanceSquaredTo(myLocation))
-                    nearestNetGun = x;
+                        nearestNetGun.distanceSquaredTo(myLocation) > x.location.distanceSquaredTo(myLocation))
+                    nearestNetGun = x.location;
             }
         }
+        nearbyNetGuns.add(enemyLocation);
+        if (nearestNetGun == null)
+            nearestNetGun = enemyLocation;
 
         trapped = true;
 
         outer:
         for (Direction d : cardinalCenter) {
-            for (RobotInfo n : nearbyNetGuns) {
-                if (n.getLocation().distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+            for (MapLocation n : nearbyNetGuns) {
+                if (n.distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                     continue outer;
                 }
             }
@@ -873,12 +876,14 @@ public class DeliveryDrone extends Unit {
         if (to.equals(reservedForDSchoolBuild))
             return false;
         try {
+            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
+                + " " + !underFireExceptForNearest(to));
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
                     && (trapped || !underFire(to))
                     && (!trapped
                     || enemyLocation == null
-                    || (to.distanceSquaredTo(nearestNetGun.location) > from.distanceSquaredTo(nearestNetGun.location)
+                    || (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun)
                         && !underFireExceptForNearest(to)));
         } catch (GameActionException e) {
             e.printStackTrace();
@@ -887,22 +892,22 @@ public class DeliveryDrone extends Unit {
     }
 
     private boolean underFire(MapLocation to) {
-        for (RobotInfo y : nearbyNetGuns) {
-            if (y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+        for (MapLocation y : nearbyNetGuns) {
+            if (y.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                 return true;
             }
         }
-        return (enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        return false; //(enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
     private boolean underFireExceptForNearest(MapLocation to) {
-        for (RobotInfo y : nearbyNetGuns) {
-            if (!y.location.equals(nearestNetGun.location) &&
-                    y.getLocation().distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+        for (MapLocation y : nearbyNetGuns) {
+            if (!y.equals(nearestNetGun) &&
+                    y.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
                 return true;
             }
         }
-        return (enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        return false; //(enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
 
