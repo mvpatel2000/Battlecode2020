@@ -215,8 +215,8 @@ public class DeliveryDrone extends Unit {
             else
                 goToWaterAndDrop();
         } else {
-            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
-                attackDrone = false;
+//            if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
+//                attackDrone = false;
             System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
 
             if (shouldPickup(distToNearest)) { // pick up
