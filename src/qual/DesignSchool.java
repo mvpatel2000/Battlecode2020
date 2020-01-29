@@ -215,17 +215,41 @@ public class DesignSchool extends Building {
         }
     }
 
+    public boolean buildTerraformer(Direction spawnDir) throws GameActionException {
+        if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+            System.out.println("Built terraformer in direction " + spawnDir);
+            int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
+            numTerraformersMade++;
+            sendTerraformMessage(terraformerID);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void spawnTerraformerEarly() throws GameActionException {
+        System.out.println("Attempting to spawn terraformer");
+        Direction spawnDir = myLocation.directionTo(hqLocation).rotateRight().rotateRight();
+        if (buildTerraformer(spawnDir)) {
+            return;
+        }
+        spawnDir = myLocation.directionTo(hqLocation).rotateLeft().rotateLeft();
+        for (int i = 8; i > 0; i--) {
+            if (buildTerraformer(spawnDir)) {
+                break;
+            } else {
+                spawnDir = spawnDir.rotateLeft();
+            }
+        }
+    }
+
     public void spawnTerraformer() throws GameActionException {
         System.out.println("Attempting to spawn terraformer");
         Direction spawnDir = myLocation.directionTo(hqLocation).opposite().rotateRight();
         for (int i = 8; i > 0; i--) {
-            if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
-                System.out.println("Built terraformer in direction " + spawnDir);
-                int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
-                numTerraformersMade++;
-                sendTerraformMessage(terraformerID);
-            }
-            else {
+            if (buildTerraformer(spawnDir)) {
+                break;
+            } else {
                 spawnDir = spawnDir.rotateLeft();
             }
         }

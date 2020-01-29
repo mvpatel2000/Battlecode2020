@@ -620,7 +620,7 @@ public class Landscaper extends Unit {
                     }
                     if (!foundDumpSite) {
                         Direction dump = innerWallLowestNearbyDirection();
-                        if (rc.senseElevation(myLocation.add(dump)) > GameConstants.getWaterLevel(rc.getRoundNum() + 10)) {
+                        if (rc.senseElevation(myLocation.add(dump)) > GameConstants.getWaterLevel(rc.getRoundNum() + 10) && !isAdjacentToWater(myLocation.add(dump))) {
                             dump = Direction.CENTER;
                         }
                         System.out.println("Dumping dirt in direction " + dump);
@@ -908,9 +908,9 @@ public class Landscaper extends Unit {
                         holdPositionLoc = t;
                     }
                 }
-                if (existsNearbyBotAt(hqLocation) && getNearbyBotAt(hqLocation).getDirtCarrying() > 20) {
-                    hqInDanger = true;
-                }
+            }
+            if (getNearbyBotAt(hqLocation).getDirtCarrying() > 20 || existsNearbyEnemyOfType(RobotType.LANDSCAPER, 15)) {
+                hqInDanger = true;
             }
             if (currentlyInInnerWall && (hqInDanger || rc.senseElevation(myLocation) > rc.senseElevation(hqLocation) + 3)) { // override: if HQ is dying or i'm standing on a pillar and i'm already in the wall, just hold there
                 holdPositionLoc = myLocation;

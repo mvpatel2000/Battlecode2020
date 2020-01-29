@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java. util.Iterator;
+import java.util.Iterator;
 
 public class HQ extends Building {
 
@@ -104,12 +104,14 @@ public class HQ extends Building {
             if((minerCount < 4 || (minerCount < 5 && !enemyAggression && rc.getRoundNum() > 67)) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
                 minerCount++;
                 minerCooldown = 5;
-            } else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
+            /*}
+            //heuristic, uncomment to produce more miners on high-soup maps
+            else if ((soupSum/(300*minerCount)>Math.cbrt(rc.getRoundNum()+1000)/5 && rc.getRoundNum() < INNER_WALL_FORCE_TAKEOFF_DEFAULT) && tryBuild(RobotType.MINER, getBestMinerDirection())) {
                 //System.out.println("I producing miners");
                 //System.out.println("SoupSum/MinerCount " + Integer.toString(soupSum/minerCount));
                 //System.out.println("SQRT(roundNum/5) " + Integer.toString(rc.getRoundNum()/5));
                 //System.out.println("[i] Producing extra miner");
-                minerCount++;
+                minerCount++;*/
             } else {
                 if (rc.getRoundNum() > 150 + terraformCount * 20 && terraformCount < 3) {
                     if (tryBuild(RobotType.MINER, getBestMinerDirection())) {

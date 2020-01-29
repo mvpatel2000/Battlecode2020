@@ -466,7 +466,7 @@ public class DeliveryDrone extends Unit {
         System.out.println("Handle Defense");
         if (!cornerHolder) {
             destination = hqLocation;
-            if (rc.getRoundNum() < 200) {
+            if (rc.getRoundNum() < 300) {
                 fuzzyMoveToLoc(hqLocation.add(hqLocation.directionTo(enemyLocation)));
             } else if (rc.getRoundNum() < DEFEND_TURN) {
                 spiral(destination, false);
@@ -525,14 +525,40 @@ public class DeliveryDrone extends Unit {
     }
 
     private void chaseEnemy(RobotInfo nearest) throws GameActionException {
+        boolean existsEnemyNetGun = false;
+        for (RobotInfo r : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
+            if (r.type == RobotType.NET_GUN) {
+                existsEnemyNetGun = true;
+                break;
+            }
+        }
         if (!cornerHolder) {
             int[] dxy = xydist(myLocation, enemyLocation);
             if (dxy[0] == 3 && dxy[1] == 3 && rc.getRoundNum() > HOLD_CORNER_ROUND && !underFire(myLocation)) {
                 cornerHolder = true;
             } else if (rc.getRoundNum() > ATTACK_TURN) { // charge after ATTACK_TURN
                 fuzzyMoveToLoc(nearest.location);
-            } else if (rc.getRoundNum() < 100 && myLocation.distanceSquaredTo(hqLocation) < 64) {
-                path(nearest.location, false); // path recklessly
+            } else if (rc.getRoundNum() < 200 && myLocation.distanceSquaredTo(hqLocation) < 100
+                    && !existsEnemyNetGun && !attackDrone) { // guard HQ
+                Direction optimalDir = null;
+                int optimalScore = Integer.MAX_VALUE;
+                for (Direction dir : directions) {
+                    if (rc.canMove(dir)) {
+                        int enemyDist = myLocation.add(dir).distanceSquaredTo(nearest.location);
+                        if (enemyDist == 1) // don't give special priority to cardinal directions
+                            enemyDist = 2;
+                        int score = enemyDist * 1000 + myLocation.add(dir).distanceSquaredTo(hqLocation);
+                        System.out.println(dir + " " + score);
+                        if (score < optimalScore) {
+                            optimalDir = dir;
+                            optimalScore = score;
+                        }
+                    }
+                }
+                if (optimalDir != null) {
+                    rc.move(optimalDir);
+                }
+//                path(nearest.location, false); // path recklessly
             } else {
                 path(nearest.location, true);
             }
@@ -547,6 +573,8 @@ public class DeliveryDrone extends Unit {
             cornerHolder = true;
         } else if (myLocation.distanceSquaredTo(hqLocation) < 50) {
             spiral(enemyLocation, enemyAggression);
+        } else if (myLocation.distanceSquaredTo(enemyLocation) > 50 && rc.getRoundNum() < 150) { // early game surge
+            spiral(enemyLocation, false);
         } else {
             spiral(enemyLocation, true);
         }
@@ -2956,7 +2984,7 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
-                    if (nearest == null && (rc.getRoundNum() > 200 || enemyRobot.type != RobotType.COW)
+                    if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone || enemyRobot.type != RobotType.COW)
                             || nearest != null && nearest.type == RobotType.COW
                             || nearest != null && (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
                             || nearest != null && enemyRobot.type == RobotType.LANDSCAPER) {
