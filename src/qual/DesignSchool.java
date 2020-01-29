@@ -178,7 +178,7 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("F");
                     spawnTerraformer();
-                } else if (rc.getRoundNum() >= 1100) {
+                } else if (rc.getRoundNum() >= 1100 & rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
                     System.out.println("G");
                     spawnTerraformer();
                 } else {
@@ -201,13 +201,16 @@ public class DesignSchool extends Building {
                 } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 510) {
                     System.out.println("E");
                     spawnTerraformer();
+                } else if (vaporatorsBuilt < 10 && rc.getTeamSoup() < 1000) {
+                    System.out.println("D");
+                    return;
                 } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
                     System.out.println("F");
                     spawnTerraformer();
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
                     System.out.println("G");
                     spawnTerraformer();
-                } else if (rc.getRoundNum() >= 1100) {
+                } else if (rc.getRoundNum() >= 1100 && rc.getTeamSoup() >= 400 + 3 * numTerraformersMade) {
                     System.out.println("H");
                     spawnTerraformer();
                 } else {
