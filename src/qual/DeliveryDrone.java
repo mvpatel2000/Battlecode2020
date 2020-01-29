@@ -163,6 +163,8 @@ public class DeliveryDrone extends Unit {
 
         checkIfDoneCornerHolding();
 
+        System.out.println("Starting if statement: " + Clock.getBytecodeNum());
+
         if (shellDrone) {
             if (!inShell())
                 path(hqLocation);
@@ -178,7 +180,7 @@ public class DeliveryDrone extends Unit {
         } else {
             if (rc.getRoundNum() + 100 > DEFEND_TURN)  // retreat all drones
                 attackDrone = false;
-            System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN);
+            System.out.println("Choosing: " + distToNearest + " " + myLocation + " " + attackDrone + " " + DEFEND_TURN + " Time: " + Clock.getBytecodeNum());
 
             if (distToNearest <= GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED) { // pick up
                 tryPickUp(nearest);
@@ -655,10 +657,10 @@ public class DeliveryDrone extends Unit {
         int x = (int) (dx * cs - dy * sn);
         int y = (int) (dx * sn + dy * cs);
         if (myLocation.distanceSquaredTo(center) > 35) {
-            System.out.println("Spiral is pushing me in");
+            System.out.println("Spiral is pushing me in. Safe " + safe);
             path(center, safe);
         } else if (myLocation.distanceSquaredTo(center) < 20) {
-            System.out.println("Spiral is pushing me out");
+            System.out.println("Spiral is pushing me out. Safe: " + safe);
             path(myLocation.add(center.directionTo(myLocation)), safe);
         } else {
             System.out.println("Spiraling to " + center.translate(x, y));
@@ -859,6 +861,9 @@ public class DeliveryDrone extends Unit {
                 }
                 oldPtr = ptr;
                 ptr = ptr.next;
+                if (Clock.getBytecodesLeft() < 800) {
+                    break;
+                }
             }
             return nearest != null ? nearest.mapLocation : null;
         }
@@ -2984,7 +2989,9 @@ public class DeliveryDrone extends Unit {
                         || (nearest != null && nearest.type != RobotType.LANDSCAPER && enemyRobot.type == RobotType.LANDSCAPER)
                         || (nearest != null && nearest.type != RobotType.MINER && enemyRobot.type == RobotType.MINER)
                         || (nearest != null && nearest.type.equals(RobotType.COW) && !enemyRobot.type.equals(RobotType.COW))) {
-                    if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone || enemyRobot.type != RobotType.COW)
+                    if (nearest == null && (rc.getRoundNum() > 200 && !attackDrone && myLocation.distanceSquaredTo(hqLocation) < 64
+                                            || rc.getRoundNum() > 600 && !attackDrone
+                                            || enemyRobot.type != RobotType.COW)
                             || nearest != null && nearest.type == RobotType.COW
                             || nearest != null && (enemyRobot.type != RobotType.COW && nearest.type != RobotType.LANDSCAPER)
                             || nearest != null && enemyRobot.type == RobotType.LANDSCAPER) {
