@@ -172,7 +172,7 @@ public class DesignSchool extends Building {
                 } else if ((rc.getRoundNum() >= 500 || (firstRefineryExists && rc.getTeamSoup() >= 1000)) && numLandscapersMade < 8) {
                     System.out.println("D");
                     spawnInnerWaller();
-                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000) {
+                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000 && rc.getRoundNum() < 650) {
                     System.out.println("E");
                     return;
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
@@ -195,13 +195,13 @@ public class DesignSchool extends Building {
                 } else if (rc.getRoundNum() >= 300 && numLandscapersMade < 3) {
                     System.out.println("C");
                     spawnInnerWaller();
-                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000) {
+                } else if (vaporatorsBuilt < 4 && rc.getTeamSoup() < 1000 && rc.getRoundNum() < 650) {
                     System.out.println("D");
                     return;
-                } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250 && rc.getTeamSoup() >= 500) {
+                } else if (numTerraformersMade < 5 && rc.getRoundNum() >= 250) {
                     System.out.println("E");
                     spawnTerraformer();
-                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500) {
+                } else if (numTerraformersMade < 8 && rc.getRoundNum() >= 500 && rc.getTeamSoup() > 510) {
                     System.out.println("F");
                     spawnTerraformer();
                 } else if (numTerraformersMade < 18 && (rc.getRoundNum() >= 800 || rc.getTeamSoup() >= 521)) {
@@ -217,7 +217,7 @@ public class DesignSchool extends Building {
         } else {
             boolean existPlacesToBuild = false;
             for (Direction d : directions) {
-                if (rc.canBuildRobot(RobotType.LANDSCAPER, d)) {
+                if (rc.canBuildRobot(RobotType.LANDSCAPER, d) && myLocation.add(d).distanceSquaredTo(hqLocation) <= Landscaper.LATTICE_SIZE) {
                     existPlacesToBuild = true;
                 }
             }
@@ -230,13 +230,14 @@ public class DesignSchool extends Building {
             if (stuckCounter >= 20) {
                 rc.disintegrate();
             }
-            System.out.println("I am an extra d.school.  Attempting to make terraformers!");
-            spawnTerraformerTowardsHQ();
+            if (rc.getRoundNum() > 800 || rc.getTeamSoup() >= 528) {
+                spawnTerraformerTowardsHQ();
+            }
         }
     }
 
     public boolean buildTerraformer(Direction spawnDir) throws GameActionException {
-        if (tryBuild(RobotType.LANDSCAPER, spawnDir)) {
+        if (myLocation.add(spawnDir).distanceSquaredTo(hqLocation) <= Landscaper.LATTICE_SIZE && tryBuild(RobotType.LANDSCAPER, spawnDir)) {
             System.out.println("Built terraformer in direction " + spawnDir);
             int terraformerID = rc.senseRobotAtLocation(myLocation.add(spawnDir)).ID;
             numTerraformersMade++;

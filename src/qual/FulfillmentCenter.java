@@ -127,6 +127,14 @@ public class FulfillmentCenter extends Building {
         }
     }
 
+    @Override
+    boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
+        if (rc.getRoundNum() > DeliveryDrone.SELF_DESTUCT_ROUND && myLocation.add(dir).distanceSquaredTo(hqLocation) < 9) {
+            return false;
+        }
+        return super.tryBuild(type, dir);
+    }
+
     //Returns true if should continue halting production
     //Returns false if should not continue halting production
     private boolean checkIfContinueHold() throws GameActionException {
