@@ -642,7 +642,7 @@ public class DeliveryDrone extends Unit {
             return;
         MapLocation enemyLocation = nearest == null ? this.enemyLocation : nearest.getLocation();
         if (!dropship) {
-            for (Direction d : directions) {
+            for (Direction d : cardinalDirections) {
                 RobotInfo x = rc.senseRobotAtLocation(myLocation.add(d));
                 if (x != null && x.getTeam().equals(allyTeam)
                         && x.getType().equals(RobotType.LANDSCAPER)
