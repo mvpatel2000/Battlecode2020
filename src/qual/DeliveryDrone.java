@@ -7,7 +7,7 @@ import java.util.*;
 public class DeliveryDrone extends Unit {
 
     protected static final int START_FERRY = 300;
-    protected static final int FILL_WALL_ROUND = 600;
+    protected static final int FILL_WALL_ROUND = 530;
     protected static final int FILL_OUTER_ROUND = 1000;
     protected static final int SHRINK_SHELL_ROUND = 2605;
     protected static final int POKE_DURATION = 50;
