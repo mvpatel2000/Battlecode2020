@@ -117,28 +117,37 @@ public abstract class Unit extends Robot {
     }
 
     protected boolean canMove(Direction in) {
-        MapLocation me = myLocation.add(in);
-        try {
-            return rc.canSenseLocation(me) && rc.canMove(in) && !rc.senseFlooding(me)
-                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(me));
-        } catch (GameActionException e) {
-            e.printStackTrace();
-            return false;
-        }
+        return canMove(myLocation, in);
     }
 
     protected boolean canMove(MapLocation from, Direction in) {
         MapLocation to = from.add(in);
         try {
             if (from.equals(myLocation)) {
-                return rc.canSenseLocation(to) && rc.canMove(in) && !rc.senseFlooding(to)
-                        && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(to));
+                if (rc.canSenseLocation(to) && rc.canMove(in) && !rc.senseFlooding(to)) {
+                    boolean done = true;
+                    for (RobotInfo x : getNearbyDrones()) {
+                        if (x.getLocation().isAdjacentTo(to)) {
+                            done = false;
+                            break;
+                        }
+                    }
+                    if (done) return true;
+                }
+                return false;
             }
-            return rc.canSenseLocation(to)
-                    && !rc.isLocationOccupied(to)
-                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4
-                    && !rc.senseFlooding(to)
-                    && getNearbyDrones().stream().noneMatch(x -> x.getLocation().isAdjacentTo(to));
+            if (rc.canSenseLocation(to) && !rc.isLocationOccupied(to)
+                    && Math.abs(rc.senseElevation(to) - rc.senseElevation(from)) < 4 && !rc.senseFlooding(to)) {
+                boolean done = true;
+                for (RobotInfo x : getNearbyDrones()) {
+                    if (x.getLocation().isAdjacentTo(to)) {
+                        done = false;
+                        break;
+                    }
+                }
+                if (done) return true;
+            }
+            return false;
         } catch (GameActionException e) {
             e.printStackTrace();
             return false;
@@ -189,10 +198,11 @@ public abstract class Unit extends Robot {
         RobotInfo[] adjacentDrones = getNearbyDrones().stream().filter(x ->
                 x.getLocation().distanceSquaredTo(myLocation) <= getFleeRadius()).toArray(RobotInfo[]::new);
 
-        if (adjacentDrones.length == 0)
+        if (adjacentDrones.length == 0 || !rc.isReady())
             return false;
         Direction escapeLeft = adj(toward(myLocation, adjacentDrones[0].getLocation()), 4);
         Direction escapeRight = escapeLeft;
+        int ctr = 0;
         while (!canMove(escapeLeft)) {
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
@@ -200,6 +210,9 @@ public abstract class Unit extends Robot {
                 return true;
             }
             escapeLeft = escapeLeft.rotateLeft();
+            if (ctr > 1)
+                break;
+            ctr++;
         }
         if (canMove(escapeLeft)) {
             go(escapeLeft);
