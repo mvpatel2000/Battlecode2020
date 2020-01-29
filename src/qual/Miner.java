@@ -505,7 +505,13 @@ public class Miner extends Unit {
                 } else if (!existsDesignSchool && rc.getRoundNum() > 1100) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
-                    tryBuild(RobotType.VAPORATOR, dir);
+                    boolean vbuild = tryBuild(RobotType.VAPORATOR, dir);
+                    //alert others vaporator has been built
+                    if(vbuild) {
+                        BuiltMessage b = new BuiltMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+                        b.writeTypeBuilt(4);
+                        sendMessage(b.getMessage(), 1);
+                    }
                 }
             }
         }
