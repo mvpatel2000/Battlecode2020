@@ -333,7 +333,7 @@ public class DeliveryDrone extends Unit {
 
     private void checkIfDoneWithPoke(RobotInfo[] nearby) throws GameActionException {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
-            boolean giveUp = noLandscapersLeft(nearby);
+            boolean giveUp = shouldRetreat(nearby);
             if (giveUp) {
                 giveUpOnPoke = true;
                 handleDefense(nearby);
@@ -341,9 +341,9 @@ public class DeliveryDrone extends Unit {
         }
     }
 
-    private boolean noLandscapersLeft(RobotInfo[] nearby) {
+    private boolean shouldRetreat(RobotInfo[] nearby) {
         if (dropship)
-            return false;
+            return myLocation.distanceSquaredTo(enemyLocation) < 8;
         boolean giveUp = true;
         for (RobotInfo x : nearby) {
             if (!x.getTeam().equals(allyTeam) && x.getType() == RobotType.LANDSCAPER) {
@@ -409,7 +409,7 @@ public class DeliveryDrone extends Unit {
 
     private void checkIfDoneWithAMove(RobotInfo[] nearby) throws GameActionException {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
-            if (noLandscapersLeft(nearby)) {
+            if (shouldRetreat(nearby)) {
                 giveUpOnAMove = true;
                 handleDefense(nearby);
             }
