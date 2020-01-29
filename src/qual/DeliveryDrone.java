@@ -23,13 +23,15 @@ public class DeliveryDrone extends Unit {
     final int ATTACK_TURN = 1875;
     final int POKE_TURN = 900;
     long[] waterChecked = new long[64]; // align to top right
+    long[] gunsChecked = new long[64];
     WaterList waterLocations = new WaterList();
 
     final int[][] SPIRAL_ORDER = {{0, 0}, {-1, 0}, {0, -1}, {0, 1}, {1, 0}, {-1, -1}, {-1, 1}, {1, -1}, {1, 1}, {-2, 0}, {0, -2}, {0, 2}, {2, 0}, {-2, -1}, {-2, 1}, {-1, -2}, {-1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1}, {-2, -2}, {-2, 2}, {2, -2}, {2, 2}, {-3, 0}, {0, -3}, {0, 3}, {3, 0}, {-3, -1}, {-3, 1}, {-1, -3}, {-1, 3}, {1, -3}, {1, 3}, {3, -1}, {3, 1}, {-3, -2}, {-3, 2}, {-2, -3}, {-2, 3}, {2, -3}, {2, 3}, {3, -2}, {3, 2}, {-4, 0}, {0, -4}, {0, 4}, {4, 0}, {-4, -1}, {-4, 1}, {-1, -4}, {-1, 4}, {1, -4}, {1, 4}, {4, -1}, {4, 1}, {-3, -3}, {-3, 3}, {3, -3}, {3, 3}, {-4, -2}, {-4, 2}, {-2, -4}, {-2, 4}, {2, -4}, {2, 4}, {4, -2}, {4, 2}, {-5, 0}, {-4, -3}, {-4, 3}, {-3, -4}, {-3, 4}, {0, -5}, {0, 5}, {3, -4}, {3, 4}, {4, -3}, {4, 3}, {5, 0}, {-5, -1}, {-5, 1}, {-1, -5}, {-1, 5}, {1, -5}, {1, 5}, {5, -1}, {5, 1}, {-5, -2}, {-5, 2}, {-2, -5}, {-2, 5}, {2, -5}, {2, 5}, {5, -2}, {5, 2}, {-4, -4}, {-4, 4}, {4, -4}, {4, 4}, {-5, -3}, {-5, 3}, {-3, -5}, {-3, 5}, {3, -5}, {3, 5}, {5, -3}, {5, 3}};
     final Direction[] cardinalDirections = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
     int[] tilesVisited;
     int stuckCount;
-    List<MapLocation> nearbyNetGuns;
+//    List<MapLocation> nearbyNetGuns;
+    GunList nearbyNetGuns;
     MapLocation nearestNetGun = null;
 
     MapLocation nearestWaterLocation;
@@ -104,14 +106,15 @@ public class DeliveryDrone extends Unit {
         stuckCount = 0;
 
         destination = hqLocation;
-        enemyLocation = new MapLocation(MAP_WIDTH - destination.x, MAP_HEIGHT - destination.y);
+        enemyLocation = new MapLocation(MAP_WIDTH - destination.x - 1, MAP_HEIGHT - destination.y - 1);
         enemyVisited = false;
         carrying = false;
         carryingCow = false;
         giveUpOnAMove = false;
         ferrying = false;
         landscaping = false;
-        nearbyNetGuns = new ArrayList<>();
+//        nearbyNetGuns = new ArrayList<>();
+        nearbyNetGuns = new GunList();
         outerWall = new ArrayList<>();
         centerDigSites = new ArrayList<>();
         for (int i = -2; i <= 2; i++) {
@@ -652,7 +655,7 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > POKE_TURN + POSTURE_POKE_TIME) {
             fuzzyMoveToLoc(enemyLocation);
         } else if (rc.getRoundNum() > POKE_TURN && !cornerHolder) {
-            path(enemyLocation, true);
+            path(enemyLocation, false);
         }
     }
 
@@ -680,11 +683,11 @@ public class DeliveryDrone extends Unit {
             if (enemy == null || enemy.type != RobotType.HQ) {
                 switch (whichEnemyLocation) {
                     case 0:
-                        enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y);
+                        enemyLocation = new MapLocation(destination.x, MAP_HEIGHT - destination.y - 1);
                         whichEnemyLocation++;
                         break;
                     case 1:
-                        enemyLocation = new MapLocation(MAP_WIDTH - destination.x, destination.y);
+                        enemyLocation = new MapLocation(MAP_WIDTH - destination.x - 1, destination.y);
                         whichEnemyLocation++;
                         break;
                     case 2:
@@ -695,9 +698,9 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > ATTACK_TURN) {
             fuzzyMoveToLoc(enemyLocation);
         } else if (rc.getRoundNum() > ATTACK_TURN - 25 && !cornerHolder) {
-            path(enemyLocation, true);
+            path(enemyLocation, false);
         } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !cornerHolder) {
-            spiral(enemyLocation, true);
+            spiral(enemyLocation, false);
         }
     }
 
@@ -730,7 +733,7 @@ public class DeliveryDrone extends Unit {
                 }
 //                path(nearest.location, false); // path recklessly
             } else {
-                path(nearest.location, true);
+                path(nearest.location, false);
             }
         }
         nearestWaterLocation = updateNearestWaterLocation();
@@ -787,17 +790,17 @@ public class DeliveryDrone extends Unit {
                 }
             }
             if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                path(nearestWaterLocation, enemyAggression);
+                path(nearestWaterLocation, false);
             } else {
-                path(nearestWaterLocation, true);
+                path(nearestWaterLocation, false);
             }
         } else {
 //                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
             if (waterDrop()) return true;
             if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                path(nearestWaterLocation, enemyAggression);
+                path(nearestWaterLocation, false);
             } else {
-                path(nearestWaterLocation, true);
+                path(nearestWaterLocation, false);
             }
             nearestWaterLocation = updateNearestWaterLocation();
         }
@@ -826,42 +829,79 @@ public class DeliveryDrone extends Unit {
         int y = (int) (dx * sn + dy * cs);
         if (myLocation.distanceSquaredTo(center) > 35) {
             System.out.println("Spiral is pushing me in. Safe " + safe);
-            path(center, safe);
+            path(center, false);
         } else if (myLocation.distanceSquaredTo(center) < 20) {
             System.out.println("Spiral is pushing me out. Safe: " + safe);
-            path(myLocation.add(center.directionTo(myLocation)), safe);
+            path(myLocation.add(center.directionTo(myLocation)), false);
         } else {
             //System.out.println("Spiraling to " + center.translate(x, y));
-            path(center.translate(x, y), safe);
+            path(center.translate(x, y), false);
         }
     }
 
+//    protected void updateEnemies() {
+//        nearbyNetGuns.clear();
+//        nearestNetGun = null;
+//        for (RobotInfo x : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
+//            if ((x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
+//                    && x.getCooldownTurns() < 7) {
+//                nearbyNetGuns.add(x.location);
+//                if (nearestNetGun == null ||
+//                        nearestNetGun.distanceSquaredTo(myLocation) > x.location.distanceSquaredTo(myLocation))
+//                    nearestNetGun = x.location;
+//            }
+//        }
+//        nearbyNetGuns.add(enemyLocation);
+//        if (nearestNetGun == null)
+//            nearestNetGun = enemyLocation;
+//
+//        trapped = true;
+//
+//        outer:
+//        for (Direction d : cardinalCenter) {
+//            for (MapLocation n : nearbyNetGuns) {
+//                if (n.distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+//                    continue outer;
+//                }
+//            }
+//            trapped = false;
+//        }
+//    }
     protected void updateEnemies() {
-        nearbyNetGuns.clear();
+//        System.out.println("Start update enemies: " + Clock.getBytecodeNum());
         nearestNetGun = null;
         for (RobotInfo x : rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam)) {
             if ((x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
-                    && x.getCooldownTurns() < 7) {
-                nearbyNetGuns.add(x.location);
+                    && x.getCooldownTurns() < 8) {
+//                nearbyNetGuns.add(x.location);
+                System.out.println("Adding..." + x.location + " " + x.getCooldownTurns());
+                addToGunList(x.location);
                 if (nearestNetGun == null ||
                         nearestNetGun.distanceSquaredTo(myLocation) > x.location.distanceSquaredTo(myLocation))
                     nearestNetGun = x.location;
             }
         }
-        nearbyNetGuns.add(enemyLocation);
+        addToGunList(enemyLocation);
         if (nearestNetGun == null)
             nearestNetGun = enemyLocation;
+//        nearbyNetGuns.printAll();
+
+//        System.out.println("End update enemies: " + Clock.getBytecodeNum());
 
         trapped = true;
 
-        outer:
-        for (Direction d : cardinalCenter) {
-            for (MapLocation n : nearbyNetGuns) {
-                if (n.distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                    continue outer;
-                }
+//        outer:
+        for (Direction d : directionsWithCenter) {
+//            for (MapLocation n : nearbyNetGuns) {
+//                if (n.distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+//                    continue outer;
+//                }
+//            }
+            // no guns can reach this square
+            if (!nearbyNetGuns.withinRange(myLocation.add(d), GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED)) {
+                trapped = false;
+                break;
             }
-            trapped = false;
         }
     }
 
@@ -896,8 +936,8 @@ public class DeliveryDrone extends Unit {
         if (to.equals(reservedForDSchoolBuild))
             return false;
         try {
-            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
-                + " " + !underFireExceptForNearest(to));
+//            System.out.println("moving " + to + " " + (to.distanceSquaredTo(nearestNetGun) > from.distanceSquaredTo(nearestNetGun))
+//                + " " + !underFireExceptForNearest(to));
             return rc.canSenseLocation(to)
                     && !rc.isLocationOccupied(to)
                     && (trapped || !underFire(to))
@@ -912,22 +952,24 @@ public class DeliveryDrone extends Unit {
     }
 
     private boolean underFire(MapLocation to) {
-        for (MapLocation y : nearbyNetGuns) {
-            if (y.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                return true;
-            }
-        }
-        return false; //(enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+//        for (MapLocation y : nearbyNetGuns) {
+//            if (y.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+//                return true;
+//            }
+//        }
+//        return false; //(enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        return nearbyNetGuns.withinRange(to, GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
     private boolean underFireExceptForNearest(MapLocation to) {
-        for (MapLocation y : nearbyNetGuns) {
-            if (!y.equals(nearestNetGun) &&
-                    y.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
-                return true;
-            }
-        }
-        return false; //(enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+//        for (MapLocation y : nearbyNetGuns) {
+//            if (!y.equals(nearestNetGun) &&
+//                    y.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
+//                return true;
+//            }
+//        }
+//        return false; //(enemyLocation != null && enemyLocation.distanceSquaredTo(to) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
+        return nearbyNetGuns.withinRangeExcept(to, nearestNetGun, GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED);
     }
 
 
@@ -1077,6 +1119,122 @@ public class DeliveryDrone extends Unit {
             public MapLocation mapLocation;
 
             public WaterLoc(MapLocation ml, WaterLoc n) {
+                mapLocation = ml;
+                next = n;
+            }
+        }
+    }
+
+    public void addToGunList(MapLocation ml) {
+        if (((gunsChecked[ml.x] >> ml.y) & 1) == 0) {
+            gunsChecked[ml.x] = gunsChecked[ml.x] | (1L << ml.y);
+            nearbyNetGuns.add(ml);
+        }
+    }
+
+    private class GunList {
+
+        private GunLoc head;
+        private int size;
+
+        public GunList() {
+            head = new GunLoc(null, null);
+            size = 0;
+        }
+
+        public int size() {
+            return size;
+        }
+
+        public boolean withinRange(MapLocation ml, int range) {
+            GunLoc ptr = head.next;
+            while (ptr != null) {
+                if (ptr.mapLocation.distanceSquaredTo(ml) <= range)
+                    return true;
+                ptr = ptr.next;
+            }
+            return false;
+        }
+
+        public boolean withinRangeExcept(MapLocation ml, MapLocation exc, int range) {
+            GunLoc ptr = head.next;
+            while (ptr != null) {
+                if (ptr.mapLocation.distanceSquaredTo(ml) <= range && !ptr.mapLocation.equals(exc))
+                    return true;
+                ptr = ptr.next;
+            }
+            return false;
+        }
+
+        public void add(MapLocation ml) {
+            head.next = new GunLoc(ml, head.next);
+            size++;
+        }
+
+        public void printAll() {
+            GunLoc ptr = head.next;
+            while (ptr != null) {
+                System.out.println("List: " + ptr.mapLocation);
+                ptr = ptr.next;
+            }
+        }
+
+        public void cleanList() throws GameActionException {
+            GunLoc oldPtr = head;
+            GunLoc ptr = head.next;
+            while (ptr != null) {
+                MapLocation ptrLocation = ptr.mapLocation;
+
+                if (rc.canSenseLocation(ptrLocation) && rc.senseFlooding(ptrLocation)) {
+                    oldPtr.next = oldPtr.next.next;
+                    gunsChecked[ptr.mapLocation.x] = gunsChecked[ptr.mapLocation.x] & (~(1L << ptr.mapLocation.y));
+                    size--;
+                }
+                oldPtr = ptr;
+                ptr = ptr.next;
+                if (Clock.getBytecodesLeft() < 800) {
+                    break;
+                }
+            }
+        }
+
+
+//        public MapLocation findNearest() throws GameActionException {
+//            int scanRadius = rc.getCurrentSensorRadiusSquared();
+//            int nearestDist = Integer.MAX_VALUE;
+//            GunLoc nearest = null;
+//            GunLoc oldPtr = head;
+//            GunLoc ptr = head.next;
+//            while (ptr != null) {
+//                int distToPtr = ptr.mapLocation.distanceSquaredTo(myLocation);
+//                MapLocation ptrLocation = ptr.mapLocation;
+//
+//                int waterDistance = myLocation.distanceSquaredTo(ptrLocation);
+//                if (rc.canSenseLocation(ptrLocation) && rc.senseFlooding(ptrLocation)) {
+//                    oldPtr.next = oldPtr.next.next;
+//                    gunsChecked[ptr.mapLocation.x] = gunsChecked[ptr.mapLocation.x] & (~(1L << ptr.mapLocation.y));
+//                    size--;
+//                } else if (waterDistance < nearestDist) {
+//                    nearest = ptr;
+//                    nearestDist = waterDistance;
+//                    if (distToPtr <= 2) {
+//                        break;
+//                    }
+//                }
+//                oldPtr = ptr;
+//                ptr = ptr.next;
+//                if (Clock.getBytecodesLeft() < 800) {
+//                    break;
+//                }
+//            }
+//            return nearest != null ? nearest.mapLocation : null;
+//        }
+
+        private class GunLoc {
+            public GunLoc next;
+            public MapLocation mapLocation;
+
+            public GunLoc(MapLocation ml, GunLoc n) {
                 mapLocation = ml;
                 next = n;
             }
