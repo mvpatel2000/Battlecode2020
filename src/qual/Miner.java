@@ -485,7 +485,7 @@ public class Miner extends Unit {
             if (robot.type.equals(RobotType.FULFILLMENT_CENTER)) {
                 existsFulfillmentCenter = true;
             }
-            if (robot.type.equals(RobotType.DESIGN_SCHOOL) && robot.location.distanceSquaredTo(myLocation) < 25) {
+            if (robot.type.equals(RobotType.DESIGN_SCHOOL) && robot.location.distanceSquaredTo(hqLocation) >= 25) {
                 existsDesignSchool = true;
             }
             if (robot.type.equals(RobotType.VAPORATOR)) {
@@ -505,7 +505,7 @@ public class Miner extends Unit {
                     tryBuild(RobotType.NET_GUN, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 48) && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-                } else if (!existsDesignSchool && rc.getRoundNum() > 500 && radiusSquared > 25) {
+                } else if (!existsDesignSchool && rc.getTeamSoup() > 500 && rc.getRoundNum() > 750 && radiusSquared >= (rc.getRoundNum() < 900 ? 25 : 26) && radiusSquared <= (rc.getRoundNum() < 1100 ? 33 : 48)) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
                     boolean vbuild = tryBuild(RobotType.VAPORATOR, dir);
