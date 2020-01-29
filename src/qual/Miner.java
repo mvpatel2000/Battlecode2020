@@ -500,7 +500,7 @@ public class Miner extends Unit {
                     && rc.canSenseLocation(t) && (rc.senseElevation(t) > 2 || rc.getRoundNum() < 300)) {
                 if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 800 ? 48 : 35)) {
                     tryBuild(RobotType.NET_GUN, dir);
-                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1300 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 32)) {
+                } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 32)) {
                     tryBuild(RobotType.FULFILLMENT_CENTER, dir);
                 } else if (!existsDesignSchool && rc.getRoundNum() > 1100) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
