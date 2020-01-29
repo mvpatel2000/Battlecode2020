@@ -14,6 +14,12 @@ public class DeliveryDrone extends Unit {
     private static final int POKE_RADIUS = 64;
     private static final int POSTURE_POKE_TIME = 20;
     private static final int HOLD_CORNER_ROUND = 600;
+    private static final int GIVE_UP_DEFENSE = 100;
+    private static final int DEFENSE_FAR_RADIUS = 48;
+
+    final int DEFEND_TURN = 1100;
+    final int ATTACK_TURN = 1875;
+    final int POKE_TURN = 900;
     long[] waterChecked = new long[64]; // align to top right
     WaterList waterLocations = new WaterList();
 
@@ -36,9 +42,7 @@ public class DeliveryDrone extends Unit {
     MapLocation commedWaterLocation = null;
 
     boolean attackDrone;
-    final int DEFEND_TURN = 1100;
-    final int ATTACK_TURN = 1875;
-    final int POKE_TURN = 900;
+
 
     boolean carrying;
     boolean giveUpOnAMove;
@@ -56,6 +60,7 @@ public class DeliveryDrone extends Unit {
     private boolean giveUpOnPoke;
     private boolean cornerHolder;
     private boolean alwaysAttack;
+    int defending = 0;
 
     public DeliveryDrone(RobotController rc) throws GameActionException {
         super(rc);
@@ -394,7 +399,7 @@ public class DeliveryDrone extends Unit {
     }
 
     private void dropOntoWall() throws GameActionException {
-        if (innerWallMissing()) {
+        if (!shellDrone && innerWallMissing()) {
             for (Direction d : directions) {
                 MapLocation loc = myLocation.add(d);
                 if (loc.isAdjacentTo(hqLocation) && !rc.isLocationOccupied(loc) && !rc.senseFlooding(loc)) {
@@ -450,7 +455,10 @@ public class DeliveryDrone extends Unit {
             }
         } else if (wallMissing()) {
             for (RobotInfo x : nearby) {
-                if (!x.getTeam().equals(allyTeam) || !x.getType().equals(RobotType.LANDSCAPER) || outerWall.contains(x.getLocation()))
+                if (!x.getTeam().equals(allyTeam)
+                        || !x.getType().equals(RobotType.LANDSCAPER)
+                        || outerWall.contains(x.getLocation())
+                        || centerDigSites.contains(x.getLocation()))
                     continue;
                 MapLocation loc = x.getLocation();
                 if (loc.isAdjacentTo(myLocation)) {
@@ -520,10 +528,12 @@ public class DeliveryDrone extends Unit {
                 spiral(destination, false);
             } else {
                 if (!inShell()) {
+                    defending++;
                     if (inShell(1) || inShell(2))
                         path(enemyLocation, false);
-                    else
+                    else {
                         path(destination, false);
+                    }
                 } else
                     shellDrone = true;
             }
@@ -714,7 +724,7 @@ public class DeliveryDrone extends Unit {
         for (RobotInfo x : rc.senseNearbyRobots()) {
             if (!x.getTeam().equals(allyTeam) &&
                     (x.getType().equals(RobotType.NET_GUN) || x.getType().equals(RobotType.HQ))
-                    && x.getCooldownTurns() < 5) {
+                    && x.getCooldownTurns() < 5.) {
                 nearbyNetGuns.add(x);
             }
         }
@@ -744,7 +754,13 @@ public class DeliveryDrone extends Unit {
         }
         if (shellDrone)
             return false;
+
         MapLocation to = from.add(in);
+
+        if (defending > GIVE_UP_DEFENSE && to.distanceSquaredTo(hqLocation) < DEFENSE_FAR_RADIUS
+                && to.distanceSquaredTo(hqLocation) <= from.distanceSquaredTo(hqLocation) && !underFire(from)) {
+            return false;
+        }
         if (landscaping && wallMissing()) {
             if (innerWallMissing()) {
                 if (to.isAdjacentTo(hqLocation))
@@ -788,14 +804,16 @@ public class DeliveryDrone extends Unit {
     private boolean safe = false;
 
     public void path(MapLocation target, boolean safe) throws GameActionException {
+        if (onBoundary(myLocation)) {
+            setDestination(null);
+        }
         this.safe = safe;
         super.path(target);
         this.safe = false;
     }
 
     public void path(MapLocation target) throws GameActionException {
-        this.safe = false;
-        super.path(target);
+        path(target, false);
     }
 
     // Returns location of nearest water
