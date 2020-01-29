@@ -635,7 +635,7 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > POKE_TURN + POSTURE_POKE_TIME) {
             fuzzyMoveToLoc(enemyLocation);
         } else if (rc.getRoundNum() > POKE_TURN && !cornerHolder) {
-            path(enemyLocation, true);
+            path(enemyLocation, false);
         }
     }
 
@@ -678,9 +678,9 @@ public class DeliveryDrone extends Unit {
         if (rc.getRoundNum() > ATTACK_TURN) {
             fuzzyMoveToLoc(enemyLocation);
         } else if (rc.getRoundNum() > ATTACK_TURN - 25 && !cornerHolder) {
-            path(enemyLocation, true);
+            path(enemyLocation, false);
         } else if (rc.getRoundNum() > ATTACK_TURN - 200 && !cornerHolder) {
-            spiral(enemyLocation, true);
+            spiral(enemyLocation, false);
         }
     }
 
@@ -713,7 +713,7 @@ public class DeliveryDrone extends Unit {
                 }
 //                path(nearest.location, false); // path recklessly
             } else {
-                path(nearest.location, true);
+                path(nearest.location, false);
             }
         }
         nearestWaterLocation = updateNearestWaterLocation();
@@ -770,17 +770,17 @@ public class DeliveryDrone extends Unit {
                 }
             }
             if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                path(nearestWaterLocation, enemyAggression);
+                path(nearestWaterLocation, false);
             } else {
-                path(nearestWaterLocation, true);
+                path(nearestWaterLocation, false);
             }
         } else {
 //                System.out.println("Path to water: " + myLocation + " " + nearestWaterLocation);
             if (waterDrop()) return true;
             if (myLocation.distanceSquaredTo(hqLocation) < 100) {
-                path(nearestWaterLocation, enemyAggression);
+                path(nearestWaterLocation, false);
             } else {
-                path(nearestWaterLocation, true);
+                path(nearestWaterLocation, false);
             }
             nearestWaterLocation = updateNearestWaterLocation();
         }
@@ -809,13 +809,13 @@ public class DeliveryDrone extends Unit {
         int y = (int) (dx * sn + dy * cs);
         if (myLocation.distanceSquaredTo(center) > 35) {
             System.out.println("Spiral is pushing me in. Safe " + safe);
-            path(center, safe);
+            path(center, false);
         } else if (myLocation.distanceSquaredTo(center) < 20) {
             System.out.println("Spiral is pushing me out. Safe: " + safe);
-            path(myLocation.add(center.directionTo(myLocation)), safe);
+            path(myLocation.add(center.directionTo(myLocation)), false);
         } else {
             //System.out.println("Spiraling to " + center.translate(x, y));
-            path(center.translate(x, y), safe);
+            path(center.translate(x, y), false);
         }
     }
 
@@ -870,7 +870,7 @@ public class DeliveryDrone extends Unit {
         trapped = true;
 
 //        outer:
-        for (Direction d : cardinalCenter) {
+        for (Direction d : directionsWithCenter) {
 //            for (MapLocation n : nearbyNetGuns) {
 //                if (n.distanceSquaredTo(myLocation.add(d)) <= GameConstants.NET_GUN_SHOOT_RADIUS_SQUARED) {
 //                    continue outer;
