@@ -271,7 +271,6 @@ public class Landscaper extends Unit {
             superCanMove = false;
             return;
         }
-        System.out.println("Failed to flee " + Clock.getBytecodeNum() + " " + rc.getRoundNum());
         superCanMove = false;
 
         if (rc.getRoundNum() > 1100 && baseLocation != null) {
@@ -286,36 +285,29 @@ public class Landscaper extends Unit {
             superCanMove = true;
             path(hqLocation);
             superCanMove = false;
-            System.out.println("I pathed! yay :)");
             return;
         }
         if (myLocation.isAdjacentTo(hqLocation) && rc.getRoundNum() > DeliveryDrone.FILL_WALL_ROUND ||
                 (myLocation.distanceSquaredTo(hqLocation) < 9 && myLocation.distanceSquaredTo(hqLocation) > 3 && rc.getRoundNum() > DeliveryDrone.FILL_OUTER_ROUND)) {
             // if I'm in the inner wall or in the outer wall after a certain point, become a defender
-            System.out.println("Hitting if1");
             terraformer = false;
             defensive = true;
             defense();
             return;
         }
         if (getTerraformDigDirection() == Direction.CENTER) { // if I find myself in a dig site, get out of there
-            System.out.println("Hitting if");
             Direction d = hqLocation.directionTo(myLocation);
             moveInDirection(d);
             return;
         } else {
-            System.out.println("hitting else");
             if (isWalled() && myLocation.equals(reservedForDSchoolBuild)) {
                 // wait for my ride onto the lattice
                 return;
             }
-            System.out.println("Indicator my ass");
             rc.setIndicatorDot(myLocation, 0, 255, 0);
 
             updateTerraformTarget();
             rc.setIndicatorLine(myLocation, terraformTarget, 0, 255, 255);
-
-            System.out.println("Done updating target");
 
             if (myLocation.isAdjacentTo(terraformTarget)) {
                 if (rc.getDirtCarrying() == 0) {

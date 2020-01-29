@@ -226,7 +226,7 @@ public abstract class Unit extends Robot {
             escapeRight = escapeRight.rotateRight();
             if (canMove(escapeRight)) {
                 go(escapeRight);
-                System.out.println("I am fleeing " + Clock.getBytecodeNum() + " " + rc.getRoundNum());
+                System.out.println("I am fleeing " + Clock.getBytecodeNum());
                 return true;
             }
             escapeLeft = escapeLeft.rotateLeft();
