@@ -22,6 +22,8 @@ public class DeliveryDrone extends Unit {
     protected static final int ATTACK_TURN = 1875;
     protected static final int POKE_TURN = 900;
     protected static final int ATTACK_COMM_TIME = DeliveryDrone.ATTACK_TURN - DeliveryDrone.POSTURE_TIME - 5;
+    protected static final int SELF_DESTUCT_ROUND = DEFEND_TURN + GIVE_UP_DEFENSE;
+
 
     long[] waterChecked = new long[64]; // align to top right
     long[] gunsChecked = new long[64];
@@ -196,6 +198,7 @@ public class DeliveryDrone extends Unit {
 
         //System.out.println(myLocation + " " + destination + " " + nearestWaterLocation + " " + carrying + " " + ferrying);
 
+        checkToDisintegrate();
         checkDropship();
         checkIfDoneCornerHolding();
         checkResetDefense();
@@ -249,6 +252,11 @@ public class DeliveryDrone extends Unit {
         System.out.println(crunchSuccess);
         System.out.println("Crunch success");
         System.out.println("Cooldown at the end of the turn: " + String.valueOf(rc.getCooldownTurns()));
+    }
+
+    private void checkToDisintegrate() {
+        if (!shellDrone && myLocation.distanceSquaredTo(hqLocation) < 9 && rc.getRoundNum() > SELF_DESTUCT_ROUND)
+            rc.disintegrate();
     }
 
     private boolean checkAggroDrop() throws GameActionException {
