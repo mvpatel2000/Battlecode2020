@@ -50,6 +50,7 @@ public class DeliveryDrone extends Unit {
     //water communication
     MapLocation commedWaterLocation = null;
     private boolean sentCrunchSuccessMessage = false;
+    int birth;
 
     boolean attackDrone;
 
@@ -144,6 +145,7 @@ public class DeliveryDrone extends Unit {
 
         whichEnemyLocation = 0;
         nearestWaterLocation = updateNearestWaterLocation();
+        birth = rc.getRoundNum();
         Clock.yield(); //TODO: Hacky way to avoid recomputing location twice. Remove and do more efficiently?
     }
 
@@ -421,7 +423,7 @@ public class DeliveryDrone extends Unit {
 
     private boolean shouldAMove() {
         return rc.getRoundNum() > ATTACK_TURN - POSTURE_TIME && !giveUpOnAMove && !shellDrone
-                && rc.getRoundNum() < SHRINK_SHELL_ROUND;
+                && rc.getRoundNum() < SHRINK_SHELL_ROUND && birth < ATTACK_TURN;
     }
 
     private boolean shouldPoke() {
