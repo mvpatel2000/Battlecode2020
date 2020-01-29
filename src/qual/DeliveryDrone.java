@@ -168,7 +168,7 @@ public class DeliveryDrone extends Unit {
 
     @Override
     public void run() throws GameActionException {
-        System.out.println("Cooldown at the start of the turn: " + String.valueOf(rc.getCooldownTurns()));
+        // System.out.println("Cooldown at the start of the turn: " + String.valueOf(rc.getCooldownTurns()));
         super.run();
 
         updateVisitedTiles(myLocation);
