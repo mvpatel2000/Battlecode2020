@@ -71,7 +71,9 @@ public class FulfillmentCenter extends Building {
                 }
             } else if (!enemyAggression && rc.getRoundNum() > 200 && attackDroneCount + defenseDroneCount < 4) {
                 buildDrone();
-            } if (rc.getTeamSoup() >= 521 && rc.getRoundNum() > 655 && attackDroneCount + defenseDroneCount < 60 || rc.getTeamSoup() > 1100) {
+            } else if (!enemyAggression && rc.getRoundNum() > 350 && attackDroneCount + defenseDroneCount < 6) {
+                buildDrone();
+            } if (rc.getTeamSoup() >= 521 && rc.getRoundNum() > 655 && attackDroneCount + defenseDroneCount < 40 || rc.getTeamSoup() > 1100) {
                 buildDrone();
             }
         }
