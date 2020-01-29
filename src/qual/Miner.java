@@ -504,7 +504,7 @@ public class Miner extends Unit {
                 if (!existsNetGun && (rc.getRoundNum() > 500 || fleeing != null && existsVaporator) && radiusSquared <= (rc.getRoundNum() < 500 ? 48 : 34)) {
                     tryBuild(RobotType.NET_GUN, dir);
                 } else if (!existsFulfillmentCenter && rc.getRoundNum() > 1100 && radiusSquared <= (rc.getRoundNum() < 800 ? 20 : 48) && radiusSquared > (rc.getRoundNum() < 800 ? 0 : 34)) {
-                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);35
+                    tryBuild(RobotType.FULFILLMENT_CENTER, dir);
                 } else if (!existsDesignSchool && rc.getTeamSoup() > 500 && rc.getRoundNum() > 800 && radiusSquared >= (rc.getRoundNum() < 900 ? 25 : 26) && radiusSquared <= (rc.getRoundNum() < 1100 ? 33 : 48)) {
                     tryBuild(RobotType.DESIGN_SCHOOL, dir);
                 } else if (rc.getRoundNum() < 1700 && rc.getTeamSoup() > 500 + (int) (rc.getRoundNum()/100) && radiusSquared <= 20) {
