@@ -41,6 +41,7 @@ public class DeliveryDrone extends Unit {
     int whichEnemyLocation;
     //enemy hq communication
     boolean hasSentEnemyLoc = false;
+    boolean crunchSuccess = false;
     //water communication
     MapLocation commedWaterLocation = null;
 
@@ -80,7 +81,7 @@ public class DeliveryDrone extends Unit {
         }
         if (baseLocation == null)
             baseLocation = myLocation;
-        
+
 
         //initial message check
         //looking for locations broadcast before you were born
@@ -265,7 +266,7 @@ public class DeliveryDrone extends Unit {
 
     private void checkDropship() {
         System.out.println("carry count: " + carryCount + " " + dropship);
-        if (landscaping) {
+        if (landscaping && !shellDrone) {
             carryCount++;
             if (carryCount > LANDSCAPE_GIVE_UP) {
                 becomeDropship();
@@ -335,10 +336,29 @@ public class DeliveryDrone extends Unit {
         if (enemyLocation != null && rc.canSenseLocation(enemyLocation)) {
             boolean giveUp = shouldRetreat(nearby);
             if (giveUp) {
+                if(nothingButBuildingsLeft(nearby) && !crunchSuccess) {
+                    RushCommitMessage r = new RushCommitMessage(MAP_HEIGHT, MAP_WIDTH, teamNum, rc.getRoundNum());
+                    r.writeTypeOfCommit(4);
+                    if(sendMessage(r.getMessage(), 1)) {
+                        System.out.println("[i] Telling team crunch has succeeded!");
+                        crunchSuccess = true;
+                    }
+                }
                 giveUpOnPoke = true;
                 handleDefense(nearby);
             }
         }
+    }
+
+    private boolean nothingButBuildingsLeft(RobotInfo[] nearby) {
+        boolean bleft = true;
+        for (RobotInfo x : nearby) {
+            if (!x.getTeam().equals(allyTeam) && !x.getType().isBuilding()) {
+                bleft = false;
+                break;
+            }
+        }
+        return bleft;
     }
 
     private boolean shouldRetreat(RobotInfo[] nearby) {
@@ -1097,6 +1117,11 @@ public class DeliveryDrone extends Unit {
                             System.out.println("[i] Enemy has stopped rushing");
                             enemyAggression = false;
                             turnAtEnemyAggression = -1;
+                        }
+                    } else if (r.typeOfCommit == 4) {
+                        if(!crunchSuccess) {
+                            System.out.println("[i] Drone crunch succeeded!");
+                            crunchSuccess = true;
                         }
                     }
                 }

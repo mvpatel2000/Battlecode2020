@@ -29,6 +29,7 @@ public class HQ extends Building {
 
     int turnAtEnemyAggression = -1;
     int vaporatorsBuilt = 0;
+    boolean crunchSuccess = false;
 
     public HQ(RobotController rc) throws GameActionException {
         super(rc);
@@ -390,6 +391,9 @@ public class HQ extends Building {
                         System.out.println("[i] Enemy is Rushing!");
                         enemyAggression = true;
                         turnAtEnemyAggression = rc.getRoundNum();
+                    } else if (r.typeOfCommit==4 && !crunchSuccess) {
+                        System.out.println("[i] Crunch Succeeded!");
+                        crunchSuccess = true;
                     }
                 }
             }
