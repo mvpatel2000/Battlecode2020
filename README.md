@@ -1,5 +1,5 @@
 # smite
-This is the [Battlecode 2020](https://battlecode.org) repository of smite. We placed second in the final tournament.
+This is the [Battlecode 2020](https://battlecode.org) repository of team smite. We placed second in the final tournament.
 
 ## Strategy Report
 Our strategy report is coming soon.
