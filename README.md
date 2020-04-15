@@ -2,7 +2,7 @@
 This is the [Battlecode 2020](https://battlecode.org) repository of team smite. We placed second in the final tournament.
 
 ## Overview
-[Battlecode](ttps://battlecode.org) is a three-week-long AI competition run by MIT students during [IAP](https://web.mit.edu/iap/) every January. The competition changes every year, but the premise stays the same: two teams of robots facing off on a map. You program robots to move, attack and communicate to make sure your team survives and the other doesn't. Teams face off in tournaments every week, culminating in a double-elimination final tournament held at MIT in early February.
+[Battlecode](https://battlecode.org) is a three-week-long AI competition run by MIT students during [IAP](https://web.mit.edu/iap/) every January. The competition changes every year, but the premise stays the same: two teams of robots facing off on a map. You program robots to move, attack and communicate to make sure your team survives and the other doesn't. Teams face off in tournaments every week, culminating in a double-elimination final tournament held at MIT in early February.
 
 This year, Battlecode required teams to battle the terrain just as much as they battled each other. Combat was de-emphasized in favor or an environmental foe---water. Throughout the game, the water level rose---starting at elevation 0, and rising slowly at first but grew rapidly---and eventually consumed the entire map. If your units flooded, then they would die. You lose the game when your headquarters flood.
 
