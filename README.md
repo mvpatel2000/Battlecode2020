@@ -20,15 +20,16 @@ Miner            | Landscaper | Drone
 
 Buildings are immobile. Once they are built at a certain elevation, they remain there for the entire game. So, buildings can die if a landscaper buries them or the flood level rises to their height. The buildings for Battlecode 2020 were:
 
-Headquarters            | Design School | Drone Factory | Refinery | Vaporator
-:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-![Headquarters](img/hq.png)  |  ![Landscaper](img/dschool.png) |  ![Drone](img/dfactory.png) | ![Refinery](img/refinery.png) | ![Vaporator](img/vaporator.png)
+Headquarters            | Design School | Drone Factory | Refinery | Vaporator | Net Gun
+:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
+![Headquarters](img/hq.png)  |  ![Landscaper](img/dschool.png) |  ![Drone](img/dfactory.png) | ![Refinery](img/refinery.png) | ![Vaporator](img/vaporator.png) | ![Net Gun](img/netgun.png)
 
 - **Headquarters**: Your base. If your HQ dies, your game is over. The HQ produces miners. It also has refinery and a net gun built in.
 - **Design School**: Produces landscapers. Built by miners. Can be used offensively (build near enemy) so you can produce landscapers which bury the opponent,  or defensively, so you can produce landscapers near your HQ to defend it.
 - **Drone Factory**: Builds drones. You only need one, since you can spit out a drone every turn, and you don't need more than 150 drones even late-game.
 - **Refinery**: Refines soup. Soup carried by miners must be deposited at a refinery. The refinery automatically refines the soup, and then adds it to your global soup store which can be drawn from to build items.
 - **Vaporator**: Vaporized soup. Every vaporator you build adds to *x* soup to your team's store every round. Teams soon realized these were extremely powerful, and built a billion and a half of them before they were nerfed. Even then, they were still a worthwhile investment. Most finalists built at least 10 vaporators, and some more than 20 in a typical game.
+- **Net Gun**: Shoots down drones. Your only protection against drones, but a pretty good one. Can shoot down a drone every turn, and have a large shooting radius so as soon as a drone sees the gun, its dead. Attackers needed a Drone : Opponent Net Gun ratio of 10:1 or more (if the defense has additional suppourt) to guarantee a successful attack.
 
 ## Resources
 The main resource of Battlecode 2020 was soup! At each turn, teams gained soup, but they could also mine soup by sending miners to soup tiles on the map. Teams could also build vaporators to increase their soup income per round. Soup is used for building buildings and producing robots. In the end, ultra-efficient HQ-miner coordinated precise soup mining didn't matter much because building enough vaporators mid-game brought in passive income. It's like gold rush, expect California in 1849 occurs is every single map at round 700.
