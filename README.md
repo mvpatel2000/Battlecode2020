@@ -34,7 +34,7 @@ Headquarters            | Design School | Drone Factory | Refinery | Vaporator |
 - **Net Gun**: Shoots down drones. Your only protection against drones, but a pretty good one. Can shoot down a drone every turn, and have a large shooting radius so as soon as a drone sees the gun, its dead. Attackers needed a Drone : Opponent Net Gun ratio of 10:1 or more (if the defense has additional suppourt) to guarantee a successful attack.
 
 ## Resources
-The main resource of Battlecode 2020 was soup! At each turn, teams gained soup, but they could also mine soup by sending miners to soup tiles on the map. Teams could also build vaporators to increase their soup income per round. Soup is used for building buildings and producing robots. In the end, ultra-efficient HQ-miner coordinated precise soup mining didn't matter much because building enough vaporators mid-game brought in passive income. It's like gold rush, expect California in 1849 occurs is every single map at round 700.
+The main resource of Battlecode 2020 was soup! At each turn, teams gained soup, but they could also mine soup by sending miners to soup tiles on the map. Teams could also build vaporators to increase their soup income per round. Soup was used for constructing buildings and producing robots. In the end, ultra-efficient HQ-miner high-precision soup mining didn't matter much because building vaporators mid-game brought in a ton passive income. Building vaporators early was like printing money.
 
 
 ## Strategy
