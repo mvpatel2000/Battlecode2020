@@ -41,16 +41,18 @@ The main resource of Battlecode 2020 was soup! At each turn, teams gained soup, 
 Our final strategy was to terraform the area surrounding our headquarters before building up our floodwalls. We then built drones to form a defensive shell and attack the enemy at certain rounds. Although this strategy seems fairly intuitive and balanced, we didn't start off with this plan.
 
 ### Sprint Tournament
-We started the Sprint Tournament by building a rush bot.
+We mostly focused on core features, building some basic rushing and defense at the last second to have a submittable bot. Aiming to optimize for the spring tournament is rarely a good idea.
 
 ### Seeding Tournament
 For the seeding tournament, we focused on a bot which built a dense set of walls in a hashtag shape around our HQ. We also built out most of our core functionality in harvesting and had basic code for drones. We ended up winning largely because our hashtag was very robust to complex map scenarios involving difficult terrain near our HQ. However, it was clear more aggressive strategies were doing well, and the writing was on the wall that this would not work.
 
 ### Qualifying Tournament
-We ended up changing our Seeding bot quite a bit.
+We believed a defensive strategy was still the best way to go. Attacking was hard, and required a well-timed strike before offensive lattices were flooded. We extended our hashtag to build an island around our HQ along with the walls. In this island, we were able to support vaporators and net guns, and make our walls very high. This defensive island, coined the cookie by someone else in the finals, let us repel most attacks. As we were the first seed, we cruised our way through qualifiying.
 
 ### Final Tournament
-We broke our bot in many ways, but made it better in others.
+In preperation for the final tournament, we tried to make the cookie and our economy as robust as possible. This was mainly tuning lots of parameters. We also added in a drone strike and offensive drone harassment which was very effective. Ultimately, we were not very confident going into the finals as we were consistently losing to an older version of our bot. We weren't able to tune our cookie to be as robust as we wanted it. 
+
+At finals, we were able to secure 2nd place, ultimately losing to Java Best Waifu, an aggressive team. The matches largely confirmed our hypothesis, that a defensive cookie was a stronger strategy than offensive attacks, but that our poorly tuned parameters meant we were unable to complete the cookie or build on it properly under harassment due to bad parameters. However, we did beat many teams, including The Highground, another top tier offensive team, and only under really strong harassment did our parameters break.
 
 ## Other Components
 
