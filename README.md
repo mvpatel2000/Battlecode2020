@@ -1,7 +1,7 @@
 # smite
 This is the [Battlecode 2020](https://battlecode.org) repository of team smite. We placed second in the final tournament.
 
-## Overview
+# Overview
 [Battlecode](https://battlecode.org) is a three-week-long AI competition run by MIT students during [IAP](https://web.mit.edu/iap/) every January. The competition changes every year, but the premise stays the same: two teams of robots facing off on a map. You program robots to move, attack and communicate to make sure your team survives and the other doesn't. Teams face off in tournaments every week, culminating in a double-elimination final tournament held at MIT in early February.
 
 This year, Battlecode required teams to battle the terrain just as much as they battled each other. Combat was de-emphasized in favor or an environmental foe---water. Throughout the game, the water level rose---starting at elevation 0, and rising slowly at first but grew rapidly---and eventually consumed the entire map. If your units flooded, then they would die. You lose the game when your headquarters flood.
@@ -61,7 +61,7 @@ Bad.
 Resources didn't matter, so neither did this.
 
 
-## To Run
+# To Run
 Clone the [Battlecode 2020 Scaffold](https://github.com/battlecode/battlecode20-scaffold), install the JDK for Java 8 and run `./gradlew build` in the scaffold directory.
 
 Then, clone this repository, and copy over the `src/` folder into the scaffold. To run games, open the client (a `client/` folder will appear once the `build` command has been run), and select the bots you wish to run. All bots can be found in the `src/` directory:
@@ -73,6 +73,6 @@ Then, clone this repository, and copy over the `src/` folder into the scaffold. 
 
 The other folders are other versions we copied at some point for testing purposes. Notably, `hades/` beats our final submission far more often than it should. So does `quail/`.
 
-## Previous Years
+# Previous Years
 * [2019 submission](https://github.com/mvpatel2000/Battlecode2019) (1st)
 
