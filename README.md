@@ -73,7 +73,7 @@ Miners also communicated which tiles had soup in them. These were broadcasted by
 
 This turned out not to matter much as vaporators dominated and late game resource collection was pointless.
 
-## Bytecode Optimization
+### Bytecode Optimization
 Because each unit was limited to 10,000 bytecode per turn, we had to limit computation significantly. To put 10,000 bytecode into meaningful terms, we had enough computation to initialize an array of length ~640. That's it. Good luck running A-star to pathfind. Don't even think about nested loops. 
 
 # To Run
