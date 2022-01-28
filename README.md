@@ -1,6 +1,12 @@
 # smite
 This is the [Battlecode 2020](https://battlecode.org) repository of team smite. We placed second in the final tournament.
 
+### Previous Years
+
+- [Battlecode 2019](https://github.com/mvpatel2000/Battlecode2019)
+- [Battlecode 2018](https://github.com/mvpatel2000/battlecode-2018-smite)
+- [Battlecode 2017](https://github.com/nthistle/battlecode-2017-segfault)
+
 # Overview
 [Battlecode](https://battlecode.org) is a three-week-long AI competition run by MIT students during [IAP](https://web.mit.edu/iap/) every January. The competition changes every year, but the premise stays the same: two teams of robots facing off on a map. You program robots to move, attack and communicate to make sure your team survives and the other doesn't. Teams face off in tournaments every week, culminating in a double-elimination final tournament held at MIT in early February.
 
